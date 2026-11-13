@@ -2384,6 +2384,145 @@ function wdPick(rng, states, levels, n) {
   return out;
 }
 
+// ---- src/logic/real.js ----
+// real.js — 身近なもの クイズ（D-040）。身近な物で単位の大きさをつかむ4択の問題。設計 §13.41
+// 物の大きさ（src）は一次資料・表示・規格で確かめた値か、問題文の中で大きさを決めて出す。
+// check がある問題は、tests/real.test.mjs で units.js の換算係数と整数で照合する。
+// kind: unit（単位を選ぶ）／count（何こ分）／about（およそどれくらい）
+
+const REAL = [
+  // ---------- 長さ（レベル1） ----------
+  {
+    id: 'R1a', level: 1, kind: 'unit', text: 'テニスコートの長さ（はしから はしまで）は、およそ 24 □', options: ['m', 'cm', 'km', 'mm'],
+    hint: 'テニスコートは、教室より ずっと長いよ。',
+    explain: 'テニスコートの長さは 23.77 m。およそ 24 m だよ。',
+    src: 'ITF のコートの寸法（全長 23.77 m）', check: null,
+  },
+  {
+    id: 'R1b', level: 1, kind: 'unit', text: '車（セレナ）の長さは、およそ 4.7 □', options: ['m', 'cm', 'km', 'mm'],
+    hint: '車の長さは、大人が 3人 ねころんだくらい。',
+    explain: 'セレナの長さは 4690 mm。4690 mm ＝ 4.69 m で、およそ 4.7 m。',
+    src: '日産 セレナ（6代目）主要諸元 全長 4690 mm（型によって 4765 mm）', check: { kind: 'round', level: 1, value: [4690, 'mm'], unit: 'm', tenths: 47 },
+  },
+  {
+    id: 'R1c', level: 1, kind: 'count', text: '1円玉（直径 2 cm）を まっすぐ 50まい ならべると、長さは何 m？', options: ['1 m', '10 m', '10 cm', '100 m'],
+    hint: '2 cm が 50こ。まず何 cm になるか考えよう。',
+    explain: '2 cm × 50 ＝ 100 cm ＝ 1 m。',
+    src: '一円玉の直径 20 mm（法令の定め）', check: { kind: 'mul', level: 1, each: [2, 'cm'], times: 50, ans: [1, 'm'] },
+  },
+  {
+    id: 'R1d', level: 1, kind: 'unit', text: 'シングルベッドの長さは、およそ 2 □', options: ['m', 'cm', 'km', 'mm'],
+    hint: 'ベッドの長さは、大人の身長より 少し長いくらい。',
+    explain: 'シングルベッドの長さは 195 cm くらい。およそ 2 m だよ。',
+    src: 'シングルベッドの標準的な大きさ はば 97 cm・長さ 195 cm（家具の売り場の表示）', check: { kind: 'round', level: 1, value: [195, 'cm'], unit: 'm', tenths: 20 },
+  },
+  // ---------- 面積（レベル2） ----------
+  {
+    id: 'R2a', level: 2, kind: 'unit', text: 'シングルベッドの広さは、およそ 2 □', options: ['m²', 'cm²', 'a', 'ha'],
+    hint: 'ベッドは たて 2 m・よこ 1 m くらい。広さは たて × よこ。',
+    explain: '97 cm × 195 cm ＝ 18915 cm²。1 m² ＝ 10000 cm² だから、およそ 2 m²。',
+    src: 'シングルベッド はば 97 cm・長さ 195 cm', check: { kind: 'area', level: 2, dims: [[97, 'cm'], [195, 'cm']], unit: 'm²', tenths: 19 },
+  },
+  {
+    id: 'R2b', level: 2, kind: 'about', text: 'テニスコート（ダブルス）は たて 約 24 m、よこ 約 11 m。広さは およそ何 a？', options: ['2.6 a', '26 a', '0.26 a', '260 a'],
+    hint: 'まず何 m² か計算しよう。1 a ＝ 100 m²。',
+    explain: '24 m × 11 m ＝ 264 m²。1 a ＝ 100 m² だから、およそ 2.6 a。',
+    src: 'ITF のコートの寸法 23.77 m × 10.97 m（ダブルス）', check: { kind: 'area', level: 2, dims: [[2377, 'cm'], [1097, 'cm']], unit: 'a', tenths: 26 },
+  },
+  {
+    id: 'R2c', level: 2, kind: 'count', text: '1 a（10 m × 10 m）の部屋に、たて 2 m・よこ 1 m のベッドを すきまなく ならべると、何台？', options: ['50台', '5台', '500台', '10台'],
+    hint: '1 a は何 m²？ ベッド 1台は何 m²？',
+    explain: '1 a ＝ 100 m²。ベッド 1台は 2 m² だから、100 ÷ 2 ＝ 50台。',
+    src: '問題文で大きさを決めている', check: { kind: 'fit', level: 2, big: [1, 'a'], dims: [[2, 'm'], [1, 'm']], ans: 50 },
+  },
+  {
+    id: 'R2d', level: 2, kind: 'about', text: '1 ha は、テニスコート（約 2.6 a）の およそ何面分？', options: ['40面分', '4面分', '400面分', '4000面分'],
+    hint: '1 ha は何 a？',
+    explain: '1 ha ＝ 100 a。100 ÷ 2.6 で、およそ 40面分（38面くらい）。',
+    src: 'ITF のコートの寸法 23.77 m × 10.97 m', check: { kind: 'ratio', level: 2, big: [1, 'ha'], dims: [[2377, 'cm'], [1097, 'cm']], lo: 30, hi: 50 },
+  },
+  // ---------- 体積・かさ（レベル3） ----------
+  {
+    id: 'R3a', level: 3, kind: 'unit', text: '大きい牛乳パック 1本は 1 □', options: ['L', 'mL', 'dL', 'kL'],
+    hint: '牛乳パックの はこに 書いてあるよ。1000 mL ＝ □？',
+    explain: '大きい牛乳パックは 1 L（1000 mL）。',
+    src: '牛乳パックの表示（1000 mL）', check: null,
+  },
+  {
+    id: 'R3b', level: 3, kind: 'unit', text: '小さいペットボトル 1本は 500 □', options: ['mL', 'L', 'dL', 'kL'],
+    hint: 'ペットボトルの ラベルを思い出そう。',
+    explain: '小さいペットボトルは 500 mL。2本で 1 L だよ。',
+    src: 'ペットボトルの表示（500 mL）', check: null,
+  },
+  {
+    id: 'R3c', level: 3, kind: 'count', text: '1 L の牛乳パックから、200 mL のコップに 何ばい つげる？', options: ['5はい', '50ぱい', '2はい', '500ぱい'],
+    hint: '1 L は何 mL？',
+    explain: '1 L ＝ 1000 mL。1000 ÷ 200 ＝ 5はい。',
+    src: '問題文で大きさを決めている', check: { kind: 'div', level: 3, big: [1, 'L'], each: [200, 'mL'], ans: 5 },
+  },
+  {
+    id: 'R3d', level: 3, kind: 'count', text: '小さじ 1ぱいは 5 mL。1 dL は 小さじ 何ばい分？', options: ['20ぱい', '2はい', '200ぱい', '50ぱい'],
+    hint: '1 dL は何 mL？',
+    explain: '1 dL ＝ 100 mL。100 ÷ 5 ＝ 20ぱい。',
+    src: '計量スプーン 小さじ 5 mL（問題文でも決めている）', check: { kind: 'div', level: 3, big: [1, 'dL'], each: [5, 'mL'], ans: 20 },
+  },
+  {
+    id: 'R3e', level: 3, kind: 'count', text: '1辺 2 cm のサイコロの体積は？', options: ['8 cm³', '6 cm³', '4 cm³', '8 cm²'],
+    hint: '体積は たて × よこ × 高さ。',
+    explain: '2 cm × 2 cm × 2 cm ＝ 8 cm³。',
+    src: '問題文で大きさを決めている', check: { kind: 'vol', level: 3, dims: [[2, 'cm'], [2, 'cm'], [2, 'cm']], ans: [8, 'cm³'] },
+  },
+  {
+    id: 'R3f', level: 3, kind: 'count', text: '1辺 2 cm のサイコロ（8 cm³）を何こ集めると、1 L（1000 cm³）になる？', options: ['125こ', '500こ', '1000こ', '12こ'],
+    hint: '1000 を 8 で わろう。',
+    explain: '1 L ＝ 1000 cm³。1000 ÷ 8 ＝ 125こ。',
+    src: '問題文で大きさを決めている', check: { kind: 'div', level: 3, big: [1, 'L'], each: [8, 'cm³'], ans: 125 },
+  },
+  {
+    id: 'R3g', level: 3, kind: 'about', text: '車（セレナ）が ぴったり入る箱は、長さ 約 4.7 m・はば 約 1.7 m・高さ 約 1.9 m。体積は およそ何 m³？', options: ['15 m³', '150 m³', '1.5 m³', '8 m³'],
+    hint: '体積は たし算ではなく、かけ算。',
+    explain: '4.7 × 1.7 × 1.9 で、およそ 15 m³。たし算（4.7＋1.7＋1.9）ではなく、かけ算だよ。',
+    src: '日産 セレナ（6代目）主要諸元 4690 × 1695 × 1870〜1895 mm', check: { kind: 'vol', level: 3, dims: [[4690, 'mm'], [1695, 'mm'], [1870, 'mm']], round: [15, 'm³'] },
+  },
+  {
+    id: 'R3h', level: 3, kind: 'about', text: 'セレナが ぴったり入る箱（約 15 m³）に 水を入れると、およそ何 L？', options: ['15000 L', '1500 L', '150 L', '15 L'],
+    hint: '1 m³ は何 L？',
+    explain: '1 m³ ＝ 1000 L。15 m³ ＝ 15000 L（15 kL）。',
+    src: '問題文で大きさを決めている', check: { kind: 'conv', level: 3, from: [15, 'm³'], ans: [15000, 'L'] },
+  },
+  {
+    id: 'R3i', level: 3, kind: 'unit', text: 'おふろの お湯は、およそ 200 □', options: ['L', 'mL', 'dL', 'kL'],
+    hint: '牛乳パック（1 L）が何本も入るよ。',
+    explain: 'おふろの お湯は、家によって ちがうけれど 200 L くらい。牛乳パック 200本分！',
+    src: '家庭の浴そうの目安〔要確認: 家によってちがう。保護者が G4 で確かめる〕', check: null,
+  },
+];
+
+function realById(id) {
+  const r = REAL.find((x) => x.id === id);
+  if (!r) throw new Error('realById: 未知の問題 ' + id);
+  return r;
+}
+
+// levels（出してよいレベル）の問題から、n問を重ならないように選ぶ。足りなければある分だけ
+function realPick(rng, levels, n) {
+  const pool = REAL.filter((r) => (levels || []).includes(r.level)).map((r) => r.id);
+  const out = [];
+  while (out.length < n && pool.length) out.push(pool.splice(rng.int(pool.length), 1)[0]);
+  return out;
+}
+
+// 出す問題: 選択肢を並べ替えて { id, level, text, explain, options: [{ label, correct }] }（意味の問題と同じ形）
+function realMakeQuestion(rng, id) {
+  const r = realById(id);
+  const opts = r.options.map((label, i) => ({ label, correct: i === 0 }));
+  for (let i = opts.length - 1; i > 0; i--) {
+    const j = rng.int(i + 1);
+    [opts[i], opts[j]] = [opts[j], opts[i]];
+  }
+  return { id: r.id, level: r.level, text: r.text, explain: r.explain, hint: r.hint, options: opts };
+}
+
 // ---- src/logic/clock.js ----
 // clock.js — じかん の セクション（秒・分・時間・日、時刻と時間）。設計 §13.20、D-016
 // 倍率は 10 のべき乗ではない。ここ（CK_FACTORS）に1か所だけ置き、テストで独立した正解表と照合する。答えはすべて整数。
@@ -2925,7 +3064,7 @@ function coWeekDone(p, today) {
 
 // ほかの練習（苦手復習・ドリル1・ドリル2・キロ・ミリ クイズ・文章題）は、それぞれ1日2回まで（D-037）。
 // 短い時間でできるので、ポイントの取りすぎを防ぐ。ドリルは 1 と 2 を別に数える。途中でやめた回は数えない（記録が残らないため）
-const CO_OTHER_MODES = ['review', 'drill', 'prefix', 'word'];
+const CO_OTHER_MODES = ['review', 'drill', 'prefix', 'word', 'real'];
 const CO_OTHER_DAILY_MAX = 2;
 function coOtherLeft(sessions, today, mode, level) {
   if (!CO_OTHER_MODES.includes(mode)) return Infinity;
@@ -2933,7 +3072,13 @@ function coOtherLeft(sessions, today, mode, level) {
   return Math.max(0, CO_OTHER_DAILY_MAX - n);
 }
 
-globalThis.KR = { decMake, decShift, decToString, decFromString, decParseInput, decEquals, decDigits, decFromFraction, decGcd, UNIT_LEVELS, UNIT_PAIRS, unitExp, unitItemsAll, unitItems, unitItemByKey, unitLadder, rngCrypto, qPick, qShuffle, qAllowedTypes, qMakeS, qOpLabel, qApplyOp, qOptions, qMakeQuestion, qMakeDrill, qCheck, qFlowStart, qFlowHint, qFlowChoose, qFlowInput, qFlowRecord, qFlowFirstRecord, qFlowRetried, PG_STREAK_TO_DOWN, PG_RECENT_MAX, PG_CHECK_INTERVAL_DAYS, PG_SESSION_SIZE, PG_MAX_CHECKS, PG_SLIP_DAYS, PG_PROBE_MAX, pgToday, pgDaysBetween, pgNewItem, pgMastered, pgRecord, pgRecordProbe, pgPlace, pgMarks, pgIsCheckDue, pgWeight, pgPickNormal, pgMarkProbes, pgLevelProgress, pgEvents, pgNextStep, pgMasteredKeys, pgPickL4, pgL4Ready, pgL4Need, pgWeakKeys, pgPickReview, pgJumpKeys, pgPickJump, pgRecordJump, SLOT_SYMBOLS, SLOT_REEL, SLOT_REEL_RIGHT, SLOT_REVIEW_MULT, slotReviewBonus, SLOT_JUMP_MULT, slotJumpBonus, SLOT_DRILL_GIVES_SLOT, slotCompute, slotFormula, slotSpin, SLOT_THEMES, slotThemesFor, RS_DEFAULT, RS_MAX_TICKETS, rsValidate, rsExpected, rsSig, rsNewBox, rsBoxEmpty, rsCurrentBox, rsDraw, STORE_SCHEMA, STORE_KEY, STORE_KEY_BROKEN, STORE_KEY_BEFORE_IMPORT, STORE_KEY_LOCK, STORE_LOCK_TTL_MS, STORE_SESSIONS_MAX, STORE_UNDO_HOURS, STORE_PREFIX_KEY_RE, STORE_LOG_MAX, STORE_LOG_KINDS, STORE_BEST_MAX, STORE_DEFAULT_NAMES, storeUpgrade, storeClone, storeInitial, storeValidate, storeLoad, storeLockAcquire, storeLockRelease, storeSave, storeProfile, storeSetItem, storeSetPrefix, storeApplyTime, storeApplyMemtest, storeApplyBonus, storeAddLog, storeSetRank, storeSetUnlocked, storeSetClock, storeSetWord, storeSetMeaning, storeAddDrill, storeApplySession, storeClearPending, storeExchange, storeRewardSlot, storeSetRewardSlot, storeSpinReward, storeSetRewards, storeRename, storeSetTheme, storeResetProfile, storeResetAll, storeMarkExported, storeExportText, storeParseImport, storeImportSummary, storeBackupBeforeImport, storeReadBeforeImport, storeClearBeforeImport, storeAdoptImported, CHARA_LIST, CHARA_MOODS, CHARA_LINES, charaLine, charaForLevel, charaSvg, charaLiterSvg, AV_MOODS, AV_IDS, avatarSvg, avMoodFromResult, avMood, avIsFirst, PREFIXES, PREFIX_KINDS, PREFIX_BOX_MAX, prefixById, prefixKeys, prefixFactorLabel, prefixMakeQuestion, prefixRecord, prefixLearned, prefixPick, prefixTableHtml, MN_DONE_BOX, MEANING, mnById, mnForLevel, mnMakeQuestion, mnRecord, mnDone, mnNextFor, mnLevelDone, WD_DONE_BOX, WORD, wdById, wdMakeQuestion, wdRecord, wdDone, wdKeysFor, wdPick, CK_FACTORS, CK_SESSION_SIZE, CK_MAX_CHECKS, CK_ITEMS, ckById, ckOpLabel, ckOptions, ckMakeQuestion, ckFlowStart, ckFlowHint, ckFlowChoose, ckFlowInput, ckFlowRecord, ckFirstRecord, ckPick, ckHasWork, ckPickLabel, MT_POINTS, MT_MIN_MASTERED, MT_LOGIN_BONUS, MT_WEEK_STAMPS, MT_WEEK_BONUS, mtPoints, mtCandidates, mtAvailable, mtDoneToday, mtPick, mtWeekStart, mtWeekStamps, mtDueBonuses, TC_SECONDS, TC_DAILY_MAX, TC_UNLOCK_MASTERED, TC_WRONG_SHOW_MS, tcMakeQuestion, tcPoints, tcScore, tcCountToday, tcPointsFromScore, tcPointsFor, tcReady, coClockCleared, coClockMastered, coWordLevels, coLevelCleared, CO_RECENT_DAYS, CO_ERR_MIN, coRecentErrors, coLevelHasWork, coL4Available, coTimeAvailable, coRecommend, coSessionEvents, CO_RANKS, coRankStats, coRankIndex, coCheckWaiting, coLevelStages, CO_WEEK_KINDS, coWeekDone, CO_OTHER_MODES, CO_OTHER_DAILY_MAX, coOtherLeft };
+// 身近なもの クイズ（D-040）で出してよいレベル: レベル1と、1問でも練習したレベル
+function coRealLevels(p) {
+  const items = p.items || {};
+  return [1, 2, 3].filter((lv) => lv === 1 || unitItems(lv).some((it) => items[it.key]));
+}
+
+globalThis.KR = { decMake, decShift, decToString, decFromString, decParseInput, decEquals, decDigits, decFromFraction, decGcd, UNIT_LEVELS, UNIT_PAIRS, unitExp, unitItemsAll, unitItems, unitItemByKey, unitLadder, rngCrypto, qPick, qShuffle, qAllowedTypes, qMakeS, qOpLabel, qApplyOp, qOptions, qMakeQuestion, qMakeDrill, qCheck, qFlowStart, qFlowHint, qFlowChoose, qFlowInput, qFlowRecord, qFlowFirstRecord, qFlowRetried, PG_STREAK_TO_DOWN, PG_RECENT_MAX, PG_CHECK_INTERVAL_DAYS, PG_SESSION_SIZE, PG_MAX_CHECKS, PG_SLIP_DAYS, PG_PROBE_MAX, pgToday, pgDaysBetween, pgNewItem, pgMastered, pgRecord, pgRecordProbe, pgPlace, pgMarks, pgIsCheckDue, pgWeight, pgPickNormal, pgMarkProbes, pgLevelProgress, pgEvents, pgNextStep, pgMasteredKeys, pgPickL4, pgL4Ready, pgL4Need, pgWeakKeys, pgPickReview, pgJumpKeys, pgPickJump, pgRecordJump, SLOT_SYMBOLS, SLOT_REEL, SLOT_REEL_RIGHT, SLOT_REVIEW_MULT, slotReviewBonus, SLOT_JUMP_MULT, slotJumpBonus, SLOT_DRILL_GIVES_SLOT, slotCompute, slotFormula, slotSpin, SLOT_THEMES, slotThemesFor, RS_DEFAULT, RS_MAX_TICKETS, rsValidate, rsExpected, rsSig, rsNewBox, rsBoxEmpty, rsCurrentBox, rsDraw, STORE_SCHEMA, STORE_KEY, STORE_KEY_BROKEN, STORE_KEY_BEFORE_IMPORT, STORE_KEY_LOCK, STORE_LOCK_TTL_MS, STORE_SESSIONS_MAX, STORE_UNDO_HOURS, STORE_PREFIX_KEY_RE, STORE_LOG_MAX, STORE_LOG_KINDS, STORE_BEST_MAX, STORE_DEFAULT_NAMES, storeUpgrade, storeClone, storeInitial, storeValidate, storeLoad, storeLockAcquire, storeLockRelease, storeSave, storeProfile, storeSetItem, storeSetPrefix, storeApplyTime, storeApplyMemtest, storeApplyBonus, storeAddLog, storeSetRank, storeSetUnlocked, storeSetClock, storeSetWord, storeSetMeaning, storeAddDrill, storeApplySession, storeClearPending, storeExchange, storeRewardSlot, storeSetRewardSlot, storeSpinReward, storeSetRewards, storeRename, storeSetTheme, storeResetProfile, storeResetAll, storeMarkExported, storeExportText, storeParseImport, storeImportSummary, storeBackupBeforeImport, storeReadBeforeImport, storeClearBeforeImport, storeAdoptImported, CHARA_LIST, CHARA_MOODS, CHARA_LINES, charaLine, charaForLevel, charaSvg, charaLiterSvg, AV_MOODS, AV_IDS, avatarSvg, avMoodFromResult, avMood, avIsFirst, PREFIXES, PREFIX_KINDS, PREFIX_BOX_MAX, prefixById, prefixKeys, prefixFactorLabel, prefixMakeQuestion, prefixRecord, prefixLearned, prefixPick, prefixTableHtml, MN_DONE_BOX, MEANING, mnById, mnForLevel, mnMakeQuestion, mnRecord, mnDone, mnNextFor, mnLevelDone, WD_DONE_BOX, WORD, wdById, wdMakeQuestion, wdRecord, wdDone, wdKeysFor, wdPick, REAL, realById, realPick, realMakeQuestion, CK_FACTORS, CK_SESSION_SIZE, CK_MAX_CHECKS, CK_ITEMS, ckById, ckOpLabel, ckOptions, ckMakeQuestion, ckFlowStart, ckFlowHint, ckFlowChoose, ckFlowInput, ckFlowRecord, ckFirstRecord, ckPick, ckHasWork, ckPickLabel, MT_POINTS, MT_MIN_MASTERED, MT_LOGIN_BONUS, MT_WEEK_STAMPS, MT_WEEK_BONUS, mtPoints, mtCandidates, mtAvailable, mtDoneToday, mtPick, mtWeekStart, mtWeekStamps, mtDueBonuses, TC_SECONDS, TC_DAILY_MAX, TC_UNLOCK_MASTERED, TC_WRONG_SHOW_MS, tcMakeQuestion, tcPoints, tcScore, tcCountToday, tcPointsFromScore, tcPointsFor, tcReady, coClockCleared, coClockMastered, coWordLevels, coLevelCleared, CO_RECENT_DAYS, CO_ERR_MIN, coRecentErrors, coLevelHasWork, coL4Available, coTimeAvailable, coRecommend, coSessionEvents, CO_RANKS, coRankStats, coRankIndex, coCheckWaiting, coLevelStages, CO_WEEK_KINDS, coWeekDone, CO_OTHER_MODES, CO_OTHER_DAILY_MAX, coOtherLeft, coRealLevels };
 if (typeof document !== 'undefined') {
 // ---- src/ui/app.js ----
 // ui/app.js — 画面の描画とイベント。logic の関数は同じスコープに連結されている（build.mjs）。設計 §9
@@ -3341,6 +3486,7 @@ function uiHome() {
   const wl = coWordLevels(p);
   const wdn = WORD.filter((w) => wdDone((p.word || {})[w.id])).length;
   h += '<button data-act="start" data-mode="word"' + (wl.length ? oDis('word') : ' disabled') + '>文章題<br><span class="muted">' + (wl.length ? '解けた ' + wdn + ' / ' + WORD.length : 'レベル1で できた を 4個にしよう') + '</span>' + (wl.length ? oNote('word') : '') + '</button>';
+  h += '<button data-act="start" data-mode="real"' + oDis('real') + '>身近なもの クイズ<br><span class="muted">ベッド・テニスコート・牛乳パック</span>' + oNote('real') + '</button>';
   h += '<button data-act="rewards">ごほうび</button>';
   h += '</div>';
   if (weakN === 0) h += '<p class="muted">苦手はありません。練習をしてみよう。</p>';
@@ -3381,6 +3527,7 @@ function uiStart(mode, level, fromRec) {
   else if (mode === 'l4') list = pgPickL4(uiRng, p.items, today);
   else if (mode === 'jump') list = pgPickJump(uiRng, p.items, level);
   else if (mode === 'word') list = wdPick(uiRng, p.word, coWordLevels(p), PG_SESSION_SIZE);
+  else if (mode === 'real') list = realPick(uiRng, coRealLevels(p), PG_SESSION_SIZE).map((id) => ({ key: 'rl:' + id, isMeaning: true, isReal: true, isCheck: false, isProbe: false })); // 身近なもの クイズ（D-040）
   else if (mode === 'clock') list = ckPick(uiRng, p.clock, today);
   else if (mode === 'memtest') list = mtDoneToday(p.sessions, today) ? [] : mtPick(uiRng, p.items, p.clock, today);
   else list = Array.from({ length: PG_SESSION_SIZE }, () => ({ key: 'drill', isCheck: false }));
@@ -3402,6 +3549,7 @@ function uiNextQ() {
   const p = uiProfile();
   const entry = pl.list[pl.idx];
   pl.isMeaning = !!entry.isMeaning;
+  pl.isReal = !!entry.isReal;
   pl.isWord = !!entry.isWord;
   pl.isClock = !!entry.isClock;
   uiS.lastInput = 'ans';
@@ -3424,7 +3572,7 @@ function uiNextQ() {
     return;
   }
   if (pl.isMeaning) {
-    pl.q = mnMakeQuestion(uiRng, entry.key.slice(3));
+    pl.q = pl.isReal ? realMakeQuestion(uiRng, entry.key.slice(3)) : mnMakeQuestion(uiRng, entry.key.slice(3));
     pl.flow = null;
     pl.drillHint = false;
     pl.pf = { disabled: [], wrongs: 0, done: false, lastWrong: null };
@@ -3807,7 +3955,7 @@ function uiMeaning() {
   const pl = uiS.play;
   const q = pl.q;
   const pf = pl.pf;
-  let h = '<p>単位の意味</p><div class="qtext">' + uiEsc(q.text) + '</div><div class="options">';
+  let h = '<p>' + (pl.isReal ? '身近なもの クイズ' : '単位の意味') + '</p><div class="qtext">' + uiEsc(q.text) + '</div><div class="options">';
   q.options.forEach((o, i) => {
     const dis = pf.disabled.includes(i) || (pf.done && !o.correct);
     h += '<button data-act="choose" data-i="' + i + '"' + (dis ? ' disabled' : '') + (pf.done && o.correct ? ' class="primary"' : '') + '><span class="key">' + (i + 1) + '</span>' + (uiShapeOption(o.label) || uiEsc(o.label)) + '</button>';
@@ -3818,7 +3966,7 @@ function uiMeaning() {
     h += '<div class="fb ok">' + (pf.wrongs === 0 ? '正解！ ' : 'できたね！ ') + uiEsc(q.explain) + fig + '</div>';
     h += '<p><button class="primary big" data-act="next">次へ（Enter）</button></p>';
   } else if (pf.lastWrong !== null) {
-    h += '<div class="fb hint">おしい！ ' + uiEsc(q.explain.split('。')[0]) + '。' + fig + '</div>';
+    h += '<div class="fb hint">おしい！ ' + (q.hint ? uiEsc(q.hint) : uiEsc(q.explain.split('。')[0]) + '。') + fig + '</div>'; // 身近なもの クイズは答えを言わないヒント（D-040）
   } else if (pl.drillHint) {
     h += '<div class="fb info">ヒント: ' + uiEsc(q.explain) + fig + '</div>';
   }
@@ -3830,8 +3978,8 @@ function uiMeaningChoose(i) {
   const pf = pl.pf;
   const o = pl.q.options[i];
   if (!o || pf.done || pf.disabled.includes(i)) return;
-  // ヒントを見て正解したときは進めない。誤りは記録する（D-014）
-  if (pf.wrongs === 0 && !(pl.drillHint && o.correct)) {
+  // ヒントを見て正解したときは進めない。誤りは記録する（D-014）。身近なもの クイズは記録しない（D-040）
+  if (!pl.isReal && pf.wrongs === 0 && !(pl.drillHint && o.correct)) {
     const today = pgToday();
     const before = (uiProfile().meaning || {})[pl.q.id];
     const after = mnRecord(before, o.correct, today);
