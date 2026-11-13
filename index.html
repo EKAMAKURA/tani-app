@@ -145,6 +145,7 @@ input.ck-in { width: 5em; }
 .waiting { margin: 6px 0; }
 .card.week { margin: 8px 0; }
 .level-btn > span { flex: 1; min-width: 0; }
+input[id^="ans"]:focus { outline: 3px solid var(--accent); outline-offset: 1px; }
 
 </style>
 <link rel="manifest" href="manifest.webmanifest">
@@ -2657,6 +2658,8 @@ const uiBanner = document.getElementById('banner');
 const uiRng = rngCrypto();
 const uiTabId = 't' + Date.now().toString(36) + uiRng.int(1e9).toString(36);
 const uiNowIso = () => new Date().toISOString();
+// 主な入力がタッチの端末（iPad・iPhone）か（D-027）
+const uiTouch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
 
 const uiS = {
   data: null,
@@ -4096,6 +4099,8 @@ function uiRender() {
   else if (scr === 'tresult') h = uiTimeResult();
   else if (scr === 'mresult') h = uiS.result ? uiMemtestResult() : uiHome();
   uiApp.innerHTML = h;
+  // タッチの端末では端末のキーボードを出さず、画面のテンキーだけで入れる（D-027）
+  if (uiTouch) for (const el of uiApp.querySelectorAll('input[id^="ans"]')) { el.readOnly = true; el.setAttribute('inputmode', 'none'); }
   const ans = document.getElementById('ans');
   if (ans) ans.focus();
   if (scr === 'result') uiRunSlot();
