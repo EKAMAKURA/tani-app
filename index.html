@@ -4129,7 +4129,8 @@ function uiRender() {
     }
   }
   const ans = document.getElementById('ans');
-  if (ans) ans.focus();
+  // 画面をずらさずに入れる欄を選ぶ（iPhone は focus で欄を画面の中ほどへ動かすため。D-031）
+  if (ans) ans.focus({ preventScroll: true });
   if (scr === 'result') uiRunSlot();
   const imp = document.getElementById('importfile');
   if (imp) imp.addEventListener('change', uiOnImportFile);
@@ -4206,7 +4207,7 @@ function uiOnClick(e) {
       if (el) {
         const k = b.dataset.k;
         el.value = k === '⌫' ? el.value.slice(0, -1) : el.value + k;
-        el.focus();
+        if (document.activeElement !== el) el.focus({ preventScroll: true });
       }
       return;
     }
@@ -4417,6 +4418,14 @@ uiApp.addEventListener('click', (e) => {
 });
 document.addEventListener('keydown', uiOnKey);
 // テンキーで入れる欄（じかん の 答えが2つの問題）: 最後に触った欄
+// タッチの端末: 欄をタップしても画面を動かさない（選ぶだけ。D-031）
+document.addEventListener('touchend', (e) => {
+  const t = e.target;
+  if (!uiTouch || !t || !/^ans\d*$/.test(t.id || '')) return;
+  e.preventDefault();
+  uiS.lastInput = t.id;
+  t.focus({ preventScroll: true });
+}, { passive: false });
 document.addEventListener('focusin', (e) => {
   if (e.target && /^ans\d*$/.test(e.target.id || '')) uiS.lastInput = e.target.id;
 });
