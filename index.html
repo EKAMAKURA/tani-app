@@ -133,6 +133,7 @@ input.ck-in { width: 5em; }
 .box-left { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; }
 .box-left .chip.gone { opacity: 0.35; text-decoration: line-through; }
 .box-left .chip.last { border-color: #e24b4a; color: #e24b4a; font-weight: bold; }
+.danger-btn { background: #b3261e; color: #fff; border-color: #b3261e; }
 
 </style>
 <link rel="manifest" href="manifest.webmanifest">
@@ -1443,6 +1444,21 @@ function storeSetTheme(data, pid, theme) {
   });
 }
 
+// 記録のリセット（D-023）。名前だけ残して最初の状態に戻す。端末全体の設定（ごほうび・くじの中身）は変えない
+function storeResetProfile(data, pid) {
+  const i = data.profiles.findIndex((p) => p.id === pid);
+  if (i < 0) throw new Error('storeResetProfile: 未知のメンバー ' + pid);
+  const d = storeClone(data);
+  d.profiles[i] = { ...storeNewProfile({ id: pid, name: data.profiles[i].name }) };
+  return d;
+}
+
+function storeResetAll(data) {
+  let d = data;
+  for (const p of data.profiles) d = storeResetProfile(d, p.id);
+  return d;
+}
+
 function storeMarkExported(data, nowIso) {
   return { ...storeClone(data), lastExportAt: nowIso };
 }
@@ -2574,7 +2590,7 @@ function coRankIndex(p) {
   return i;
 }
 
-globalThis.KR = { decMake, decShift, decToString, decFromString, decParseInput, decEquals, decDigits, decFromFraction, decGcd, UNIT_LEVELS, UNIT_PAIRS, unitExp, unitItemsAll, unitItems, unitItemByKey, unitLadder, rngCrypto, qPick, qShuffle, qAllowedTypes, qMakeS, qOpLabel, qApplyOp, qOptions, qMakeQuestion, qMakeDrill, qCheck, qFlowStart, qFlowHint, qFlowChoose, qFlowInput, qFlowRecord, qFlowFirstRecord, qFlowRetried, PG_STREAK_TO_DOWN, PG_RECENT_MAX, PG_CHECK_INTERVAL_DAYS, PG_SESSION_SIZE, PG_MAX_CHECKS, PG_SLIP_DAYS, PG_PROBE_MAX, pgToday, pgDaysBetween, pgNewItem, pgMastered, pgRecord, pgRecordProbe, pgPlace, pgMarks, pgIsCheckDue, pgWeight, pgPickNormal, pgMarkProbes, pgLevelProgress, pgEvents, pgNextStep, pgMasteredKeys, pgPickL4, pgL4Ready, pgL4Need, pgWeakKeys, pgPickReview, pgJumpKeys, pgPickJump, pgRecordJump, SLOT_SYMBOLS, SLOT_REEL, SLOT_REEL_RIGHT, SLOT_DRILL_GIVES_SLOT, slotCompute, slotFormula, slotSpin, SLOT_THEMES, slotThemesFor, RS_DEFAULT, RS_MAX_TICKETS, rsValidate, rsExpected, rsSig, rsNewBox, rsBoxEmpty, rsCurrentBox, rsDraw, STORE_SCHEMA, STORE_KEY, STORE_KEY_BROKEN, STORE_KEY_BEFORE_IMPORT, STORE_KEY_LOCK, STORE_LOCK_TTL_MS, STORE_SESSIONS_MAX, STORE_UNDO_HOURS, STORE_PREFIX_KEY_RE, STORE_LOG_MAX, STORE_LOG_KINDS, STORE_BEST_MAX, STORE_DEFAULT_NAMES, storeUpgrade, storeClone, storeInitial, storeValidate, storeLoad, storeLockAcquire, storeLockRelease, storeSave, storeProfile, storeSetItem, storeSetPrefix, storeApplyTime, storeApplyMemtest, storeApplyBonus, storeAddLog, storeSetRank, storeSetUnlocked, storeSetClock, storeSetWord, storeSetMeaning, storeAddDrill, storeApplySession, storeClearPending, storeExchange, storeRewardSlot, storeSetRewardSlot, storeSpinReward, storeSetRewards, storeRename, storeSetTheme, storeMarkExported, storeExportText, storeParseImport, storeImportSummary, storeBackupBeforeImport, storeReadBeforeImport, storeClearBeforeImport, storeAdoptImported, CHARA_LIST, CHARA_MOODS, charaForLevel, charaSvg, charaLiterSvg, PREFIXES, PREFIX_KINDS, PREFIX_BOX_MAX, prefixById, prefixKeys, prefixFactorLabel, prefixMakeQuestion, prefixRecord, prefixLearned, prefixPick, prefixTableHtml, MN_DONE_BOX, MEANING, mnById, mnForLevel, mnMakeQuestion, mnRecord, mnDone, mnNextFor, mnLevelDone, WD_DONE_BOX, WORD, wdById, wdMakeQuestion, wdRecord, wdDone, wdKeysFor, wdPick, CK_FACTORS, CK_SESSION_SIZE, CK_MAX_CHECKS, CK_ITEMS, ckById, ckOpLabel, ckOptions, ckMakeQuestion, ckFlowStart, ckFlowHint, ckFlowChoose, ckFlowInput, ckFlowRecord, ckFirstRecord, ckPick, ckHasWork, ckPickLabel, MT_POINTS, MT_MIN_MASTERED, MT_LOGIN_BONUS, MT_WEEK_STAMPS, MT_WEEK_BONUS, mtPoints, mtCandidates, mtAvailable, mtDoneToday, mtPick, mtWeekStart, mtWeekStamps, mtDueBonuses, TC_SECONDS, TC_DAILY_MAX, TC_UNLOCK_MASTERED, TC_WRONG_SHOW_MS, tcMakeQuestion, tcPoints, tcScore, tcCountToday, tcPointsFromScore, tcPointsFor, tcReady, coClockCleared, coClockMastered, coWordLevels, coLevelCleared, CO_RECENT_DAYS, CO_ERR_MIN, coRecentErrors, coLevelHasWork, coL4Available, coTimeAvailable, coRecommend, coSessionEvents, CO_RANKS, coRankStats, coRankIndex };
+globalThis.KR = { decMake, decShift, decToString, decFromString, decParseInput, decEquals, decDigits, decFromFraction, decGcd, UNIT_LEVELS, UNIT_PAIRS, unitExp, unitItemsAll, unitItems, unitItemByKey, unitLadder, rngCrypto, qPick, qShuffle, qAllowedTypes, qMakeS, qOpLabel, qApplyOp, qOptions, qMakeQuestion, qMakeDrill, qCheck, qFlowStart, qFlowHint, qFlowChoose, qFlowInput, qFlowRecord, qFlowFirstRecord, qFlowRetried, PG_STREAK_TO_DOWN, PG_RECENT_MAX, PG_CHECK_INTERVAL_DAYS, PG_SESSION_SIZE, PG_MAX_CHECKS, PG_SLIP_DAYS, PG_PROBE_MAX, pgToday, pgDaysBetween, pgNewItem, pgMastered, pgRecord, pgRecordProbe, pgPlace, pgMarks, pgIsCheckDue, pgWeight, pgPickNormal, pgMarkProbes, pgLevelProgress, pgEvents, pgNextStep, pgMasteredKeys, pgPickL4, pgL4Ready, pgL4Need, pgWeakKeys, pgPickReview, pgJumpKeys, pgPickJump, pgRecordJump, SLOT_SYMBOLS, SLOT_REEL, SLOT_REEL_RIGHT, SLOT_DRILL_GIVES_SLOT, slotCompute, slotFormula, slotSpin, SLOT_THEMES, slotThemesFor, RS_DEFAULT, RS_MAX_TICKETS, rsValidate, rsExpected, rsSig, rsNewBox, rsBoxEmpty, rsCurrentBox, rsDraw, STORE_SCHEMA, STORE_KEY, STORE_KEY_BROKEN, STORE_KEY_BEFORE_IMPORT, STORE_KEY_LOCK, STORE_LOCK_TTL_MS, STORE_SESSIONS_MAX, STORE_UNDO_HOURS, STORE_PREFIX_KEY_RE, STORE_LOG_MAX, STORE_LOG_KINDS, STORE_BEST_MAX, STORE_DEFAULT_NAMES, storeUpgrade, storeClone, storeInitial, storeValidate, storeLoad, storeLockAcquire, storeLockRelease, storeSave, storeProfile, storeSetItem, storeSetPrefix, storeApplyTime, storeApplyMemtest, storeApplyBonus, storeAddLog, storeSetRank, storeSetUnlocked, storeSetClock, storeSetWord, storeSetMeaning, storeAddDrill, storeApplySession, storeClearPending, storeExchange, storeRewardSlot, storeSetRewardSlot, storeSpinReward, storeSetRewards, storeRename, storeSetTheme, storeResetProfile, storeResetAll, storeMarkExported, storeExportText, storeParseImport, storeImportSummary, storeBackupBeforeImport, storeReadBeforeImport, storeClearBeforeImport, storeAdoptImported, CHARA_LIST, CHARA_MOODS, charaForLevel, charaSvg, charaLiterSvg, PREFIXES, PREFIX_KINDS, PREFIX_BOX_MAX, prefixById, prefixKeys, prefixFactorLabel, prefixMakeQuestion, prefixRecord, prefixLearned, prefixPick, prefixTableHtml, MN_DONE_BOX, MEANING, mnById, mnForLevel, mnMakeQuestion, mnRecord, mnDone, mnNextFor, mnLevelDone, WD_DONE_BOX, WORD, wdById, wdMakeQuestion, wdRecord, wdDone, wdKeysFor, wdPick, CK_FACTORS, CK_SESSION_SIZE, CK_MAX_CHECKS, CK_ITEMS, ckById, ckOpLabel, ckOptions, ckMakeQuestion, ckFlowStart, ckFlowHint, ckFlowChoose, ckFlowInput, ckFlowRecord, ckFirstRecord, ckPick, ckHasWork, ckPickLabel, MT_POINTS, MT_MIN_MASTERED, MT_LOGIN_BONUS, MT_WEEK_STAMPS, MT_WEEK_BONUS, mtPoints, mtCandidates, mtAvailable, mtDoneToday, mtPick, mtWeekStart, mtWeekStamps, mtDueBonuses, TC_SECONDS, TC_DAILY_MAX, TC_UNLOCK_MASTERED, TC_WRONG_SHOW_MS, tcMakeQuestion, tcPoints, tcScore, tcCountToday, tcPointsFromScore, tcPointsFor, tcReady, coClockCleared, coClockMastered, coWordLevels, coLevelCleared, CO_RECENT_DAYS, CO_ERR_MIN, coRecentErrors, coLevelHasWork, coL4Available, coTimeAvailable, coRecommend, coSessionEvents, CO_RANKS, coRankStats, coRankIndex };
 if (typeof document !== 'undefined') {
 // ---- src/ui/app.js ----
 // ui/app.js — 画面の描画とイベント。logic の関数は同じスコープに連結されている（build.mjs）。設計 §9
@@ -2596,7 +2612,7 @@ const uiS = {
   pid: null,
   play: null,
   result: null,
-  adult: { ok: false, askSaved: false, importPlan: null, msg: null },
+  adult: { ok: false, askSaved: false, importPlan: null, msg: null, resetAsk: null },
   exchange: null,
   blocked: false,
   tc: null, // タイムチャレンジの回（設計 §13.8）
@@ -3831,19 +3847,28 @@ function uiAdult() {
   }
   if (a.undoPlan) {
     const sm = a.undoPlan.summary;
-    h += '<div class="fb hint"><b>よみこむ まえの きろくに もどします。よみこんだ あとの きろく（ポイント・にがて）は きえます。</b><ul class="list">';
+    h += '<div class="fb hint"><b>よみこみ・リセットの まえの きろくに もどします。そのあとの きろく（ポイント・にがて）は きえます。</b><ul class="list">';
     for (const x of sm.profiles) h += '<li>' + uiEsc(x.name) + ': ごうけい ' + x.cur.total + ' → ' + x.next.total + '、つかえる ' + x.cur.available + ' → ' + x.next.available + '</li>';
     h += '</ul><div class="row"><button class="primary" data-act="undogo">もどす</button><button data-act="undocancel">やめる</button></div></div>';
   } else if (storeReadBeforeImport(uiS.ctx.ls, Date.now())) {
-    h += '<p><button class="small" data-act="undoplan">まえの よみこみを とりけす（24じかん いない）</button></p>';
+    h += '<p><button class="small" data-act="undoplan">まえの よみこみ・リセットを とりけす（24じかん いない）</button></p>';
   }
   if (uiS.rawBroken) h += '<p class="danger">こわれていた もとの データ: <button class="small" data-act="exportbroken">かきだす</button></p>';
   h += '</div>';
-  // みんなの きろく（D-022 で5人）
-  h += '<h2>みんなの きろく</h2><div class="grid2">';
+  // みんなの きろく（D-022 で5人）。リセット（D-023）
+  h += '<h2>みんなの きろく</h2>';
+  if (a.resetAsk) {
+    const who = a.resetAsk === 'all' ? 'みんな（' + d.profiles.length + 'にん）' : uiEsc(storeProfile(d, a.resetAsk).name);
+    h += '<div class="fb hint"><b>' + who + 'の きろくを けします。</b>ポイントも 0 に なります（なまえは のこります）。24じかん いないなら「とりけす」で もどせます。'
+      + '<div class="row"><button class="danger-btn" data-act="resetgo">けす</button><button data-act="resetcancel">やめる</button></div></div>';
+  } else {
+    h += '<p><button class="small" data-act="resetask" data-id="all">みんなの きろくを リセット</button></p>';
+  }
+  h += '<div class="grid2">';
   for (const p of d.profiles) {
     const weak = pgWeakKeys(p.items);
     h += '<div class="card"><h3>' + uiEsc(p.name) + '</h3>';
+    h += '<p><button class="small" data-act="resetask" data-id="' + p.id + '">この人の きろくを リセット</button></p>';
     h += '<div class="row"><input type="text" id="name-' + p.id + '" value="' + uiEsc(p.name) + '" maxlength="20"><button class="small" data-act="rename" data-id="' + p.id + '">なまえを かえる</button></div>';
     h += '<p>ごうけい <b>' + p.total + '</b> / つかえる <b>' + p.available + '</b> / 段位 ' + uiEsc(CO_RANKS[coRankIndex(p)].name) + '</p>';
     h += '<p>にがて（' + weak.length + '）</p><ul class="list">';
@@ -3962,6 +3987,7 @@ function uiSaveRewards(list) {
 // ---------- 描画とイベント ----------
 function uiRender() {
   uiShowBanner();
+  if (uiSw.reload) uiSwMaybeReload();
   if (uiS.blocked) {
     uiApp.innerHTML = '<h1>ほかの まどで ひらいています</h1><p>この まどを とじてね。（2つの まどで つかうと、きろくが きえることが あります）</p>' +
       '<p class="muted">ほかの まどが ない ときは、5びょう まってから ひらきなおしてね。</p>';
@@ -4143,11 +4169,30 @@ function uiOnClick(e) {
       break;
     }
     case 'undocancel': a.undoPlan = null; break;
+    case 'resetask': a.resetAsk = b.dataset.id; a.msg = null; break;
+    case 'resetcancel': a.resetAsk = null; break;
+    case 'resetgo': {
+      const target = a.resetAsk;
+      a.resetAsk = null;
+      if (!target) break;
+      // 直前の状態を控える（読み込みと同じ場所。D-023）。控えられなければ消さない
+      if (uiS.mode === 'normal' && !storeBackupBeforeImport(uiS.ctx.ls, uiS.data, Date.now())) {
+        a.msg = 'いまの きろくを とっておけなかったので、リセットを やめました。';
+        break;
+      }
+      const next = target === 'all' ? storeResetAll(uiS.data) : storeResetProfile(uiS.data, target);
+      if (uiSave(next, { atomic: true })) a.msg = 'リセット しました。24じかん いないなら「とりけす」で もどせます。';
+      else {
+        if (uiS.mode === 'normal') storeClearBeforeImport(uiS.ctx.ls);
+        a.msg = 'リセットを ほぞん できませんでした。もとの きろくの ままです。';
+      }
+      break;
+    }
     case 'undogo': {
       if (!a.undoPlan) break;
       if (uiSave(storeAdoptImported(a.undoPlan.data, uiS.ctx.rev), { atomic: true })) {
         storeClearBeforeImport(uiS.ctx.ls);
-        a.msg = 'よみこみの まえに もどしました。';
+        a.msg = 'よみこみ・リセットの まえに もどしました。';
       } else {
         a.msg = 'もどせませんでした。いまの きろくの ままです。';
       }
@@ -4265,12 +4310,32 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('focus', () => {
   if (uiS.screen === 'home' && !uiS.blocked) uiRender();
 });
+// iPad・iPhone 用（PWA）: サービスワーカーの登録と、新しい版への切り替え（D-024）。http/https のときだけ
+const uiSw = { reg: null, reload: false };
+function uiSwSetup() {
+  if (!('serviceWorker' in navigator) || !/^https?:$/.test(location.protocol)) return;
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('sw.js').then((reg) => { uiSw.reg = reg; }).catch(() => {});
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController) return; // はじめて入ったときは読み込み直さない
+    uiSw.reload = true;
+    uiSwMaybeReload();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && uiSw.reg) uiSw.reg.update().catch(() => {});
+  });
+}
+// 新しい版が入っていて、最初の画面かホームなら読み込み直す（学習の途中では読み込み直さない）
+function uiSwMaybeReload() {
+  if (uiSw.reload && (uiS.screen === 'who' || uiS.screen === 'home') && !uiS.play && !uiS.tc) location.reload();
+}
+
 uiInitStore();
 uiRender();
+uiSwSetup();
 
 }
 })();
 </script>
-<script>if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js');</script>
 </body>
 </html>
