@@ -1,0 +1,4261 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>たんい の へんかん</title>
+<style>
+:root {
+  --bg: #fffaf2;
+  --fg: #2b2b2b;
+  --muted: #6b6b6b;
+  --card: #ffffff;
+  --line: #e3d9c8;
+  --accent: #2f7de1;
+  --accent-weak: #e6f0fd;
+  --ok: #24914a;
+  --ok-weak: #e7f6ec;
+  --warn: #c77700;
+  --warn-weak: #fff3dd;
+  --hl: #ffd34d;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--fg); }
+body {
+  font-family: "BIZ UDPGothic", "Meiryo", "Yu Gothic UI", "Hiragino Sans", system-ui, sans-serif;
+  font-size: 22px; line-height: 1.6;
+}
+main { max-width: 980px; margin: 0 auto; padding: 20px 16px 60px; }
+h1 { font-size: 34px; margin: 8px 0 16px; }
+h2 { font-size: 26px; margin: 20px 0 10px; }
+h3 { font-size: 22px; margin: 16px 0 6px; }
+button {
+  font: inherit; min-height: 52px; min-width: 52px; padding: 8px 18px; border-radius: 14px;
+  border: 2px solid var(--line); background: var(--card); color: var(--fg); cursor: pointer;
+}
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:focus-visible, input:focus-visible { outline: 4px solid var(--hl); outline-offset: 2px; }
+button:disabled { opacity: .4; cursor: default; }
+button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+button.big { font-size: 28px; padding: 16px 28px; }
+button.small { min-height: 40px; font-size: 18px; padding: 4px 12px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.card { background: var(--card); border: 2px solid var(--line); border-radius: 18px; padding: 16px 20px; }
+.muted { color: var(--muted); font-size: 18px; }
+.banner { background: var(--warn-weak); border-bottom: 3px solid var(--warn); padding: 10px 16px; font-size: 18px; }
+.ver { text-align: center; color: var(--muted); font-size: 14px; padding: 8px; }
+.who button { font-size: 32px; min-height: 120px; }
+.adult-link { position: fixed; right: 12px; bottom: 30px; }
+.stat { font-size: 20px; }
+.stat b { font-size: 30px; }
+.title-badge { display: inline-block; background: var(--hl); border-radius: 999px; padding: 2px 16px; font-weight: bold; }
+.qtext { font-size: 40px; font-weight: bold; margin: 12px 0; }
+.qtext .u { color: var(--accent); }
+.progress { color: var(--muted); }
+.options { display: grid; grid-template-columns: repeat(2, minmax(180px, 1fr)); gap: 14px; margin: 14px 0; }
+.options button { font-size: 34px; min-height: 90px; }
+.options button .key { font-size: 16px; color: var(--muted); display: block; }
+.answer-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; font-size: 36px; font-weight: bold; }
+.answer-row input { font: inherit; width: 7.5em; padding: 6px 12px; border: 3px solid var(--accent); border-radius: 12px; text-align: right; }
+.tenkey { display: grid; grid-template-columns: repeat(3, 72px); gap: 8px; margin: 12px 0; }
+.tenkey button { font-size: 26px; min-height: 60px; }
+.fb { border-radius: 16px; padding: 12px 16px; margin: 14px 0; }
+.fb.ok { background: var(--ok-weak); border: 2px solid var(--ok); }
+.fb.hint { background: var(--warn-weak); border: 2px solid var(--warn); }
+.fb.info { background: var(--accent-weak); border: 2px solid var(--accent); }
+.figure { margin: 10px 0; overflow-x: auto; }
+.figure svg { max-width: 100%; height: auto; }
+table.place { border-collapse: collapse; margin: 8px 0; font-size: 30px; }
+table.place th { font-size: 15px; color: var(--muted); font-weight: normal; padding: 2px 6px; border-bottom: 2px solid var(--line); }
+table.place td { width: 1.6em; text-align: center; border-left: 1px dashed var(--line); padding: 2px 4px; }
+table.place td.pt { border-left: 3px solid var(--fg); }
+table.place tr.after td { color: var(--accent); font-weight: bold; animation: slidein .9s ease-out; }
+table.place td.lab { border: none; font-size: 18px; text-align: right; width: auto; color: var(--muted); }
+@keyframes slidein { from { opacity: 0; transform: translateX(var(--from, 40px)); } to { opacity: 1; transform: none; } }
+.slot { display: flex; gap: 14px; justify-content: center; align-items: center; margin: 20px 0; font-size: 26px; }
+.reel { width: 130px; height: 130px; border-radius: 18px; border: 4px solid var(--fg); display: flex; align-items: center; justify-content: center; font-size: 46px; font-weight: bold; background: #fff; }
+.reel.spin { animation: shake .12s linear infinite; }
+@keyframes shake { 0% { transform: translateY(-3px); } 50% { transform: translateY(3px); } 100% { transform: translateY(-3px); } }
+.slot.basic .reel { border-color: #555; }
+.slot.sky .reel { border-color: #2f7de1; background: #eef6ff; }
+.slot.forest .reel { border-color: #24914a; background: #effaf2; }
+.slot.gold .reel { border-color: #c99a00; background: #fff8dc; }
+.formula { text-align: center; font-size: 32px; font-weight: bold; margin: 10px 0; }
+.points { text-align: center; font-size: 48px; font-weight: bold; color: var(--ok); }
+.list { margin: 4px 0; padding-left: 1.2em; font-size: 19px; }
+.tag { display: inline-block; font-size: 15px; border-radius: 8px; padding: 0 8px; margin-left: 6px; background: var(--accent-weak); }
+.tag.calc { background: var(--warn-weak); }
+.adult input[type=text], .adult input[type=number] { font: inherit; font-size: 18px; padding: 4px 8px; border: 2px solid var(--line); border-radius: 8px; }
+.adult input[type=number] { width: 6em; }
+.danger { color: #b3261e; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+/* キャラクター（D-007） */
+.level-btn { display: flex; align-items: center; gap: 14px; text-align: left; }
+.level-btn .chara { flex: none; }
+.fb.say::after { content: ""; display: block; clear: both; }
+.fb.say > svg.chara { float: left; margin: 0 12px 4px 0; }
+.chara-row { display: flex; justify-content: center; gap: 18px; margin: 4px 0 8px; }
+.chara-cheer { animation: chara-hop .6s ease-in-out infinite alternate; }
+@media (prefers-reduced-motion: reduce) { .chara-cheer { animation: none; } }
+@keyframes chara-hop { from { transform: translateY(0); } to { transform: translateY(-6px); } }
+svg.liter { max-width: 100%; height: auto; }
+/* 接頭語クイズの表（D-009） */
+.prefix-table { border-collapse: collapse; margin: 10px 0; font-size: 18px; background: #fff; }
+.prefix-table th, .prefix-table td { border: 2px solid var(--line); padding: 4px 10px; text-align: center; }
+.prefix-table .hi { background: var(--hl); font-weight: bold; }
+.prefix-table .mark { background: var(--warn-weak); }
+/* rev4: きょうの れんしゅう・できること マップ・タイムチャレンジ（D-010） */
+.rec { margin: 8px 0 12px; }
+.rec-btn { width: 100%; }
+.rec-why { font-size: 20px; opacity: .9; }
+.chip { display: inline-block; padding: 2px 10px; margin: 2px 4px 2px 0; border-radius: 999px; font-size: 16px; border: 2px solid var(--line); background: #fff; }
+.chip.done { background: var(--ok-weak); border-color: var(--ok); }
+.chip.weak { background: var(--warn-weak); border-color: var(--warn); }
+.chip.learn { background: var(--accent-weak); border-color: var(--accent); }
+.chip.fresh { color: var(--muted); }
+.map-row { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; margin: 6px 0; }
+.map-lv { min-width: 7em; font-weight: bold; }
+.clear { color: var(--ok); }
+.tc-left { font-size: 48px; font-weight: bold; color: var(--accent); min-width: 2ch; text-align: right; }
+button.tc-ng { border-color: var(--warn); }
+.daily-bar { font-size: 20px; margin: 4px 0; }
+.fb.daily { text-align: center; font-size: 26px; }
+.big-reel { margin: 10px auto; width: 220px; height: 110px; font-size: 48px; display: flex; align-items: center; justify-content: center; border: 4px solid var(--line); border-radius: 18px; background: #fff; }
+.rs { border-color: var(--hl); }
+.qtext.word { font-size: 26px; line-height: 1.7; }
+ol.steps { margin: 6px 0 0 1.2em; padding: 0; }
+.clock-fig { background: #fff8d6; border: 2px solid #e24b4a; border-radius: 12px; padding: 8px 12px; }
+input.ck-in { width: 5em; }
+.memtest-row { margin: 8px 0; }
+.memtest-btn { width: 100%; }
+.stamps { letter-spacing: 4px; color: #e24b4a; font-size: 20px; }
+.box-left { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; }
+.box-left .chip.gone { opacity: 0.35; text-decoration: line-through; }
+.box-left .chip.last { border-color: #e24b4a; color: #e24b4a; font-weight: bold; }
+
+</style>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="たんい">
+<meta name="theme-color" content="#fff6e0">
+</head>
+<body>
+<div id="banner" class="banner" hidden></div>
+<main id="app" data-version="5">
+  <p class="noscript">よみこみちゅう…（この表示のままなら、JavaScript が動いていません）</p>
+</main>
+<footer class="ver">たんい の へんかん v5</footer>
+<script>
+(function () {
+'use strict';
+// ---- src/logic/decimal.js ----
+// decimal.js — 10進数を「整数の数字列 int × 10^-scale」で表す。浮動小数は使わない。
+// 負の数は扱わない。設計 docs/02_design.md §2
+
+function decMake(int, scale) {
+  let s = String(int).replace(/^0+(?=\d)/, '');
+  let sc = scale;
+  if (!/^\d+$/.test(s) || !Number.isInteger(sc) || sc < 0) {
+    throw new Error('decMake: 不正な値 ' + int + ' / ' + scale);
+  }
+  while (sc > 0 && s.length > 1 && s.endsWith('0')) {
+    s = s.slice(0, -1);
+    sc -= 1;
+  }
+  if (sc > 0 && s === '0') sc = 0;
+  return { int: s, scale: sc };
+}
+
+// ×10^k（k<0 なら ÷10^|k|）
+function decShift(x, k) {
+  let sc = x.scale - k;
+  let s = x.int;
+  if (sc < 0) {
+    s = s + '0'.repeat(-sc);
+    sc = 0;
+  }
+  return decMake(s, sc);
+}
+
+function decToString(x) {
+  if (x.scale === 0) return x.int;
+  const s = x.int.padStart(x.scale + 1, '0');
+  return s.slice(0, s.length - x.scale) + '.' + s.slice(s.length - x.scale);
+}
+
+function decFromString(str) {
+  const m = /^(\d+)(?:\.(\d+))?$/.exec(str);
+  if (!m) throw new Error('decFromString: 不正な値 ' + str);
+  const frac = m[2] || '';
+  return decMake(m[1] + frac, frac.length);
+}
+
+// 子供の入力を正規化する。読めなければ null。
+function decParseInput(str) {
+  if (typeof str !== 'string') return null;
+  let s = str.replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0));
+  s = s.replace(/[．。]/g, '.');
+  s = s.replace(/[,、，\s　]/g, '');
+  if (!/\d/.test(s)) return null;
+  if (s.startsWith('.')) s = '0' + s;
+  if (s.endsWith('.')) s = s.slice(0, -1);
+  if (!/^\d+(\.\d+)?$/.test(s)) return null;
+  return decFromString(s);
+}
+
+function decEquals(a, b) {
+  return a.int === b.int && a.scale === b.scale;
+}
+
+// 整数部の桁数（0.5 なら 1）と小数部の桁数
+function decDigits(x) {
+  const s = decToString(x);
+  const [i, f] = s.split('.');
+  return { intDigits: i.length, fracDigits: f ? f.length : 0 };
+}
+
+// 分母が 2 と 5 の積だけの分数 num/den（整数）を正確な小数にする
+function decFromFraction(num, den) {
+  if (!Number.isInteger(num) || !Number.isInteger(den) || num < 0 || den <= 0) {
+    throw new Error('decFromFraction: 不正な値 ' + num + '/' + den);
+  }
+  const g = decGcd(num, den) || 1;
+  let n = num / g;
+  const dd = den / g;
+  let rest = dd;
+  while (rest % 2 === 0) rest /= 2;
+  while (rest % 5 === 0) rest /= 5;
+  if (rest !== 1) throw new Error('decFromFraction: 有限小数にならない ' + num + '/' + den);
+  let scale = 0;
+  while (n % dd !== 0) {
+    n *= 10;
+    scale += 1;
+    if (scale > 12) throw new Error('decFromFraction: 桁が多すぎる');
+  }
+  return decMake(String(n / dd), scale);
+}
+
+function decGcd(a, b) {
+  while (b) {
+    const t = a % b;
+    a = b;
+    b = t;
+  }
+  return a;
+}
+
+// ---- src/logic/units.js ----
+// units.js — 単位と換算係数。係数はこのファイルだけに置く（CLAUDE.md 禁止事項）。
+// 指数は基準単位からの 10 の累乗。設計 docs/02_design.md §3
+
+const UNIT_LEVELS = {
+  1: { name: 'ながさ', base: 'mm', units: { mm: 0, cm: 1, m: 3, km: 6 } },
+  2: { name: 'めんせき', base: 'cm²', units: { 'cm²': 0, 'm²': 4, a: 6, ha: 8, 'km²': 10 } },
+  3: { name: 'たいせき・かさ', base: 'mL', units: { mL: 0, 'cm³': 0, dL: 2, L: 3, kL: 6, 'm³': 6 } },
+};
+
+// small: 指数の小さい（または等しい）単位、large: 大きい単位。dim: 長さと取り違えたときの指数
+const UNIT_PAIRS = [
+  { level: 1, small: 'mm', large: 'cm' },
+  { level: 1, small: 'cm', large: 'm' },
+  { level: 1, small: 'm', large: 'km' },
+  { level: 1, small: 'mm', large: 'm' },
+  { level: 2, small: 'm²', large: 'a' },
+  { level: 2, small: 'a', large: 'ha' },
+  { level: 2, small: 'ha', large: 'km²' },
+  { level: 2, small: 'cm²', large: 'm²', dim: 2 },
+  { level: 2, small: 'm²', large: 'ha' },
+  { level: 2, small: 'm²', large: 'km²', dim: 3 },
+  { level: 3, small: 'dL', large: 'L' },
+  { level: 3, small: 'mL', large: 'dL' },
+  { level: 3, small: 'mL', large: 'L' },
+  { level: 3, small: 'L', large: 'kL' },
+  { level: 3, small: 'cm³', large: 'L' },
+  { level: 3, small: 'L', large: 'm³' },
+  { level: 3, small: 'cm³', large: 'mL' },
+  { level: 3, small: 'kL', large: 'm³' },
+  { level: 3, small: 'cm³', large: 'm³', dim: 2 },
+];
+
+function unitExp(level, unit) {
+  const lv = UNIT_LEVELS[level];
+  if (!lv || !(unit in lv.units)) throw new Error('unitExp: 未知の単位 ' + level + ':' + unit);
+  return lv.units[unit];
+}
+
+// 項目（向きつき）。dir: 'x' は掛ける（大→小）、'd' は割る（小→大）。k=0 は 'x'（×1）
+function unitItemsAll() {
+  const items = [];
+  for (const p of UNIT_PAIRS) {
+    const k = unitExp(p.level, p.large) - unitExp(p.level, p.small);
+    if (k < 0) throw new Error('unitItemsAll: small/large が逆 ' + p.small + '/' + p.large);
+    const dim = p.dim || null;
+    items.push({ key: p.level + ':' + p.large + '>' + p.small, level: p.level, from: p.large, to: p.small, k, dir: 'x', dim });
+    items.push({ key: p.level + ':' + p.small + '>' + p.large, level: p.level, from: p.small, to: p.large, k, dir: k === 0 ? 'x' : 'd', dim });
+  }
+  return items;
+}
+
+function unitItems(level) {
+  return unitItemsAll().filter((it) => it.level === level);
+}
+
+function unitItemByKey(key) {
+  const it = unitItemsAll().find((x) => x.key === key);
+  if (!it) throw new Error('unitItemByKey: 未知の項目 ' + key);
+  return it;
+}
+
+// はしごの図に使う、レベルの単位を大きい順に並べたもの（同じ指数はまとめる）
+function unitLadder(level) {
+  const lv = UNIT_LEVELS[level];
+  const groups = {};
+  for (const [u, e] of Object.entries(lv.units)) {
+    (groups[e] = groups[e] || []).push(u);
+  }
+  return Object.keys(groups)
+    .map(Number)
+    .sort((a, b) => b - a)
+    .map((e) => ({ exp: e, units: groups[e] }));
+}
+
+// ---- src/logic/question.js ----
+// question.js — 問題生成、①の選択肢、1問の流れ（必ず終わる状態機械）。設計 §4・§5
+
+// 乱数: rng.int(n) は 0..n-1 の整数を返す。本番は crypto の Uint32 を棄却法で使う
+function rngCrypto() {
+  const buf = new Uint32Array(1);
+  return {
+    int(n) {
+      if (!Number.isInteger(n) || n <= 0) throw new Error('rng.int: 不正な n ' + n);
+      const limit = Math.floor(0x100000000 / n) * n;
+      for (;;) {
+        globalThis.crypto.getRandomValues(buf);
+        if (buf[0] < limit) return buf[0] % n;
+      }
+    },
+  };
+}
+
+function qPick(rng, arr) {
+  if (!arr.length) throw new Error('qPick: 空の配列');
+  return arr[rng.int(arr.length)];
+}
+
+function qShuffle(rng, arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = rng.int(i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// 補助段階と k から使える数の型
+function qAllowedTypes(support, k) {
+  // D-014: 小数（c・d）は段階1から出す
+  const t = support >= 2 ? ['a'] : ['a', 'b', 'c', 'd'];
+  return k >= 4 ? t.filter((x) => x !== 'b') : t;
+}
+
+// 型ごとの小さい側の数 s
+function qMakeS(rng, type) {
+  if (type === 'a') return decMake(String(1 + rng.int(9)), 0);
+  if (type === 'b') return decMake(String(10 + rng.int(990)), 0);
+  if (type === 'c') {
+    // 0.1〜9.9 で整数にならないもの: 1..99 のうち 10 の倍数を除く 90 通り
+    let v = 1 + rng.int(90);
+    v = v + Math.floor((v - 1) / 9); // 1..9,11..19,...,91..99
+    return decMake(String(v), 1);
+  }
+  if (type === 'd') {
+    // 小数第2位・第3位（D-014）: v ÷ 10^p、p は 2 か 3、v は 1〜10^p−1 で 10 の倍数を除く
+    const p = 2 + rng.int(2);
+    const n = 10 ** p;
+    let v = 1 + rng.int(n - n / 10); // 10 の倍数を除いた個数
+    v = v + Math.floor((v - 1) / 9);
+    return decMake(String(v), p);
+  }
+  throw new Error('qMakeS: 未知の型 ' + type);
+}
+
+function qOpLabel(op) {
+  if (op.k === 0) return '×1（そのまま）';
+  return (op.dir === 'x' ? '×' : '÷') + '1' + '0'.repeat(op.k);
+}
+
+function qApplyOp(value, op) {
+  return decShift(value, op.dir === 'x' ? op.k : -op.k);
+}
+
+// ①の選択肢（正解1＋誤り3）。誤りには種類 t を付ける
+function qOptions(rng, item) {
+  const k = item.k;
+  const D = item.dir;
+  const opp = D === 'x' ? 'd' : 'x';
+  const correct = { dir: D, k, t: null, correct: true };
+  let cands;
+  if (k === 0) {
+    cands = [{ dir: 'x', k: 1, t: 'mag' }, { dir: 'd', k: 1, t: 'dir' }, { dir: 'x', k: 3, t: 'mag' }];
+  } else {
+    cands = [{ dir: opp, k, t: 'dir' }];
+    if (item.dim) cands.push({ dir: D, k: item.dim, t: 'dim' });
+    cands.push({ dir: D, k: k + 1, t: 'mag' });
+    if (k - 1 >= 1) cands.push({ dir: D, k: k - 1, t: 'mag' });
+    cands.push({ dir: opp, k: k + 1, t: 'dir' });
+    if (item.dim) cands.push({ dir: opp, k: item.dim, t: 'dir' });
+    cands.push({ dir: D, k: k + 2, t: 'mag' });
+  }
+  const seen = new Set([D + k]);
+  const wrong = [];
+  for (const c of cands) {
+    const id = c.dir + c.k;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    wrong.push({ ...c, correct: false });
+    if (wrong.length === 3) break;
+  }
+  if (wrong.length !== 3) throw new Error('qOptions: 誤りの選択肢が3つそろわない ' + item.key);
+  return qShuffle(rng, [correct, ...wrong]).map((o) => ({ ...o, label: qOpLabel(o) }));
+}
+
+// 問題を作る。item は units.js の項目
+function qMakeQuestion(rng, item, support) {
+  const type = qPick(rng, qAllowedTypes(support, item.k));
+  const s = qMakeS(rng, type);
+  const op = { dir: item.dir, k: item.k };
+  let value, answer;
+  if (item.dir === 'x') {
+    value = s;
+    answer = qApplyOp(s, op);
+  } else {
+    answer = s;
+    value = decShift(s, item.k);
+  }
+  return {
+    key: item.key, level: item.level, from: item.from, to: item.to, k: item.k, dir: item.dir, dim: item.dim,
+    type, value, answer, op, options: qOptions(rng, item),
+  };
+}
+
+// 倍率ドリルの問題。drillLevel 1: k=1..3、2: k=1,2,3,4,6
+function qMakeDrill(rng, drillLevel) {
+  const ks = drillLevel === 2 ? [1, 2, 3, 4, 6] : [1, 2, 3];
+  const k = qPick(rng, ks);
+  const dir = qPick(rng, ['x', 'd']);
+  const type = qPick(rng, k >= 4 ? ['a', 'c'] : ['a', 'b', 'c']);
+  const s = qMakeS(rng, type);
+  const op = { dir, k };
+  const value = dir === 'x' ? s : decShift(s, k);
+  const answer = qApplyOp(value, op);
+  return { drill: true, key: 'drill:' + dir + k, k, dir, type, value, answer, op };
+}
+
+function qCheck(input, answer) {
+  const v = decParseInput(input);
+  if (v === null) return 'invalid';
+  return decEquals(v, answer) ? 'ok' : 'ng';
+}
+
+// ---- 1問の流れ（状態機械） ----
+// stage: 's1'（①）→ 's2'（②）→ 'done'。段階0は 'direct' から始まり、誤答で 's1' へ
+function qFlowStart(q, support) {
+  return {
+    stage: support === 0 ? 'direct' : 's1',
+    disabled: [],
+    s2Errors: 0,
+    first: null, // 最初の誤答: 'e1' | 'e2' | 'e0'
+    errType: null, // ①で最初に選んだ誤りの種類
+    hint: false,
+    showAnswer: false,
+    feedback: null,
+  };
+}
+
+function qFlowHint(flow) {
+  return { ...flow, hint: true };
+}
+
+// ①: 選択肢の番号を受け取る
+function qFlowChoose(flow, q, idx) {
+  if (flow.stage !== 's1') throw new Error('qFlowChoose: ①の段階ではない');
+  if (flow.disabled.includes(idx)) return { ...flow, feedback: { kind: 'disabled' } };
+  const opt = q.options[idx];
+  if (!opt) throw new Error('qFlowChoose: 不正な番号 ' + idx);
+  if (opt.correct) return { ...flow, stage: 's2', feedback: { kind: 'ok1' } };
+  const f = { ...flow, disabled: [...flow.disabled, idx], feedback: { kind: 'ng1', t: opt.t } };
+  if (!f.first) {
+    f.first = 'e1';
+    f.errType = opt.t;
+  }
+  return f;
+}
+
+// ②または直接: 入力文字列を受け取る
+function qFlowInput(flow, q, input) {
+  if (flow.stage !== 's2' && flow.stage !== 'direct') throw new Error('qFlowInput: 入力の段階ではない');
+  const res = qCheck(input, q.answer);
+  if (res === 'invalid') return { ...flow, feedback: { kind: 'invalid' } };
+  if (res === 'ok') return { ...flow, stage: 'done', feedback: { kind: 'ok' } };
+  if (flow.stage === 'direct') {
+    return { ...flow, stage: 's1', first: flow.first || 'e0', feedback: { kind: 'ng0' } };
+  }
+  const f = { ...flow, s2Errors: flow.s2Errors + 1 };
+  if (!f.first) f.first = 'e2';
+  if (f.s2Errors >= 2) return { ...f, stage: 'done', showAnswer: true, feedback: { kind: 'ng2final', answer: decToString(q.answer) } };
+  return { ...f, feedback: { kind: 'ng2' } };
+}
+
+// 1問の記録（最初の挑戦の結果）。終わったときに呼ぶ
+function qFlowRecord(flow, support) {
+  if (flow.stage !== 'done') throw new Error('qFlowRecord: まだ終わっていない');
+  return { r: flow.first || 'ok', t: flow.first === 'e1' ? flow.errType : null, s: support, h: flow.hint };
+}
+
+// 最初の誤答が起きた時点の記録（途中で「やめる」を押しても残すため）。誤答がまだ無ければ null
+function qFlowFirstRecord(flow, support) {
+  if (!flow.first) return null;
+  return { r: flow.first, t: flow.first === 'e1' ? flow.errType : null, s: support, h: flow.hint };
+}
+
+// 「やりなおして できた」に数えるか（誤答はあったが答えを見ずに解けた）
+function qFlowRetried(flow) {
+  return flow.stage === 'done' && !!flow.first && !flow.showAnswer;
+}
+
+// ---- src/logic/progress.js ----
+// progress.js — 項目ごとの記録、補助段階、苦手、確認、出題の選び方。設計 §5
+
+const PG_STREAK_TO_DOWN = 2; // rev4（v1〜v4 は 3）。設計 §13.3
+const PG_RECENT_MAX = 5;
+const PG_CHECK_INTERVAL_DAYS = 7;
+const PG_SESSION_SIZE = 5;
+const PG_MAX_CHECKS = 2; // rev4（v2〜v4 は 1）
+const PG_SLIP_DAYS = 14; // うっかりミスとして扱う間隔。設計 §13.4
+const PG_PROBE_MAX = 2; // 1回の ためし問題 の上限。設計 §13.2
+
+// 端末の現地時刻での日付 YYYY-MM-DD
+function pgToday(date) {
+  const d = date || new Date();
+  const p = (n) => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+
+function pgDaysBetween(a, b) {
+  const pa = a.split('-').map(Number);
+  const pb = b.split('-').map(Number);
+  const ta = Date.UTC(pa[0], pa[1] - 1, pa[2]);
+  const tb = Date.UTC(pb[0], pb[1] - 1, pb[2]);
+  return Math.round((tb - ta) / 86400000);
+}
+
+function pgNewItem() {
+  return { support: 2, streak: 0, placeAid: false, placeOk: 0, weak: false, attempts: 0, lastSeen: null, confirmedAt: null, recent: [] };
+}
+
+// 1問の記録を追加した新しい状態を返す。rec: { r, t, s, h }、isCheck: 確認として出した問題か
+// できた ＝ 段階0・別の日の確認に合格・苦手でない。設計 §13.1
+function pgMastered(st) {
+  return !!st && st.support === 0 && !!st.confirmedAt && !st.weak;
+}
+
+function pgRecord(state, rec, today, isCheck) {
+  const prev = state || pgNewItem();
+  const st = { ...prev };
+  // うっかりミス（できた 項目の誤答で、前のうっかりから14日以上）。設計 §13.4
+  const slip = rec.r !== 'ok' && pgMastered(prev) && (!prev.slipAt || pgDaysBetween(prev.slipAt, today) >= PG_SLIP_DAYS);
+  st.recent = [...st.recent, rec].slice(-PG_RECENT_MAX);
+  st.attempts += 1;
+  st.lastSeen = today;
+
+  // 補助段階
+  if (slip) {
+    st.streak = 0;
+    st.slipAt = today;
+  } else if (rec.r === 'ok') {
+    if (!rec.h) {
+      if (st.support > 0) {
+        st.streak += 1;
+        if (st.streak >= PG_STREAK_TO_DOWN) {
+          st.support -= 1;
+          st.streak = 0;
+        }
+      } else {
+        st.streak = Math.min(st.streak + 1, PG_STREAK_TO_DOWN);
+      }
+    }
+  } else if (rec.r === 'e1' || rec.r === 'e0') {
+    st.streak = 0;
+    st.support = Math.min(2, st.support + 1);
+  } else if (rec.r === 'e2') {
+    st.streak = 0;
+    if (st.support === 0) st.support = 1;
+  } else {
+    throw new Error('pgRecord: 未知の結果 ' + rec.r);
+  }
+
+  // 苦手（状態遷移。追加した1件の種類で決める）
+  if (rec.r !== 'ok') {
+    st.weak = true;
+  } else if (st.weak) {
+    const last2 = st.recent.slice(-2);
+    if (last2.length === 2 && last2.every((x) => x.r === 'ok' && !x.h) && last2[1].s <= 1) st.weak = false;
+  }
+
+  // 守り1: 段階が上がった・うっかりのときは確認をやり直す。守り2: 確認の合格はヒントなしの正解だけ。設計 §13.1
+  // 確認は段階0で得たものだけ有効（v4 までの記録の段階1・2の confirmedAt も、段階0に下がったときに消す。レビュー R-006）
+  if (slip || st.support > prev.support || (prev.support > 0 && st.support === 0)) st.confirmedAt = null;
+  // 合格は「段階0のまま・今日まだ触れていない項目・ヒントなしの正解」だけ（同じ回の2回目以降で合格しない。R-006）
+  if (isCheck && rec.r === 'ok' && !rec.h && prev.support === 0 && st.support === 0 && prev.lastSeen !== today) st.confirmedAt = today;
+  return st;
+}
+
+// ためし問題（初めて出す項目を段階0で出した結果）の記録。設計 §13.2
+function pgRecordProbe(rec, today) {
+  const st = pgNewItem();
+  st.support = rec.r === 'ok' && !rec.h ? 1 : 2;
+  st.attempts = 1;
+  st.lastSeen = today;
+  st.recent = st.support === 1 ? [rec] : []; // 誤り・ヒントは「最近の誤り」に数えない（R-006）
+  return st;
+}
+
+// ②（計算）の結果で位取り表の常時表示を切り替える。1問につき1回、①の結果とは別に呼ぶ
+// ok=false: ②で誤答した → 常時表示にする。ok=true かつヒントなし: 2回続いたら外す。ヒント付きの正解は数えない
+function pgPlace(state, ok, hint) {
+  const st = { ...(state || pgNewItem()) };
+  if (!ok) {
+    st.placeAid = true;
+    st.placeOk = 0;
+  } else if (st.placeAid && !hint) {
+    st.placeOk += 1;
+    if (st.placeOk >= 2) {
+      st.placeAid = false;
+      st.placeOk = 0;
+    }
+  }
+  return st;
+}
+
+// 保護者画面の印
+function pgMarks(state) {
+  const errs = state.recent.filter((x) => x.r !== 'ok');
+  const e1 = errs.filter((x) => x.r === 'e1' || x.r === 'e0').length;
+  const e2 = errs.filter((x) => x.r === 'e2').length;
+  const dim = errs.filter((x) => x.t === 'dim').length;
+  return {
+    stage: errs.length === 0 ? null : e1 >= e2 ? 'unit' : 'calc',
+    dimConfusion: dim >= 1 && dim * 2 >= errs.length,
+    errorProne: errs.length >= 2,
+  };
+}
+
+function pgIsCheckDue(state, today) {
+  if (!state || state.support !== 0 || !state.lastSeen) return false;
+  if (pgDaysBetween(state.lastSeen, today) < 1) return false;
+  if (!state.confirmedAt) return true;
+  return pgDaysBetween(state.confirmedAt, today) >= PG_CHECK_INTERVAL_DAYS;
+}
+
+function pgWeight(state) {
+  if (!state || state.attempts === 0) return 3;
+  if (state.weak) return 3;
+  if (state.support === 2) return 2;
+  if (state.support === 1) return 1;
+  return 0; // 段階0（苦手でない）は後日の確認で出すので、通常の出題からは外す。設計 §13.3（rev4）
+}
+
+function pgWeighted(rng, list, weightOf) {
+  const total = list.reduce((s, x) => s + weightOf(x), 0);
+  let r = rng.int(total);
+  for (const x of list) {
+    r -= weightOf(x);
+    if (r < 0) return x;
+  }
+  throw new Error('pgWeighted: 到達しない');
+}
+
+// 通常の学習: 出題する項目キーの列 [{ key, isCheck }]
+function pgPickNormal(rng, items, level, today) {
+  const keys = unitItems(level).map((it) => it.key);
+  const out = [];
+  const due = keys.filter((k) => pgIsCheckDue(items[k], today));
+  const checks = [];
+  const pool = due.slice();
+  while (checks.length < PG_MAX_CHECKS && pool.length) {
+    const i = rng.int(pool.length);
+    checks.push(pool.splice(i, 1)[0]);
+  }
+  for (const k of checks) out.push({ key: k, isCheck: true });
+  let prev = out.length ? out[out.length - 1].key : null;
+  while (out.length < PG_SESSION_SIZE) {
+    const cands = keys.filter((k) => k !== prev);
+    // 段階0（重み0）以外が直前の1つだけなら、同じ項目が続いてよい。レベル全体が段階0のときだけ均等に出す（R-006）
+    const pos = (list) => list.some((x) => pgWeight(items[x]) > 0);
+    const pool = pos(cands) ? cands : pos(keys) ? keys : null;
+    const k = pool ? pgWeighted(rng, pool, (x) => pgWeight(items[x])) : pgWeighted(rng, cands, () => 1);
+    out.push({ key: k, isCheck: false });
+    prev = k;
+  }
+  // 確認を先頭に固めないよう並べ替える（続けて同じ項目にならない範囲で）
+  return pgMarkProbes(pgSpread(rng, out), items);
+}
+
+// 記録の無い項目の、その回で最初の出現に isProbe を付ける（最大 PG_PROBE_MAX）。設計 §13.2
+function pgMarkProbes(list, items) {
+  const seen = new Set();
+  let n = 0;
+  return list.map((x) => {
+    const first = !seen.has(x.key);
+    seen.add(x.key);
+    if (first && !items[x.key] && !x.isCheck && n < PG_PROBE_MAX) {
+      n += 1;
+      return { ...x, isProbe: true };
+    }
+    return { ...x, isProbe: false };
+  });
+}
+
+// レベルの進み。設計 §13.1
+function pgLevelProgress(items, level) {
+  const out = { total: 0, mastered: 0, weak: 0, learning: 0, fresh: 0 };
+  for (const it of unitItems(level)) {
+    const st = items[it.key];
+    out.total += 1;
+    if (pgMastered(st)) out.mastered += 1;
+    else if (st && st.weak) out.weak += 1;
+    else if (st && st.attempts > 0) out.learning += 1;
+    else out.fresh += 1;
+  }
+  return out;
+}
+
+// 1問の記録の前後から出来事を作る（before が無い＝ためし問題のときは出さない）。設計 §13.5
+function pgEvents(before, after) {
+  if (!before) return [];
+  const ev = [];
+  if (before.support === 2 && after.support === 1) ev.push('nofig');
+  if (before.support > 0 && after.support === 0) ev.push('direct'); // 段階2 → 0 は ほじょなしで チャレンジ（§13.13）
+  if (!pgMastered(before) && pgMastered(after)) ev.push('mastered');
+  if (before.weak && !after.weak) ev.push('overcome');
+  return ev;
+}
+
+// 出来事が無いときに出す次の一歩（1つ）。設計 §13.5
+function pgNextStep(items, level) {
+  const its = unitItems(level);
+  let best = null;
+  its.forEach((it, i) => {
+    const st = items[it.key];
+    if (!st || st.support === 0) return;
+    const rest = PG_STREAK_TO_DOWN - st.streak;
+    const cand = { key: it.key, kind: st.support === 2 ? 'nofig' : 'direct', rest, support: st.support, i };
+    if (!best || cand.rest < best.rest || (cand.rest === best.rest && (cand.support < best.support || (cand.support === best.support && cand.i < best.i)))) best = cand;
+  });
+  if (best) return { key: best.key, kind: best.kind, rest: best.rest };
+  const wait = its.find((it) => items[it.key] && items[it.key].support === 0 && !items[it.key].confirmedAt);
+  return wait ? { key: wait.key, kind: 'check', rest: 0 } : null;
+}
+
+function pgMasteredKeys(items) {
+  return unitItemsAll().map((it) => it.key).filter((k) => pgMastered(items[k]));
+}
+
+// レベル4: できた 項目から5問。古いものほど重く（日数+1、上限8）、同じ項目を続けない。設計 §13.7
+function pgPickL4(rng, items, today) {
+  const keys = pgMasteredKeys(items);
+  if (keys.length < PG_SESSION_SIZE) return [];
+  const w = (k) => Math.min(8, Math.max(0, pgDaysBetween(items[k].lastSeen || today, today)) + 1);
+  const out = [];
+  let prev = null;
+  while (out.length < PG_SESSION_SIZE) {
+    const k = pgWeighted(rng, keys.filter((x) => x !== prev), w);
+    out.push({ key: k, isCheck: !out.some((x) => x.key === k), isProbe: false });
+    prev = k;
+  }
+  return out;
+}
+
+// レベル4を選べる条件: 各レベルで できた が半分以上（切り上げ）。設計 §13.7
+function pgL4Ready(items) {
+  return [1, 2, 3].every((lv) => {
+    const g = pgLevelProgress(items, lv);
+    return g.mastered >= Math.ceil(g.total / 2);
+  });
+}
+
+function pgL4Need(items) {
+  let need = 0;
+  for (const lv of [1, 2, 3]) {
+    const g = pgLevelProgress(items, lv);
+    need += Math.max(0, Math.ceil(g.total / 2) - g.mastered);
+  }
+  return need;
+}
+
+function pgSpread(rng, list) {
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const a = list.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = rng.int(i + 1);
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    if (a.every((x, i) => i === 0 || a[i - 1].key !== x.key)) return a;
+  }
+  return list; // 元の列は「続けて同じ項目にしない」で作ってある
+}
+
+function pgWeakKeys(items) {
+  return unitItemsAll()
+    .map((it) => it.key)
+    .filter((k) => items[k] && items[k].weak);
+}
+
+// 苦手復習: 始めた時点の苦手の一覧から、件数×2（上限 PG_SESSION_SIZE）問
+function pgPickReview(rng, items) {
+  const weak = pgWeakKeys(items);
+  if (weak.length === 0) return [];
+  const n = Math.min(PG_SESSION_SIZE, weak.length * 2);
+  const out = [];
+  let prev = null;
+  while (out.length < n) {
+    const cands = weak.length >= 2 ? weak.filter((k) => k !== prev) : weak;
+    const k = qPick(rng, cands);
+    out.push({ key: k, isCheck: false });
+    prev = k;
+  }
+  return out;
+}
+
+// ほじょなしで チャレンジ（設計 §13.13）: 候補は苦手でなく、段階1・2または記録なし
+function pgJumpKeys(items, level) {
+  return unitItems(level).map((it) => it.key).filter((k) => !items[k] || (!items[k].weak && items[k].support > 0));
+}
+
+function pgPickJump(rng, items, level) {
+  const keys = pgJumpKeys(items, level);
+  if (!keys.length) return [];
+  const w = (k) => (!items[k] || items[k].support === 2 ? 2 : 1);
+  const out = [];
+  let prev = null;
+  while (out.length < PG_SESSION_SIZE) {
+    const cands = keys.length >= 2 ? keys.filter((k) => k !== prev) : keys;
+    const k = pgWeighted(rng, cands, w);
+    out.push({ key: k, isCheck: false, isProbe: false, isJump: true });
+    prev = k;
+  }
+  return out;
+}
+
+// ほじょなしで チャレンジの記録。正解で段階0（確認は別の日）。誤答・ヒントは罰しない
+function pgRecordJump(state, rec, today) {
+  if (!state) {
+    const st0 = pgRecordProbe(rec, today);
+    return rec.r === 'ok' && !rec.h ? { ...st0, support: 0 } : st0;
+  }
+  const st = { ...state, attempts: state.attempts + 1, lastSeen: today };
+  if (rec.r === 'ok' && !rec.h) {
+    st.support = 0;
+    st.confirmedAt = null; // 確認は別の日に段階0で（R-006）
+    st.streak = 0;
+    st.recent = [...state.recent, rec].slice(-PG_RECENT_MAX);
+  }
+  return st;
+}
+
+// ---- src/logic/slot.js ----
+// slot.js — スロットのリール、抽選、ポイント計算（分数・整数だけ）、称号と絵柄。設計 §6・§7
+
+// 目（中央と右のリールで共通）
+const SLOT_SYMBOLS = [
+  { n: 1, d: 10, label: '1/10' },
+  { n: 1, d: 5, label: '1/5' },
+  { n: 1, d: 2, label: '1/2' },
+  { n: 1, d: 1, label: '1' },
+  { n: 2, d: 1, label: '2' },
+  { n: 5, d: 1, label: '5' },
+  { n: 10, d: 1, label: '10' },
+];
+
+// 中央のリール: 20コマの並び（SLOT_SYMBOLS の番号）。1/10×1, 1/5×2, 1/2×4, 1×6, 2×4, 5×2, 10×1。隣どうしが同じ目にならない
+const SLOT_REEL = [3, 2, 4, 3, 5, 2, 3, 0, 4, 3, 1, 2, 4, 3, 6, 2, 3, 5, 4, 1];
+// 右のリール: 13コマ。1×6, 2×4, 5×2, 10×1（÷1/10 などの大当たりを無くす。D-011、保護者の決定）。1回の最大は 5 × 10 ÷ 1 ＝ 50
+const SLOT_REEL_RIGHT = [3, 4, 3, 5, 3, 4, 3, 6, 3, 4, 3, 5, 4];
+
+// ドリルのあとにもスロットをまわすか（D-005 仮決め。保護者の判断待ち）
+const SLOT_DRILL_GIVES_SLOT = true;
+
+// ポイント ＝ 正解数 × 中央 ÷ 右 を四捨五入（0.5 切り上げ）。正解数 ≥ 1 なら最低 1
+function slotCompute(correct, mi, ri) {
+  if (!Number.isInteger(correct) || correct < 0 || correct > 10) throw new Error('slotCompute: 正解数が不正 ' + correct);
+  const m = SLOT_SYMBOLS[mi];
+  const r = SLOT_SYMBOLS[ri];
+  if (!m || !r) throw new Error('slotCompute: 目が不正');
+  const num = correct * m.n * r.d;
+  const den = m.d * r.n;
+  const a = 2 * num + den;
+  const b = 2 * den;
+  const rounded = (a - (a % b)) / b; // 整数の割り算（切り捨て）
+  const points = correct >= 1 ? Math.max(1, rounded) : 0;
+  let note = 'exact';
+  if (correct === 0) note = 'zero';
+  else if (points !== rounded) note = 'min';
+  else if (num % den !== 0) note = 'round';
+  return { num, den, raw: decToString(decFromFraction(num, den)), rounded, points, note };
+}
+
+function slotFormula(correct, mi, ri) {
+  const res = slotCompute(correct, mi, ri);
+  const base = correct + ' × ' + SLOT_SYMBOLS[mi].label + ' ÷ ' + SLOT_SYMBOLS[ri].label + ' ＝ ' + res.raw;
+  if (res.note === 'round') return base + ' → ' + res.points + '（ししゃごにゅう）';
+  if (res.note === 'min') return base + ' → ' + res.points + '（さいてい 1てん）';
+  return base;
+}
+
+// 抽選。rng.int(n) は偏りのない整数
+function slotSpin(rng, correct) {
+  const midPos = rng.int(SLOT_REEL.length);
+  const rightPos = rng.int(SLOT_REEL_RIGHT.length);
+  const mi = SLOT_REEL[midPos];
+  const ri = SLOT_REEL_RIGHT[rightPos];
+  return { correct, midPos, rightPos, mi, ri, ...slotCompute(correct, mi, ri), formula: slotFormula(correct, mi, ri) };
+}
+
+// 称号は段位（coach.js の CO_RANKS、D-013）に置き換えた
+
+// スロットの色のテーマ（累計で増える）
+const SLOT_THEMES = [
+  { id: 'basic', min: 0, name: 'きほん' },
+  { id: 'sky', min: 100, name: 'そら' },
+  { id: 'forest', min: 500, name: 'もり' },
+  { id: 'gold', min: 2000, name: 'きんいろ' },
+];
+
+function slotThemesFor(total) {
+  return SLOT_THEMES.filter((t) => total >= t.min);
+}
+
+// ---------- ごほうびの くじの箱（設計 §13.15・§13.22、D-012・D-018） ----------
+// 既定: 1回100ポイント。10円×12、20円×4、50円×2、100円×1 ＋ ラストワン100円 ＝ 20枚・500円。1枚の期待値 25円
+// w は箱に入れる枚数。last はラストワンの金額（0 なら なし）
+const RS_DEFAULT = { cost: 100, prizes: [{ yen: 10, w: 12 }, { yen: 20, w: 4 }, { yen: 50, w: 2 }, { yen: 100, w: 1 }], last: 100 };
+const RS_MAX_TICKETS = 1000;
+
+function rsValidate(cfg) {
+  const e = [];
+  const isInt = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
+  if (!cfg || typeof cfg !== 'object') return ['rewardSlot がオブジェクトでない'];
+  if (!isInt(cfg.cost, 1, 100000)) e.push('cost が不正');
+  if (cfg.last !== undefined && !isInt(cfg.last, 0, 100000)) e.push('last が不正');
+  if (!Array.isArray(cfg.prizes) || cfg.prizes.length < 1 || cfg.prizes.length > 10) e.push('prizes は1〜10個');
+  else if (cfg.prizes.some((x) => !x || !isInt(x.yen, 0, 100000) || !isInt(x.w, 1, RS_MAX_TICKETS))) e.push('prizes の値が不正');
+  else if (cfg.prizes.reduce((s, x) => s + x.w, 0) > RS_MAX_TICKETS) e.push('枚数の合計が多すぎる');
+  return e;
+}
+
+const rsLast = (cfg) => cfg.last || 0;
+
+// 1枚の期待値（円）。{ num: 箱の合計金額, den: 箱の枚数 } と、小数第1位までの表示（四捨五入、0.5 切り上げ）
+function rsExpected(cfg) {
+  const num = cfg.prizes.reduce((s, x) => s + x.yen * x.w, 0) + rsLast(cfg);
+  const den = cfg.prizes.reduce((s, x) => s + x.w, 0) + (rsLast(cfg) > 0 ? 1 : 0);
+  const t = Math.floor((20 * num + den) / (2 * den)); // 10倍して四捨五入
+  return { num, den, label: Math.floor(t / 10) + '.' + (t % 10) };
+}
+
+// 箱を作ったときの中身の設定（変わったら新しい箱にする）
+function rsSig(cfg) {
+  return cfg.prizes.map((x) => x.yen + 'x' + x.w).join(',') + '+' + rsLast(cfg);
+}
+
+function rsNewBox(cfg, no) {
+  return { no, left: cfg.prizes.map((x) => x.w), last: rsLast(cfg) > 0, sig: rsSig(cfg) };
+}
+
+function rsBoxEmpty(box) {
+  return !box || (box.left.every((n) => n === 0) && !box.last);
+}
+
+// 今の箱（無い・からっぽ・設定が変わった なら新しい箱）
+function rsCurrentBox(cfg, box) {
+  if (!box) return rsNewBox(cfg, 1);
+  if (rsBoxEmpty(box) || box.sig !== rsSig(cfg) || box.left.length !== cfg.prizes.length) return rsNewBox(cfg, box.no + 1);
+  return box;
+}
+
+// 1枚引く。返す: { prize: { yen, last }, box: 引いた後の箱 }。ふつうの札が0枚ならラストワン
+function rsDraw(rng, cfg, box) {
+  const cur = rsCurrentBox(cfg, box);
+  const total = cur.left.reduce((s, n) => s + n, 0);
+  if (total === 0) {
+    if (!cur.last) throw new Error('rsDraw: からの箱');
+    return { prize: { yen: rsLast(cfg), last: true }, box: { ...cur, last: false } };
+  }
+  let r = rng.int(total);
+  for (let i = 0; i < cur.left.length; i++) {
+    r -= cur.left[i];
+    if (r < 0) {
+      const left = cur.left.slice();
+      left[i] -= 1;
+      return { prize: { yen: cfg.prizes[i].yen, last: false }, box: { ...cur, left } };
+    }
+  }
+  throw new Error('rsDraw: 到達しない');
+}
+
+// ---- src/logic/store.js ----
+// store.js — 保存データのスキーマ、検証、読み込み、保存（lock・rev）、ポイントと交換、書き出し・読み込み。設計 §8
+// ls は localStorage と同じ getItem/setItem/removeItem を持つもの（テストで差し替える）
+
+const STORE_SCHEMA = 1;
+const STORE_KEY = 'keisanRikai.data';
+const STORE_KEY_BROKEN = 'keisanRikai.broken';
+const STORE_KEY_BEFORE_IMPORT = 'keisanRikai.beforeImport';
+const STORE_KEY_LOCK = 'keisanRikai.lock';
+const STORE_LOCK_TTL_MS = 5000;
+const STORE_SESSIONS_MAX = 100;
+const STORE_UNDO_HOURS = 24;
+
+function storeKnownKeys() {
+  return new Set(unitItemsAll().map((it) => it.key));
+}
+
+// 接頭語クイズの記録のキー（prefix.js の prefixKeys に、もう出さない da:sym を加えた集合。テストで照合する）。D-009
+// da:sym は v4 の初版だけが出した問題。その記録が残っていても読めるように受け付ける（数えない）
+const STORE_PREFIX_KEY_RE = /^(k|h|da|d|c|m):(n2f|f2n|sym)$/;
+
+// rev4 の任意の項目（設計 §13.9）
+const STORE_LOG_MAX = 300;
+const STORE_LOG_KINDS = ['nofig', 'direct', 'mastered', 'overcome', 'clear', 'prefix', 'unlock', 'daily', 'rank', 'jump', 'meaning', 'word', 'clockclear'];
+const STORE_BEST_MAX = 100000;
+
+const STORE_DEFAULT_NAMES = [
+  { id: 'p1', name: 'ちょーじょ' },
+  { id: 'p2', name: 'じーじょ' },
+  { id: 'p3', name: 'ちょーなん' },
+];
+
+function storeClone(x) {
+  return JSON.parse(JSON.stringify(x));
+}
+
+function storeInitial(nowIso) {
+  return {
+    schemaVersion: STORE_SCHEMA,
+    rev: 0,
+    updatedAt: nowIso || null,
+    lastExportAt: null,
+    profiles: STORE_DEFAULT_NAMES.map((p) => ({
+      id: p.id, name: p.name, theme: 'basic', available: 0, total: 0,
+      items: {}, drill: {}, sessions: [], pending: null, exchanges: [],
+    })),
+    rewards: [],
+  };
+}
+
+const isInt0 = (v) => Number.isInteger(v) && v >= 0;
+const isDate = (v) => v === null || (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v));
+const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+const isIntIn = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
+
+function storeBadPending(x) {
+  return !isObj(x) || typeof x.sessionId !== 'string' || !isIntIn(x.correct, 0, 10) || !isIntIn(x.n, 1, 10)
+    || !isIntIn(x.mid, 0, 6) || !isIntIn(x.right, 0, 6) || !isInt0(x.points) || typeof x.formula !== 'string'
+    || !isInt0(x.totalBefore) || !isInt0(x.retried);
+}
+
+// 項目の記録（§5）の検証。items と clock（D-016）で使う
+function storeBadItem(it) {
+  return !isObj(it) || ![0, 1, 2].includes(it.support) || !isInt0(it.streak) || typeof it.weak !== 'boolean'
+    || typeof it.placeAid !== 'boolean' || !isInt0(it.placeOk) || !isInt0(it.attempts) || !isDate(it.lastSeen)
+    || !isDate(it.confirmedAt) || !Array.isArray(it.recent) || it.recent.length > 5
+    || it.recent.some((r) => !isObj(r) || !['ok', 'e1', 'e2', 'e0'].includes(r.r) || ![0, 1, 2].includes(r.s) || typeof r.h !== 'boolean')
+    || (it.slipAt !== undefined && !isDate(it.slipAt));
+}
+
+// 検証。問題の一覧を返す（空なら正常）
+function storeValidate(d) {
+  const e = [];
+  if (!isObj(d)) return ['オブジェクトではない'];
+  if (d.schemaVersion !== STORE_SCHEMA) e.push('schemaVersion が ' + STORE_SCHEMA + ' ではない');
+  if (!isInt0(d.rev)) e.push('rev が不正');
+  if (!(d.lastExportAt === null || typeof d.lastExportAt === 'string')) e.push('lastExportAt が不正');
+  if (!Array.isArray(d.profiles) || d.profiles.length !== 3) {
+    e.push('profiles が3人分でない');
+  } else {
+    const ids = d.profiles.map((p) => p && p.id);
+    if (ids.join(',') !== 'p1,p2,p3') e.push('profiles の id が p1,p2,p3 でない');
+    for (const p of d.profiles) {
+      const w = (m) => e.push((p && p.id) + ': ' + m);
+      if (!isObj(p)) { e.push('profile が不正'); continue; }
+      if (typeof p.name !== 'string' || !p.name.trim() || p.name.length > 20) w('name が不正');
+      if (typeof p.theme !== 'string') w('theme が不正');
+      if (!isInt0(p.available) || !isInt0(p.total) || p.available > p.total) w('ポイントが不正');
+      if (!isObj(p.items)) w('items が不正');
+      else {
+        const known = storeKnownKeys();
+        for (const [k, it] of Object.entries(p.items)) {
+          if (!known.has(k)) w('items に未知の項目 ' + k);
+          if (storeBadItem(it)) w('items.' + k + ' が不正');
+        }
+      }
+      if (!isObj(p.drill) || Object.entries(p.drill).some(([k, v]) => !/^[xd](1|2|3|4|6)$/.test(k) || !isObj(v) || !isInt0(v.ok) || !isInt0(v.ng))) w('drill が不正');
+      if (!Array.isArray(p.sessions) || p.sessions.length > STORE_SESSIONS_MAX
+        || p.sessions.some((x) => !isObj(x) || typeof x.id !== 'string' || !isInt0(x.points))) w('sessions が不正');
+      if (!(p.pending === null || !storeBadPending(p.pending))) w('pending が不正');
+      // rev4 の任意の項目（v4 までの記録には無い）。設計 §13.9
+      if (p.log !== undefined && (!Array.isArray(p.log) || p.log.length > STORE_LOG_MAX || p.log.some((x) => !isObj(x)
+        || typeof x.date !== 'string' || !isDate(x.date) || typeof x.kind !== 'string' || !x.kind || typeof x.key !== 'string'))) w('log が不正');
+      // kind は STORE_LOG_KINDS 以外も受け付ける（先の版で増えても、この版で記録が初期化されないように。画面では知らない kind を出さない。R-006）
+      if (p.best !== undefined && (!isObj(p.best) || (p.best.time !== undefined && !isIntIn(p.best.time, 0, STORE_BEST_MAX)))) w('best が不正');
+      if (p.rank !== undefined && (!isObj(p.rank) || !isIntIn(p.rank.i, 0, 50) || typeof p.rank.date !== 'string' || !isDate(p.rank.date))) w('rank が不正');
+      if (p.unlocked !== undefined && (!isObj(p.unlocked) || Object.entries(p.unlocked).some(([k, v]) => !['L4', 'time'].includes(k)
+        || typeof v !== 'string' || !isDate(v)))) w('unlocked が不正');
+      // meaning は任意（D-014）。キーは意味の問題の id（L1a など）
+      if (p.meaning !== undefined && (!isObj(p.meaning) || Object.entries(p.meaning).some(([k, v]) => !/^L[123][a-z]$/.test(k)
+        || !isObj(v) || !isIntIn(v.box, 0, 3) || !isInt0(v.ok) || !isInt0(v.ng)
+        || (v.day !== undefined && (typeof v.day !== 'string' || !isDate(v.day))) || (v.seen !== undefined && (typeof v.seen !== 'string' || !isDate(v.seen)))))) w('meaning が不正');
+      // clock は任意（D-016）。キーは じかん の項目 id（c1〜c10）
+      if (p.clock !== undefined && (!isObj(p.clock) || Object.entries(p.clock).some(([k, v]) => !/^c([1-9]|10)$/.test(k) || storeBadItem(v)))) w('clock が不正');
+      // word は任意（D-015）。キーは文章題の型 id（W1a など）
+      if (p.word !== undefined && (!isObj(p.word) || Object.entries(p.word).some(([k, v]) => !/^W[123][a-d]$/.test(k)
+        || !isObj(v) || !isIntIn(v.box, 0, 3) || !isInt0(v.ok) || !isInt0(v.ng)
+        || (v.day !== undefined && (typeof v.day !== 'string' || !isDate(v.day))) || (v.seen !== undefined && (typeof v.seen !== 'string' || !isDate(v.seen)))))) w('word が不正');
+      // rbox は任意（D-018。くじの箱）
+      if (p.rbox !== undefined && (!isObj(p.rbox) || !Number.isInteger(p.rbox.no) || p.rbox.no < 1 || !Array.isArray(p.rbox.left)
+        || p.rbox.left.some((n) => !isInt0(n)) || typeof p.rbox.last !== 'boolean' || typeof p.rbox.sig !== 'string')) w('rbox が不正');
+      // prefix は任意（v3 までの記録には無い）
+      if (p.prefix !== undefined && (!isObj(p.prefix) || Object.entries(p.prefix).some(([k, v]) => !STORE_PREFIX_KEY_RE.test(k)
+        || !isObj(v) || !isIntIn(v.box, 0, 3) || !isInt0(v.ok) || !isInt0(v.ng) || (v.day !== undefined && (typeof v.day !== 'string' || !isDate(v.day)))))) w('prefix が不正');
+      if (!Array.isArray(p.exchanges)) w('exchanges が不正');
+    }
+  }
+  if (d.rewardSlot !== undefined && rsValidate(d.rewardSlot).length) e.push('rewardSlot が不正');
+  if (!Array.isArray(d.rewards) || d.rewards.some((r) => !isObj(r) || typeof r.id !== 'string' || typeof r.name !== 'string' || !Number.isInteger(r.cost) || r.cost < 1)) {
+    e.push('rewards が不正');
+  }
+  return e;
+}
+
+// 読み込み。mode: normal / readonly（新しい版）/ memory（退避できず書けない）/ nostorage
+// opts.noWrite: lock を取れず書き込めないとき。壊れていても退避せず memory で動かす
+function storeLoad(ls, nowIso, opts = {}) {
+  let raw;
+  try {
+    raw = ls.getItem(STORE_KEY);
+  } catch (err) {
+    return { data: storeInitial(nowIso), mode: 'nostorage', warning: 'nostorage', rawBroken: null };
+  }
+  if (raw === null || raw === undefined) return { data: storeInitial(nowIso), mode: 'normal', warning: null, rawBroken: null };
+  let parsed = null;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (err) {
+    parsed = null;
+  }
+  if (isObj(parsed) && Number.isInteger(parsed.schemaVersion) && parsed.schemaVersion > STORE_SCHEMA) {
+    return { data: storeInitial(nowIso), mode: 'readonly', warning: 'newer', rawBroken: null, rawOriginal: raw };
+  }
+  if (parsed !== null && storeValidate(parsed).length === 0) {
+    return { data: parsed, mode: opts.noWrite ? 'memory' : 'normal', warning: opts.noWrite ? 'nowrite' : null, rawBroken: null };
+  }
+  if (opts.noWrite) return { data: storeInitial(nowIso), mode: 'memory', warning: 'broken_unsaved', rawBroken: raw };
+  // 壊れている: 退避してから初期値で始める。退避できなければ本体に書かない
+  try {
+    ls.setItem(STORE_KEY_BROKEN, raw);
+    if (ls.getItem(STORE_KEY_BROKEN) !== raw) throw new Error('退避の読み戻しが一致しない');
+    ls.removeItem(STORE_KEY);
+  } catch (err) {
+    return { data: storeInitial(nowIso), mode: 'memory', warning: 'broken_unsaved', rawBroken: raw };
+  }
+  return { data: storeInitial(nowIso), mode: 'normal', warning: 'broken_saved', rawBroken: null };
+}
+
+// lock: 同時に操作できる窓を1つに限る。'ok' / 'busy'（他の窓が使用中）/ 'error'（保存が使えない）
+function storeLockAcquire(ls, tabId, nowMs) {
+  let cur = null;
+  try {
+    cur = JSON.parse(ls.getItem(STORE_KEY_LOCK) || 'null');
+  } catch (err) {
+    cur = null; // 壊れた lock は無視して取り直す
+  }
+  if (cur && cur.tabId !== tabId && nowMs - cur.beat < STORE_LOCK_TTL_MS) return 'busy';
+  try {
+    ls.setItem(STORE_KEY_LOCK, JSON.stringify({ tabId, beat: nowMs }));
+    return 'ok';
+  } catch (err) {
+    return 'error';
+  }
+}
+
+function storeLockRelease(ls, tabId) {
+  try {
+    const cur = JSON.parse(ls.getItem(STORE_KEY_LOCK) || 'null');
+    if (cur && cur.tabId === tabId) ls.removeItem(STORE_KEY_LOCK);
+  } catch (err) {
+    // 閉じる途中の失敗は、5秒の TTL で無効になる
+  }
+}
+
+function storeLockOwned(ls, tabId) {
+  const cur = JSON.parse(ls.getItem(STORE_KEY_LOCK) || 'null');
+  return !!cur && cur.tabId === tabId;
+}
+
+// 保存。ctx = { ls, tabId, rev, mode }。成功したら ctx.rev を進め、保存した data を返す
+function storeSave(ctx, data, nowIso) {
+  if (ctx.mode !== 'normal') return { ok: false, reason: 'mode' };
+  try {
+    const raw = ctx.ls.getItem(STORE_KEY);
+    if (raw !== null && raw !== undefined) {
+      let curRev = null;
+      try {
+        curRev = JSON.parse(raw).rev;
+      } catch (err) {
+        curRev = null;
+      }
+      if (curRev !== ctx.rev) return { ok: false, reason: 'conflict' };
+    }
+    if (!storeLockOwned(ctx.ls, ctx.tabId)) return { ok: false, reason: 'conflict' };
+    const next = { ...data, rev: ctx.rev + 1, updatedAt: nowIso || data.updatedAt };
+    ctx.ls.setItem(STORE_KEY, JSON.stringify(next));
+    ctx.rev = next.rev;
+    return { ok: true, data: next };
+  } catch (err) {
+    return { ok: false, reason: 'write_failed', error: String(err) };
+  }
+}
+
+function storeProfile(data, pid) {
+  const p = data.profiles.find((x) => x.id === pid);
+  if (!p) throw new Error('storeProfile: 未知の id ' + pid);
+  return p;
+}
+
+function storeWithProfile(data, pid, fn) {
+  const d = storeClone(data);
+  fn(storeProfile(d, pid), d);
+  return d;
+}
+
+function storeSetItem(data, pid, key, state) {
+  return storeWithProfile(data, pid, (p) => {
+    p.items[key] = state;
+  });
+}
+
+function storeSetPrefix(data, pid, key, state) {
+  if (!STORE_PREFIX_KEY_RE.test(key)) throw new Error('storeSetPrefix: 未知のキー ' + key);
+  return storeWithProfile(data, pid, (p) => {
+    p.prefix = { ...(p.prefix || {}), [key]: state };
+  });
+}
+
+// タイムチャレンジの回: pending を使わずに確定する。同じ id は二重に足さない。じこベストを更新する。設計 §13.8
+function storeApplyTime(data, pid, session) {
+  const p0 = storeProfile(data, pid);
+  if (p0.sessions.some((s) => s.id === session.id)) return { data, added: false, newBest: false };
+  const prevBest = (p0.best && p0.best.time) || 0;
+  const newBest = session.score > prevBest;
+  const d = storeWithProfile(data, pid, (p) => {
+    p.available += session.points;
+    p.total += session.points;
+    p.sessions = [...p.sessions, session].slice(-STORE_SESSIONS_MAX);
+    if (newBest) p.best = { ...(p.best || {}), time: Math.min(STORE_BEST_MAX, session.score) };
+  });
+  return { data: d, added: true, newBest };
+}
+
+// きおくテストの回（D-017）: スロットを回さないので pending を使わずに確定する。同じ id は二重に足さない
+function storeApplyMemtest(data, pid, session) {
+  const p0 = storeProfile(data, pid);
+  if (p0.sessions.some((s) => s.id === session.id)) return { data, added: false };
+  const d = storeWithProfile(data, pid, (p) => {
+    p.available += session.points;
+    p.total += session.points;
+    p.sessions = [...p.sessions, session].slice(-STORE_SESSIONS_MAX);
+  });
+  return { data: d, added: true };
+}
+
+// ボーナスのポイント（ログイン・週のスタンプ。D-017。旧: きょうの もくひょう）。同じ id は二重に足さない。設計 §13.12
+function storeApplyBonus(data, pid, id, date, points) {
+  const p0 = storeProfile(data, pid);
+  if (p0.sessions.some((s) => s.id === id)) return { data, added: false };
+  const d = storeWithProfile(data, pid, (p) => {
+    p.available += points;
+    p.total += points;
+    p.sessions = [...p.sessions, { id, date, mode: 'bonus', points }].slice(-STORE_SESSIONS_MAX);
+  });
+  return { data: d, added: true };
+}
+
+// できるようになったことの記録。同じ日の同じ (kind, key) は1回だけ。新しい順、最大 300 件。設計 §13.5
+function storeAddLog(data, pid, events) {
+  const p0 = storeProfile(data, pid);
+  const old = p0.log || [];
+  const has = (e, list) => list.some((x) => x.date === e.date && x.kind === e.kind && x.key === e.key);
+  const add = [];
+  for (const e of events) if (!has(e, old) && !has(e, add)) add.push({ date: e.date, kind: e.kind, key: e.key });
+  if (!add.length) return { data, added: [] };
+  const d = storeWithProfile(data, pid, (p) => {
+    p.log = add.reverse().concat(old).slice(0, STORE_LOG_MAX);
+  });
+  return { data: d, added: add.slice().reverse() };
+}
+
+function storeSetRank(data, pid, i, date) {
+  return storeWithProfile(data, pid, (p) => {
+    p.rank = { i, date };
+  });
+}
+
+function storeSetUnlocked(data, pid, key, date) {
+  if (!['L4', 'time'].includes(key)) throw new Error('storeSetUnlocked: 未知のキー ' + key);
+  return storeWithProfile(data, pid, (p) => {
+    p.unlocked = { ...(p.unlocked || {}), [key]: date };
+  });
+}
+
+function storeSetClock(data, pid, id, state) {
+  if (!/^c([1-9]|10)$/.test(id)) throw new Error('storeSetClock: 未知の id ' + id);
+  return storeWithProfile(data, pid, (p) => {
+    p.clock = { ...(p.clock || {}), [id]: state };
+  });
+}
+
+function storeSetWord(data, pid, id, state) {
+  if (!/^W[123][a-d]$/.test(id)) throw new Error('storeSetWord: 未知の id ' + id);
+  return storeWithProfile(data, pid, (p) => {
+    p.word = { ...(p.word || {}), [id]: state };
+  });
+}
+
+function storeSetMeaning(data, pid, id, state) {
+  if (!/^L[123][a-z]$/.test(id)) throw new Error('storeSetMeaning: 未知の id ' + id);
+  return storeWithProfile(data, pid, (p) => {
+    p.meaning = { ...(p.meaning || {}), [id]: state };
+  });
+}
+
+function storeAddDrill(data, pid, dkey, ok) {
+  return storeWithProfile(data, pid, (p) => {
+    const v = p.drill[dkey] || { ok: 0, ng: 0 };
+    p.drill[dkey] = { ok: v.ok + (ok ? 1 : 0), ng: v.ng + (ok ? 0 : 1) };
+  });
+}
+
+// 回の結果を確定する。同じ sessionId は二重に足さない。pending に入れて、見せたあとで消す
+function storeApplySession(data, pid, session) {
+  const p0 = storeProfile(data, pid);
+  if (p0.sessions.some((s) => s.id === session.id)) return { data, added: false };
+  const d = storeWithProfile(data, pid, (p) => {
+    p.available += session.points;
+    p.total += session.points;
+    p.sessions = [...p.sessions, session].slice(-STORE_SESSIONS_MAX);
+    p.pending = { sessionId: session.id, ...session };
+  });
+  return { data: d, added: true };
+}
+
+function storeClearPending(data, pid) {
+  return storeWithProfile(data, pid, (p) => {
+    p.pending = null;
+  });
+}
+
+function storeExchange(data, pid, rewardId, nowIso) {
+  const r = data.rewards.find((x) => x.id === rewardId);
+  if (!r) return { ok: false, reason: 'no_reward', data };
+  const p0 = storeProfile(data, pid);
+  if (p0.available < r.cost) return { ok: false, reason: 'not_enough', data };
+  const d = storeWithProfile(data, pid, (p) => {
+    p.available -= r.cost;
+    p.exchanges = [...p.exchanges, { date: nowIso, rewardName: r.name, cost: r.cost }];
+  });
+  return { ok: true, data: d };
+}
+
+// ごほうびスロット（設計 §13.15）
+function storeRewardSlot(data) {
+  return data.rewardSlot || RS_DEFAULT;
+}
+
+function storeSetRewardSlot(data, cfg) {
+  const errs = rsValidate(cfg);
+  if (errs.length) throw new Error('storeSetRewardSlot: ' + errs.join(' / '));
+  const d = storeClone(data);
+  d.rewardSlot = { cost: cfg.cost, prizes: cfg.prizes.map((x) => ({ yen: x.yen, w: x.w })), last: cfg.last || 0 };
+  return d;
+}
+
+// くじを1枚引いた結果（rsDraw の { prize, box }）でポイントを引き、箱を保存し、交換の記録に残す。足りなければ拒否。累計は減らない（D-018）
+function storeSpinReward(data, pid, draw, nowIso) {
+  const cfg = storeRewardSlot(data);
+  if (!draw || !draw.prize || !draw.box) return { ok: false, reason: 'no_prize', data };
+  if (storeProfile(data, pid).available < cfg.cost) return { ok: false, reason: 'not_enough', data };
+  const prize = draw.prize;
+  const d = storeWithProfile(data, pid, (p) => {
+    p.available -= cfg.cost;
+    p.rbox = draw.box;
+    p.exchanges = [...p.exchanges, { date: nowIso, rewardName: (prize.last ? 'くじ ラストワン ' : 'くじ ') + prize.yen + '円', cost: cfg.cost }];
+  });
+  return { ok: true, data: d, prize };
+}
+
+function storeSetRewards(data, rewards) {
+  const d = storeClone(data);
+  d.rewards = rewards.map((r) => ({ id: String(r.id), name: String(r.name), cost: r.cost }));
+  const errs = storeValidate(d);
+  if (errs.length) throw new Error('storeSetRewards: ' + errs.join(' / '));
+  return d;
+}
+
+function storeRename(data, pid, name) {
+  const n = String(name).trim();
+  if (!n || n.length > 20) throw new Error('storeRename: 名前は1〜20文字');
+  return storeWithProfile(data, pid, (p) => {
+    p.name = n;
+  });
+}
+
+function storeSetTheme(data, pid, theme) {
+  return storeWithProfile(data, pid, (p) => {
+    p.theme = theme;
+  });
+}
+
+function storeMarkExported(data, nowIso) {
+  return { ...storeClone(data), lastExportAt: nowIso };
+}
+
+function storeExportText(data) {
+  return JSON.stringify(data, null, 1);
+}
+
+function storeParseImport(text) {
+  let d;
+  try {
+    d = JSON.parse(text);
+  } catch (err) {
+    return { ok: false, errors: ['JSON として読めない'] };
+  }
+  const errors = storeValidate(d);
+  return errors.length ? { ok: false, errors } : { ok: true, data: d };
+}
+
+function storeImportSummary(cur, next) {
+  return {
+    curUpdatedAt: cur.updatedAt,
+    nextUpdatedAt: next.updatedAt,
+    profiles: cur.profiles.map((p, i) => ({
+      id: p.id, name: p.name, cur: { available: p.available, total: p.total },
+      next: { name: next.profiles[i].name, available: next.profiles[i].available, total: next.profiles[i].total },
+    })),
+  };
+}
+
+// 読み込みの前に今の本体を退避する。失敗したら false（読み込みを中止する）
+function storeBackupBeforeImport(ls, cur, nowMs) {
+  try {
+    ls.setItem(STORE_KEY_BEFORE_IMPORT, JSON.stringify({ savedAt: nowMs, data: cur }));
+    return JSON.parse(ls.getItem(STORE_KEY_BEFORE_IMPORT)).data.rev === cur.rev;
+  } catch (err) {
+    return false;
+  }
+}
+
+// 取り消せるのは、読み込みから STORE_UNDO_HOURS 時間以内だけ
+function storeReadBeforeImport(ls, nowMs) {
+  try {
+    const raw = ls.getItem(STORE_KEY_BEFORE_IMPORT);
+    if (!raw) return null;
+    const x = JSON.parse(raw);
+    if (!isObj(x) || !Number.isFinite(x.savedAt) || nowMs - x.savedAt > STORE_UNDO_HOURS * 3600000) return null;
+    return storeValidate(x.data).length === 0 ? x.data : null;
+  } catch (err) {
+    return null;
+  }
+}
+
+function storeClearBeforeImport(ls) {
+  try {
+    ls.removeItem(STORE_KEY_BEFORE_IMPORT);
+  } catch (err) {
+    // 消せなくても期限切れで無効になる
+  }
+}
+
+// 読み込んだデータを、今の rev の続きとして保存できる形にする
+function storeAdoptImported(next, curRev) {
+  return { ...storeClone(next), rev: curRev };
+}
+
+// ---- src/logic/chara.js ----
+// chara.js — オリジナルのキャラクター3体（D-007）。SVG の文字列を返す純粋な関数だけを置く。設計 §9.10
+// 外部の画像・URL は使わない。誤答のとき（think）も責める表情にしない。
+
+const CHARA_LIST = [
+  { id: 'naga', name: 'ながさん', level: 1, what: 'ものさし' },
+  { id: 'shikaku', name: 'しかくん', level: 2, what: 'タイル' },
+  { id: 'rippo', name: 'りっぽー', level: 3, what: 'いっぺん 10 cm の りっぽうたい' },
+  { id: 'timmy', name: 'タイミー', level: 5, what: 'めざましどけい' }, // じかん の セクション（D-016）
+];
+
+const CHARA_MOODS = ['normal', 'happy', 'think', 'cheer'];
+
+function charaForLevel(level) {
+  const c = CHARA_LIST.find((x) => x.level === level);
+  if (!c) throw new Error('charaForLevel: レベルが不正 ' + level);
+  return c;
+}
+
+// 顔: 目・ほお・口。ink は線の色
+function charaFace(cx, cy, mood, ink) {
+  let s = '';
+  if (mood === 'happy') {
+    s += '<path d="M' + (cx - 16) + ' ' + cy + ' q5 -7 10 0 M' + (cx + 6) + ' ' + cy + ' q5 -7 10 0" fill="none" stroke="' + ink + '" stroke-width="3" stroke-linecap="round"/>';
+  } else {
+    s += '<circle cx="' + (cx - 11) + '" cy="' + cy + '" r="4.5" fill="' + ink + '"/><circle cx="' + (cx + 11) + '" cy="' + cy + '" r="4.5" fill="' + ink + '"/>';
+    s += '<circle cx="' + (cx - 9.5) + '" cy="' + (cy - 1.5) + '" r="1.5" fill="#fff"/><circle cx="' + (cx + 12.5) + '" cy="' + (cy - 1.5) + '" r="1.5" fill="#fff"/>';
+  }
+  s += '<ellipse cx="' + (cx - 19) + '" cy="' + (cy + 11) + '" rx="5.5" ry="3.2" fill="#f4a58a"/><ellipse cx="' + (cx + 19) + '" cy="' + (cy + 11) + '" rx="5.5" ry="3.2" fill="#f4a58a"/>';
+  if (mood === 'happy' || mood === 'cheer') {
+    s += '<path d="M' + (cx - 8) + ' ' + (cy + 10) + ' q8 11 16 0 z" fill="' + ink + '"/>';
+  } else if (mood === 'think') {
+    s += '<path d="M' + (cx - 5) + ' ' + (cy + 13) + ' q5 -3 10 0" fill="none" stroke="' + ink + '" stroke-width="2.5" stroke-linecap="round"/>';
+  } else {
+    s += '<path d="M' + (cx - 6) + ' ' + (cy + 10) + ' q6 7 12 0" fill="none" stroke="' + ink + '" stroke-width="2.5" stroke-linecap="round"/>';
+  }
+  return s;
+}
+
+// うで: cheer は上げる、それ以外は下ろす。lx/rx は体の左右の端、y は肩の高さ
+function charaArms(lx, rx, y, mood, color) {
+  const up = mood === 'cheer';
+  const dy = up ? -18 : 16;
+  return '<g stroke="' + color + '" stroke-width="4" stroke-linecap="round">' +
+    '<line x1="' + lx + '" y1="' + y + '" x2="' + (lx - 13) + '" y2="' + (y + dy) + '"/>' +
+    '<line x1="' + rx + '" y1="' + y + '" x2="' + (rx + 13) + '" y2="' + (y + dy) + '"/></g>';
+}
+
+function charaLegs(x1, x2, y, color) {
+  return '<g stroke="' + color + '" stroke-width="4" stroke-linecap="round"><line x1="' + x1 + '" y1="' + y + '" x2="' + x1 + '" y2="' + (y + 14) + '"/><line x1="' + x2 + '" y1="' + y + '" x2="' + x2 + '" y2="' + (y + 14) + '"/></g>';
+}
+
+function charaThinkMark(mood) {
+  return mood === 'think' ? '<text x="104" y="26" font-size="22" font-weight="bold" fill="#7a6a55">?</text>' : '';
+}
+
+// ながさん（D-007 追記: 笑える顔）: ぎょろ目・太いまゆ・ちょびひげ
+function charaFaceNaga(mood) {
+  const k = '#412402';
+  let s = '<ellipse cx="47" cy="60" rx="5" ry="3" fill="#f4a58a"/><ellipse cx="81" cy="60" rx="5" ry="3" fill="#f4a58a"/>';
+  if (mood === 'happy') {
+    // > < の目（笑いすぎ）
+    s += '<path d="M50 38 L58 43 L50 48 M78 38 L70 43 L78 48" fill="none" stroke="' + k + '" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>';
+  } else {
+    s += '<circle cx="55" cy="43" r="8" fill="#fff" stroke="' + k + '" stroke-width="2"/><circle cx="73" cy="43" r="8" fill="#fff" stroke="' + k + '" stroke-width="2"/>';
+    const pu = mood === 'think' ? [[52, 39], [76, 40]] : mood === 'cheer' ? [[55, 43], [73, 43]] : [[58, 45], [70, 45]];
+    s += '<circle cx="' + pu[0][0] + '" cy="' + pu[0][1] + '" r="' + (mood === 'cheer' ? 4.5 : 3.5) + '" fill="' + k + '"/><circle cx="' + pu[1][0] + '" cy="' + pu[1][1] + '" r="' + (mood === 'cheer' ? 4.5 : 3.5) + '" fill="' + k + '"/>';
+    // まゆ: think は片方だけ上げる
+    const lb = mood === 'think' ? 'M48 29 q7 -6 14 0' : mood === 'cheer' ? 'M48 28 q7 -5 14 0' : 'M48 32 q7 -3 14 0';
+    const rb = mood === 'think' ? 'M66 33 q7 1 14 -1' : mood === 'cheer' ? 'M66 28 q7 -5 14 0' : 'M66 32 q7 -3 14 0';
+    s += '<path d="' + lb + ' ' + rb + '" fill="none" stroke="' + k + '" stroke-width="3.5" stroke-linecap="round"/>';
+  }
+  // ちょびひげ
+  s += '<path d="M64 56 q-6 -4 -12 1 q5 4 12 -1 z M64 56 q6 -4 12 1 q-5 4 -12 -1 z" fill="' + k + '"/>';
+  if (mood === 'happy' || mood === 'cheer') {
+    s += '<path d="M54 61 h20 q-10 17 -20 0 z" fill="' + k + '"/><ellipse cx="64" cy="67" rx="5" ry="3" fill="#f0997b"/>';
+  } else if (mood === 'think') {
+    s += '<ellipse cx="66" cy="65" rx="3" ry="3.5" fill="none" stroke="' + k + '" stroke-width="2.5"/>';
+  } else {
+    s += '<path d="M56 62 q8 7 16 0" fill="none" stroke="' + k + '" stroke-width="2.5" stroke-linecap="round"/>';
+  }
+  return s;
+}
+
+// りっぽー（D-007 追記: 笑える顔）: 左右ちがう目・出っ歯・アホ毛
+function charaFaceRippo(mood) {
+  const k = '#042c53';
+  let s = '<path d="M62 27 q-6 -14 5 -17 q9 -1 4 8" fill="none" stroke="' + k + '" stroke-width="2.5" stroke-linecap="round"/>';
+  s += '<ellipse cx="24" cy="90" rx="5.5" ry="3.2" fill="#f4a58a"/><ellipse cx="74" cy="90" rx="5.5" ry="3.2" fill="#f4a58a"/>';
+  if (mood === 'happy') {
+    s += '<path d="M28 74 q8 -10 16 0" fill="none" stroke="' + k + '" stroke-width="3" stroke-linecap="round"/>';
+  } else {
+    s += '<circle cx="36" cy="72" r="9" fill="#fff" stroke="' + k + '" stroke-width="2"/>';
+    const p = mood === 'think' ? [32, 67] : mood === 'cheer' ? [36, 72] : [39, 74];
+    s += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="4" fill="' + k + '"/>';
+  }
+  if (mood === 'happy' || mood === 'cheer') {
+    s += '<path d="M57 68 L65 72 L57 76" fill="none" stroke="' + k + '" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>';
+  } else if (mood === 'think') {
+    s += '<line x1="56" y1="72" x2="66" y2="72" stroke="' + k + '" stroke-width="3" stroke-linecap="round"/>';
+    s += '<path d="M76 54 q-4 6 0 8 q4 -2 0 -8 z" fill="#85b7eb" stroke="#185fa5" stroke-width="1"/>';
+  } else {
+    s += '<circle cx="61" cy="72" r="3.5" fill="' + k + '"/>';
+  }
+  if (mood === 'happy' || mood === 'cheer') {
+    s += '<path d="M35 87 h28 q-14 18 -28 0 z" fill="' + k + '"/><rect x="43" y="87" width="5.5" height="6" fill="#fff" stroke="' + k + '" stroke-width="1"/><rect x="49.5" y="87" width="5.5" height="6" fill="#fff" stroke="' + k + '" stroke-width="1"/>';
+  } else if (mood === 'think') {
+    s += '<path d="M38 92 l5 -3 l5 3 l5 -3 l5 3" fill="none" stroke="' + k + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+  } else {
+    s += '<path d="M37 88 q12 9 24 0" fill="none" stroke="' + k + '" stroke-width="2.5" stroke-linecap="round"/><path d="M50 92 q4 7 8 0 z" fill="#f0997b" stroke="' + k + '" stroke-width="1.2"/>';
+  }
+  return s;
+}
+
+function charaBody(id, mood) {
+  if (id === 'naga') {
+    let s = charaArms(38, 82, 66, mood, '#8a5a12') + charaLegs(48, 72, 118, '#8a5a12');
+    s += '<rect x="38" y="8" width="44" height="112" rx="14" fill="#fac775" stroke="#8a5a12" stroke-width="2.5"/>';
+    for (let i = 0; i < 9; i++) {
+      const y = 22 + i * 11;
+      s += '<line x1="38" y1="' + y + '" x2="' + (i % 2 === 0 ? 50 : 45) + '" y2="' + y + '" stroke="#8a5a12" stroke-width="2"/>';
+    }
+    return s + charaFaceNaga(mood);
+  }
+  if (id === 'shikaku') {
+    let s = charaArms(14, 106, 70, mood, '#0f6e56') + charaLegs(44, 76, 112, '#0f6e56');
+    s += '<line x1="60" y1="22" x2="60" y2="10" stroke="#0f6e56" stroke-width="2.5"/><circle cx="60" cy="8" r="5" fill="#f4c0d1" stroke="#993556" stroke-width="1.5"/>';
+    s += '<rect x="14" y="22" width="92" height="92" rx="14" fill="#9fe1cb" stroke="#0f6e56" stroke-width="2.5"/>';
+    s += '<g stroke="#5dcaa5" stroke-width="1.6"><line x1="44.7" y1="22" x2="44.7" y2="114"/><line x1="75.3" y1="22" x2="75.3" y2="114"/><line x1="14" y1="52.7" x2="106" y2="52.7"/><line x1="14" y1="83.3" x2="106" y2="83.3"/></g>';
+    s += '<rect x="30" y="46" width="60" height="44" rx="12" fill="#e1f5ee"/>';
+    return s + charaFace(60, 64, mood, '#04342c');
+  }
+  if (id === 'rippo') {
+    // 立方体: 正面・上面・右側面
+    let s = charaArms(14, 104, 82, mood, '#185fa5') + charaLegs(34, 74, 116, '#185fa5');
+    s += '<path d="M14 46 L34 26 L104 26 L84 46 Z" fill="#b5d4f4" stroke="#185fa5" stroke-width="2.5" stroke-linejoin="round"/>';
+    s += '<path d="M84 46 L104 26 L104 96 L84 116 Z" fill="#378add" stroke="#185fa5" stroke-width="2.5" stroke-linejoin="round"/>';
+    s += '<rect x="14" y="46" width="70" height="70" fill="#e6f1fb" stroke="#185fa5" stroke-width="2.5" stroke-linejoin="round"/>';
+    return s + charaFaceRippo(mood);
+  }
+  if (id === 'timmy') {
+    // タイミー（D-016）: とがった めざましどけい。ギザギザの ふち、いなずまの 針、つりあがった まゆ、キバ（保護者の希望で とがらせた）
+    const k = '#1d1d2b';
+    let s = charaArms(14, 106, 80, mood, '#1d1d2b') + charaLegs(42, 78, 114, '#1d1d2b');
+    // ギザギザの ふち（16本の とげ）
+    let pts = '';
+    for (let i = 0; i < 32; i++) {
+      const a = (i * Math.PI) / 16;
+      const r = i % 2 === 0 ? 54 : 44;
+      pts += (60 + r * Math.sin(a)).toFixed(1) + ',' + (70 - r * Math.cos(a)).toFixed(1) + ' ';
+    }
+    s += '<polygon points="' + pts.trim() + '" fill="#e24b4a" stroke="#1d1d2b" stroke-width="2.5" stroke-linejoin="round"/>';
+    s += '<circle cx="60" cy="70" r="38" fill="#fff8d6" stroke="#1d1d2b" stroke-width="2.5"/>';
+    for (let i = 0; i < 12; i += 3) {
+      const a = (i * Math.PI) / 6;
+      s += '<line x1="' + (60 + 31 * Math.sin(a)).toFixed(1) + '" y1="' + (70 - 31 * Math.cos(a)).toFixed(1) + '" x2="' + (60 + 37 * Math.sin(a)).toFixed(1) + '" y2="' + (70 - 37 * Math.cos(a)).toFixed(1) + '" stroke="#1d1d2b" stroke-width="3"/>';
+    }
+    // いなずまの 針。cheer は 10時10分（ばんざい）
+    const bolt = mood === 'cheer'
+      ? 'M60 52 L52 47 L55 46 L46 40 M60 52 L68 47 L65 46 L74 40'
+      : 'M60 52 L58 44 L62 44 L59 34 M60 52 L66 49 L65 46 L73 43';
+    s += '<path d="' + bolt + '" fill="none" stroke="#f0a020" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="60" cy="52" r="3" fill="#1d1d2b"/>';
+    // まゆ（つりあがり）。think は 片方だけ 上がる
+    const brows = mood === 'think' ? 'M38 62 L52 66 M68 62 L82 60' : 'M38 61 L52 66 M68 66 L82 61';
+    s += '<path d="' + brows + '" stroke="' + k + '" stroke-width="4" stroke-linecap="round"/>';
+    // 目
+    if (mood === 'happy') s += '<path d="M41 73 L47 70 L53 73 M67 73 L73 70 L79 73" fill="none" stroke="' + k + '" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>';
+    else {
+      s += '<path d="M40 72 L54 70 L52 78 L42 78 Z" fill="#fff" stroke="' + k + '" stroke-width="2" stroke-linejoin="round"/><path d="M66 70 L80 72 L78 78 L68 78 Z" fill="#fff" stroke="' + k + '" stroke-width="2" stroke-linejoin="round"/>';
+      const px = mood === 'think' ? -2 : 1;
+      s += '<circle cx="' + (48 + px) + '" cy="74.5" r="2.8" fill="' + k + '"/><circle cx="' + (73 + px) + '" cy="74.5" r="2.8" fill="' + k + '"/>';
+    }
+    // 口: にやり ＋ キバ
+    if (mood === 'happy' || mood === 'cheer') s += '<path d="M48 86 Q60 98 72 86 Z" fill="' + k + '"/><path d="M52 86 l3 5 l3 -5 Z M62 86 l3 5 l3 -5 Z" fill="#fff"/>';
+    else if (mood === 'think') s += '<path d="M50 90 l5 -3 l5 3 l5 -3 l5 3" fill="none" stroke="' + k + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+    else s += '<path d="M50 87 Q62 93 72 84" fill="none" stroke="' + k + '" stroke-width="2.5" stroke-linecap="round"/><path d="M66 88 l2 5 l3 -6 Z" fill="#fff" stroke="' + k + '" stroke-width="1"/>';
+    return s;
+  }
+  throw new Error('charaSvg: キャラクターが不正 ' + id);
+}
+
+function charaSvg(id, mood, size) {
+  if (!CHARA_MOODS.includes(mood)) throw new Error('charaSvg: 表情が不正 ' + mood);
+  const c = CHARA_LIST.find((x) => x.id === id);
+  if (!c) throw new Error('charaSvg: キャラクターが不正 ' + id);
+  const w = size || 72;
+  const h = Math.round(w * 140 / 120);
+  return '<svg class="chara chara-' + mood + '" viewBox="0 0 120 140" width="' + w + '" height="' + h + '" role="img" aria-label="' + c.name + '">' +
+    charaBody(id, mood) + charaThinkMark(mood) + '</svg>';
+}
+
+// 1 L の図: りっぽー（いっぺん 10 cm の立方体）に辺の長さを書き、1 L ＝ 1000 cm³ ＝ 10 dL ＝ 1000 mL を添える
+function charaLiterSvg() {
+  let s = '<svg class="liter" viewBox="0 0 380 180" width="380" height="180" role="img" aria-label="いっぺん 10 cm の りっぽうたい は 1 L">';
+  s += '<g transform="translate(30 10)">' + charaBody('rippo', 'normal') + '</g>';
+  s += '<g font-size="13" fill="#185fa5"><text x="79" y="174" text-anchor="middle">10 cm</text><text x="140" y="96">10 cm</text><text x="58" y="30">10 cm</text></g>';
+  s += '<g font-size="17" fill="#2b2b2b"><text x="210" y="44">10×10×10</text><text x="210" y="70">＝ 1000 cm³</text><text x="210" y="96">＝ 1 L</text><text x="210" y="122">＝ 10 dL</text><text x="210" y="148">＝ 1000 mL</text></g>';
+  return s + '</svg>';
+}
+
+// ---- src/logic/prefix.js ----
+// prefix.js — 接頭語クイズ（キロ・ヘクト・デカ・デシ・センチ・ミリ）。問題、選択肢、覚えた度合い（箱）、出題。設計 §5a、D-009
+// 倍率は exp（10 の何乗か）だけで持つ。表示の文字列は exp から作る（浮動小数を使わない）
+
+// ex: 記号の問題（sym）に使う例の単位。小学校の問題で出るものだけにする（D-009 追記）。デカは例が無いので sym を出さない
+const PREFIXES = [
+  { id: 'k', name: 'キロ', sym: 'k', exp: 3, ex: ['km', 'kL', 'kg'] },
+  { id: 'h', name: 'ヘクト', sym: 'h', exp: 2, ex: ['ha'] },
+  { id: 'da', name: 'デカ', sym: 'da', exp: 1, ex: [] },
+  { id: 'd', name: 'デシ', sym: 'd', exp: -1, ex: ['dL'] },
+  { id: 'c', name: 'センチ', sym: 'c', exp: -2, ex: ['cm'] },
+  { id: 'm', name: 'ミリ', sym: 'm', exp: -3, ex: ['mm', 'mL', 'mg'] },
+];
+const PREFIX_KINDS = ['n2f', 'f2n', 'sym'];
+const PREFIX_BOX_MAX = 3;
+const PREFIX_WEIGHTS = [4, 3, 2, 1];
+
+function prefixById(id) {
+  const p = PREFIXES.find((x) => x.id === id);
+  if (!p) throw new Error('prefixById: 未知の接頭語 ' + id);
+  return p;
+}
+
+function prefixKeys() {
+  const out = [];
+  for (const p of PREFIXES) for (const k of PREFIX_KINDS) if (k !== 'sym' || p.ex.length) out.push(p.id + ':' + k);
+  return out;
+}
+
+// 倍率の表示: 3 → 「1000 ばい」、-2 → 「1/100（100ぶんの1）」
+function prefixFactorLabel(exp) {
+  if (!Number.isInteger(exp) || exp === 0) throw new Error('prefixFactorLabel: exp が不正 ' + exp);
+  const n = '1' + '0'.repeat(Math.abs(exp));
+  return exp > 0 ? n + ' ばい' : '1/' + n + '（' + n + 'ぶんの1）';
+}
+
+// 誤りの選び方: 符号が逆 → 倍率が隣（0 は飛ばす）→ 残りから抽選
+function prefixDistractors(rng, p) {
+  const others = PREFIXES.filter((x) => x.id !== p.id);
+  const pri = [];
+  const add = (x) => { if (x && !pri.includes(x)) pri.push(x); };
+  add(others.find((x) => x.exp === -p.exp));
+  for (const e of [p.exp + 1, p.exp - 1]) add(others.find((x) => x.exp === e));
+  const rest = qShuffle(rng, others.filter((x) => !pri.includes(x)));
+  return pri.concat(rest).slice(0, 3);
+}
+
+// key: 'k:n2f' など。返す問題: { key, prefix, kind, text, example, options: [{id, label, correct}] }
+function prefixMakeQuestion(rng, key) {
+  const [id, kind] = key.split(':');
+  const p = prefixById(id);
+  if (!prefixKeys().includes(key)) throw new Error('prefixMakeQuestion: 未知の問題 ' + key);
+  const cands = [p].concat(prefixDistractors(rng, p));
+  const label = (x) => (kind === 'n2f' ? prefixFactorLabel(x.exp) : x.name);
+  const options = qShuffle(rng, cands.map((x) => ({ id: x.id, label: label(x), correct: x.id === p.id })));
+  let text;
+  let example = null;
+  if (kind === 'n2f') text = p.name + ' は もとの たんいの なんばい？';
+  else if (kind === 'f2n') text = prefixFactorLabel(p.exp) + ' を あらわす ことばは？';
+  else {
+    example = qPick(rng, p.ex);
+    text = example + ' の ' + p.sym + ' は なに？';
+  }
+  return { key, prefix: id, kind, text, example, options };
+}
+
+// 箱の更新: 最初の1回で正解なら1上げる（上限 3）、誤りなら0に戻す。
+// today を渡したときは、箱を上げるのは1日に1つまで（「おぼえた」には3つの別の日の正解が要る。R-007）
+function prefixRecord(state, ok, today) {
+  const s = state || { box: 0, ok: 0, ng: 0 };
+  const sameDay = !!today && s.day === today;
+  const box = ok ? (sameDay ? s.box : Math.min(PREFIX_BOX_MAX, s.box + 1)) : 0;
+  const out = { box, ok: s.ok + (ok ? 1 : 0), ng: s.ng + (ok ? 0 : 1) };
+  if (today) out.day = ok && !sameDay ? today : s.day || today;
+  return out;
+}
+
+function prefixLearned(states) {
+  const st = states || {};
+  return prefixKeys().filter((k) => st[k] && st[k].box >= PREFIX_BOX_MAX).length;
+}
+
+// 出題: 重み box0（まだを含む）4、box1 3、box2 2、box3 1。同じ接頭語を続けない
+function prefixPick(rng, states) {
+  const st = states || {};
+  const keys = prefixKeys();
+  const out = [];
+  let prevId = null;
+  while (out.length < PG_SESSION_SIZE) {
+    const cands = keys.filter((k) => k.split(':')[0] !== prevId);
+    let total = 0;
+    for (const k of cands) total += PREFIX_WEIGHTS[st[k] ? st[k].box : 0];
+    let r = rng.int(total);
+    let pick = cands[cands.length - 1];
+    for (const k of cands) {
+      r -= PREFIX_WEIGHTS[st[k] ? st[k].box : 0];
+      if (r < 0) { pick = k; break; }
+    }
+    out.push({ key: pick, isCheck: false });
+    prevId = pick.split(':')[0];
+  }
+  return out;
+}
+
+// キロ〜ミリの7段の表（HTML）。hi: 強調する接頭語の id（正解）、mark: 子供が選んだ誤りの id
+function prefixTableHtml(hi, mark) {
+  const cols = PREFIXES.slice(0, 3).map((p) => ({ id: p.id, name: p.name, sym: p.sym, f: '×' + '1' + '0'.repeat(p.exp) }))
+    .concat([{ id: '', name: 'もと', sym: 'm・L・g', f: '×1' }])
+    .concat(PREFIXES.slice(3).map((p) => ({ id: p.id, name: p.name, sym: p.sym, f: '1/1' + '0'.repeat(-p.exp) })));
+  const cls = (c) => (c.id && c.id === hi ? ' class="hi"' : c.id && c.id === mark ? ' class="mark"' : '');
+  let h = '<table class="prefix-table"><tr>' + cols.map((c) => '<th' + cls(c) + '>' + c.name + '</th>').join('') + '</tr>';
+  h += '<tr>' + cols.map((c) => '<td' + cls(c) + '>' + c.sym + '</td>').join('') + '</tr>';
+  h += '<tr>' + cols.map((c) => '<td' + cls(c) + '>' + c.f + '</td>').join('') + '</tr></table>';
+  return h;
+}
+
+// ---- src/logic/meaning.js ----
+// meaning.js — 単位の意味を問う問題（各レベル4問、4択）。設計 §13.18 (2)、D-014
+// 定義の問題には check: { a, b, factor }（1 a は b の factor 倍）を持たせ、テストで units.js の換算係数と照合する。
+// 量感の問題（えんぴつ・1円玉）は check が無い。G4 で保護者が確かめる〔要確認〕。
+
+const MN_DONE_BOX = 2; // 別の2日で正解して「わかった」
+
+// options の先頭が正解（出すときに並べ替える）
+const MEANING = [
+  { id: 'L1a', short: 'えんぴつ 1本 は 15 cm くらい', level: 1, text: 'えんぴつ 1本の 長さに いちばん ちかいのは？', options: ['15 cm', '15 mm', '15 m', '15 km'], explain: 'えんぴつは 15 cm くらい。1 cm は ものさしの 1めもり ぶん だよ。', check: null },
+  { id: 'L1b', short: '1円玉の 直径 は 2 cm', level: 1, text: '1円玉の はしから はしまでの 長さ（直径）は？', options: ['2 cm', '2 mm', '2 m', '20 cm'], explain: '1円玉の 直径は 2 cm（20 mm）。', check: null },
+  { id: 'L1c', short: '1 m に 1 cm が 100こ', level: 1, text: '1 m の ものさしには、1 cm の めもりが いくつ ならぶ？', options: ['100', '10', '1000', '1'], explain: '1 m ＝ 100 cm。1 cm が 100こ ならぶよ。', check: { a: 'm', b: 'cm', factor: 100 } },
+  { id: 'L1d', short: '25 m × 40 ＝ 1 km', level: 1, text: '25 m の プールを 40こ まっすぐ ならべると、ぜんぶで どれくらい？', options: ['1 km', '100 m', '10 km', '4 km'], explain: '25 × 40 ＝ 1000 m ＝ 1 km。', check: { a: 'km', b: 'm', factor: 1000 } },
+  { id: 'L2a', short: '1 cm² は 1辺 1 cm の 正方形', level: 2, text: '1 cm² は どんな ひろさ？', options: ['1辺 1 cm の 正方形', '1辺 1 cm の 立方体', '長さ 1 cm の 線', '1辺 10 cm の 正方形'], explain: '1 cm² は、1辺が 1 cm の 正方形の ひろさ。', check: null },
+  { id: 'L2b', short: '1 m² に 1 cm² が 10000こ', level: 2, text: '1 m² の 正方形に、1 cm² の 正方形は いくつ しきつめられる？', options: ['100 × 100 ＝ 10000こ', '100こ', '1000こ', '100 × 100 × 100 こ'], explain: '1 m ＝ 100 cm だから、たて 100こ × よこ 100こ ＝ 10000こ。', check: { a: 'm²', b: 'cm²', factor: 10000 } },
+  { id: 'L2c', short: '1 a は 1辺 10 m の 正方形', level: 2, text: '1 a（アール）は どんな ひろさ？', options: ['1辺 10 m の 正方形', '1辺 100 m の 正方形', '1辺 1 m の 正方形', '1辺 1 km の 正方形'], explain: '1 a は 1辺 10 m の 正方形。10 × 10 ＝ 100 m²。', check: { a: 'a', b: 'm²', factor: 100 } },
+  { id: 'L2d', short: '1 ha は 1辺 100 m の 正方形', level: 2, text: '1 ha（ヘクタール）は どんな ひろさ？', options: ['1辺 100 m の 正方形', '1辺 10 m の 正方形', '1辺 1 km の 正方形', '1辺 50 m の 正方形'], explain: '1 ha は 1辺 100 m の 正方形。100 × 100 ＝ 10000 m²。', check: { a: 'ha', b: 'm²', factor: 10000 } },
+  { id: 'L3a', short: '1 cm³ は 1辺 1 cm の 立方体', level: 3, text: '1 cm³ は どんな 大きさ？', options: ['1辺 1 cm の 立方体', '1辺 1 cm の 正方形', '1辺 10 cm の 立方体', '長さ 1 cm の 線'], explain: '1 cm³ は、1辺が 1 cm の 立方体（さいころ）の 大きさ。', check: null },
+  { id: 'L3b', short: '1 L は 1辺 10 cm の 立方体', level: 3, text: '1 L は どんな 大きさ？', options: ['1辺 10 cm の 立方体', '1辺 1 cm の 立方体', '1辺 1 m の 立方体', '1辺 100 cm の 正方形'], explain: '1 L は 1辺 10 cm の 立方体（りっぽー）。10 × 10 × 10 ＝ 1000 cm³。', check: { a: 'L', b: 'cm³', factor: 1000 } },
+  { id: 'L3c', short: '1 m³ に 1 cm³ が 1000000こ', level: 3, text: '1 m³ の はこに、1 cm³ の さいころは いくつ はいる？', options: ['100 × 100 × 100 ＝ 1000000こ', '100 × 100 ＝ 10000こ', '1000こ', '100こ'], explain: '1 m ＝ 100 cm だから、たて・よこ・たかさ 100こずつ。100 × 100 × 100 ＝ 1000000こ。', check: { a: 'm³', b: 'cm³', factor: 1000000 } },
+  { id: 'L3d', short: '1 mL ＝ 1 cm³', level: 3, text: '1 mL と おなじ 大きさは？', options: ['1 cm³', '1 m³', '10 cm³', '1 dL'], explain: '1 mL ＝ 1 cm³。1辺 1 cm の さいころ 1こ ぶん。', check: { a: 'mL', b: 'cm³', factor: 1 } },
+];
+
+function mnById(id) {
+  const m = MEANING.find((x) => x.id === id);
+  if (!m) throw new Error('mnById: 未知の問題 ' + id);
+  return m;
+}
+
+function mnForLevel(level) {
+  return MEANING.filter((x) => x.level === level);
+}
+
+// 出す問題: 選択肢を並べ替えて { id, level, text, explain, options: [{ label, correct }] }
+function mnMakeQuestion(rng, id) {
+  const m = mnById(id);
+  const options = qShuffle(rng, m.options.map((label, i) => ({ label, correct: i === 0 })));
+  return { id: m.id, level: m.level, text: m.text, explain: m.explain, options };
+}
+
+// 箱は接頭語と同じ（1日に1つまで、誤りで0）。seen は最後に答えた日（1日1問にするため）
+function mnRecord(state, ok, today) {
+  return { ...prefixRecord(state, ok, today), seen: today };
+}
+
+function mnDone(st) {
+  return !!st && st.box >= MN_DONE_BOX;
+}
+
+// そのレベルで「わかった」でない問題（今日まだ答えていないものだけ）。最初のものを返す
+function mnNextFor(states, level, today) {
+  const st = states || {};
+  const left = mnForLevel(level).filter((m) => !mnDone(st[m.id]) && (!st[m.id] || st[m.id].seen !== today));
+  return left.length ? left[0].id : null;
+}
+
+function mnLevelDone(states, level) {
+  const st = states || {};
+  return mnForLevel(level).every((m) => mnDone(st[m.id]));
+}
+
+// ---- src/logic/word.js ----
+// word.js — 文章題（各レベル4型、計12型）。設計 §13.19、D-015
+// 答えはすべて整数になるように数の範囲を決め、整数の計算で出す（浮動小数を使わない。小数の入力は decimal.js で作る）。
+// 各型の factors（1 a は b の f 倍）は、テストで units.js の換算係数と照合する。登場人物はキャラクター（実名を使わない）。
+
+const WD_DONE_BOX = 2; // 別の2日で正解して「とけた」
+
+const wdInt = (n) => decMake(String(n), 0);
+const wdRange = (rng, lo, hi, step = 1) => lo + step * rng.int(Math.floor((hi - lo) / step) + 1);
+
+const WORD = [
+  {
+    id: 'W1a', title: 'みちのり（km → m）', level: 1, factors: [{ lv: 1, a: 'km', b: 'm', f: 1000 }],
+    gen(rng) {
+      const v = qMakeS(rng, qPick(rng, ['a', 'c']));
+      const ans = decShift(v, 3);
+      const vs = decToString(v);
+      return { params: { v: vs }, text: 'ながさんは ' + vs + ' km あるきました。なん m あるきましたか？', unit: 'm', answer: ans,
+        steps: ['1 km ＝ 1000 m', vs + ' × 1000 ＝ ' + decToString(ans)] };
+    },
+  },
+  {
+    id: 'W1b', title: 'm と cm の ひも', level: 1, factors: [{ lv: 1, a: 'm', b: 'cm', f: 100 }],
+    gen(rng) {
+      const a = wdRange(rng, 1, 9);
+      const b = wdRange(rng, 1, 99);
+      const ans = a * 100 + b;
+      return { params: { a, b }, text: a + ' m ' + b + ' cm の ひもが あります。なん cm ですか？', unit: 'cm', answer: wdInt(ans),
+        steps: ['1 m ＝ 100 cm だから ' + a + ' m ＝ ' + a * 100 + ' cm', a * 100 + ' ＋ ' + b + ' ＝ ' + ans] };
+    },
+  },
+  {
+    id: 'W1c', title: 'テープを つなぐ', level: 1, factors: [{ lv: 1, a: 'm', b: 'cm', f: 100 }],
+    gen(rng) {
+      const xt = wdRange(rng, 5, 39); // x ＝ xt ÷ 10 m
+      const y = wdRange(rng, 10, 95, 5);
+      const xs = decToString(decMake(String(xt), 1));
+      const xcm = xt * 10;
+      const ans = xcm + y;
+      return { params: { xt, y }, text: 'しかくんは ' + xs + ' m の テープと ' + y + ' cm の テープを つなぎました。ぜんぶで なん cm に なりますか？', unit: 'cm', answer: wdInt(ans),
+        steps: [xs + ' m ＝ ' + xcm + ' cm', xcm + ' ＋ ' + y + ' ＝ ' + ans] };
+    },
+  },
+  {
+    id: 'W1d', title: 'のこりの みちのり', level: 1, factors: [{ lv: 1, a: 'km', b: 'm', f: 1000 }],
+    gen(rng) {
+      const x = wdRange(rng, 1, 5);
+      const y = 50 * wdRange(rng, 1, x * 20 - 1);
+      const ans = x * 1000 - y;
+      return { params: { x, y }, text: 'がっこうまで ' + x + ' km あります。りっぽーは ' + y + ' m あるきました。のこりは なん m ですか？', unit: 'm', answer: wdInt(ans),
+        steps: [x + ' km ＝ ' + x * 1000 + ' m', x * 1000 + ' − ' + y + ' ＝ ' + ans] };
+    },
+  },
+  {
+    id: 'W2a', title: 'はたけの ひろさ（a）', level: 2, factors: [{ lv: 2, a: 'a', b: 'm²', f: 100 }],
+    gen(rng) {
+      const a = wdRange(rng, 10, 60, 10);
+      const b = wdRange(rng, 10, 60, 10);
+      const ab = a * b;
+      const ans = ab / 100; // a・b は 10 の倍数なので割り切れる
+      return { params: { a, b }, text: 'たて ' + a + ' m、よこ ' + b + ' m の 長方形の はたけが あります。ひろさは なん a ですか？', unit: 'a', answer: wdInt(ans),
+        steps: ['ひろさ ＝ ' + a + ' × ' + b + ' ＝ ' + ab + ' m²', '1 a ＝ 100 m² だから ' + ab + ' ÷ 100 ＝ ' + ans] };
+    },
+  },
+  {
+    id: 'W2b', title: 'タイルを しきつめる', level: 2, factors: [{ lv: 1, a: 'm', b: 'cm', f: 100 }, { lv: 2, a: 'm²', b: 'cm²', f: 10000 }],
+    gen(rng) {
+      const s = qPick(rng, [10, 20, 25, 50]);
+      const n = 100 / s;
+      const ans = n * n;
+      return { params: { s }, text: '1辺 ' + s + ' cm の 正方形の タイルで、1辺 1 m の 正方形を すきまなく しきつめます。タイルは なんまい いりますか？', unit: 'まい', answer: wdInt(ans),
+        steps: ['1 m ＝ 100 cm。1れつに 100 ÷ ' + s + ' ＝ ' + n + ' まい ならぶ', n + ' × ' + n + ' ＝ ' + ans + ' まい'] };
+    },
+  },
+  {
+    id: 'W2c', title: 'こうえんの ひろさ（ha → m²）', level: 2, factors: [{ lv: 2, a: 'ha', b: 'm²', f: 10000 }],
+    gen(rng) {
+      const v = qMakeS(rng, qPick(rng, ['a', 'c']));
+      const ans = decShift(v, 4);
+      const vs = decToString(v);
+      return { params: { v: vs }, text: 'こうえんの ひろさは ' + vs + ' ha です。なん m² ですか？', unit: 'm²', answer: ans,
+        steps: ['1 ha ＝ 10000 m²', vs + ' × 10000 ＝ ' + decToString(ans)] };
+    },
+  },
+  {
+    id: 'W2d', title: 'a と m² を あわせる', level: 2, factors: [{ lv: 2, a: 'a', b: 'm²', f: 100 }],
+    gen(rng) {
+      const x = wdRange(rng, 1, 9);
+      const y = wdRange(rng, 10, 99);
+      const ans = x * 100 + y;
+      return { params: { x, y }, text: x + ' a の はたけと ' + y + ' m² の にわが あります。あわせて なん m² ですか？', unit: 'm²', answer: wdInt(ans),
+        steps: [x + ' a ＝ ' + x * 100 + ' m²', x * 100 + ' ＋ ' + y + ' ＝ ' + ans] };
+    },
+  },
+  {
+    id: 'W3a', title: '水を わける', level: 3, factors: [{ lv: 3, a: 'L', b: 'dL', f: 10 }],
+    gen(rng) {
+      const x = wdRange(rng, 1, 5);
+      const y = qPick(rng, [1, 2, 5]);
+      const ans = (x * 10) / y; // x×10 は 1・2・5 で割り切れる
+      return { params: { x, y }, text: x + ' L の 水を、' + y + ' dL ずつ コップに わけます。なんばい に なりますか？', unit: 'はい', answer: wdInt(ans),
+        steps: [x + ' L ＝ ' + x * 10 + ' dL', x * 10 + ' ÷ ' + y + ' ＝ ' + ans + ' はい'] };
+    },
+  },
+  {
+    id: 'W3b', title: '水そうの 水（L）', level: 3, factors: [{ lv: 3, a: 'L', b: 'cm³', f: 1000 }],
+    gen(rng) {
+      const a = wdRange(rng, 10, 50, 10);
+      const b = wdRange(rng, 10, 50, 10);
+      const c = wdRange(rng, 10, 50, 10);
+      const abc = a * b * c;
+      const ans = abc / 1000; // 10 の倍数3つの積なので割り切れる
+      return { params: { a, b, c }, text: 'たて ' + a + ' cm、よこ ' + b + ' cm、たかさ ' + c + ' cm の 水そうに 水を いっぱい いれます。水は なん L ですか？', unit: 'L', answer: wdInt(ans),
+        steps: [a + ' × ' + b + ' × ' + c + ' ＝ ' + abc + ' cm³', '1 L ＝ 1000 cm³ だから ' + abc + ' ÷ 1000 ＝ ' + ans] };
+    },
+  },
+  {
+    id: 'W3c', title: 'L と dL の お茶', level: 3, factors: [{ lv: 3, a: 'L', b: 'dL', f: 10 }],
+    gen(rng) {
+      const x = wdRange(rng, 1, 9);
+      const y = wdRange(rng, 1, 9);
+      const ans = x * 10 + y;
+      return { params: { x, y }, text: 'やかんに ' + x + ' L ' + y + ' dL の お茶が あります。なん dL ですか？', unit: 'dL', answer: wdInt(ans),
+        steps: ['1 L ＝ 10 dL だから ' + x + ' L ＝ ' + x * 10 + ' dL', x * 10 + ' ＋ ' + y + ' ＝ ' + ans] };
+    },
+  },
+  {
+    id: 'W3d', title: 'mL と L の ジュース', level: 3, factors: [{ lv: 3, a: 'L', b: 'mL', f: 1000 }],
+    gen(rng) {
+      const x = wdRange(rng, 100, 900, 50);
+      const y = wdRange(rng, 1, 3);
+      const ans = y * 1000 + x;
+      return { params: { x, y }, text: x + ' mL の ジュースと ' + y + ' L の ジュースを あわせます。ぜんぶで なん mL ですか？', unit: 'mL', answer: wdInt(ans),
+        steps: [y + ' L ＝ ' + y * 1000 + ' mL', y * 1000 + ' ＋ ' + x + ' ＝ ' + ans] };
+    },
+  },
+];
+
+function wdById(id) {
+  const w = WORD.find((x) => x.id === id);
+  if (!w) throw new Error('wdById: 未知の型 ' + id);
+  return w;
+}
+
+function wdMakeQuestion(rng, id) {
+  const w = wdById(id);
+  return { id, level: w.level, ...w.gen(rng) };
+}
+
+function wdRecord(state, ok, today) {
+  return { ...prefixRecord(state, ok, today), seen: today };
+}
+
+function wdDone(st) {
+  return !!st && st.box >= WD_DONE_BOX;
+}
+
+// 出せる型: levels（できた が半分以上のレベル）の型
+function wdKeysFor(levels) {
+  return WORD.filter((w) => levels.includes(w.level)).map((w) => w.id);
+}
+
+// 5問。まだ「とけた」でない型は重み3、とけた は1。同じ型を続けない
+function wdPick(rng, states, levels, n) {
+  const keys = wdKeysFor(levels);
+  if (!keys.length) return [];
+  const st = states || {};
+  const w = (k) => (wdDone(st[k]) ? 1 : 3);
+  const out = [];
+  let prev = null;
+  while (out.length < n) {
+    const cands = keys.length >= 2 ? keys.filter((k) => k !== prev) : keys;
+    const total = cands.reduce((a, k) => a + w(k), 0);
+    let r = rng.int(total);
+    let pick = cands[cands.length - 1];
+    for (const k of cands) {
+      r -= w(k);
+      if (r < 0) { pick = k; break; }
+    }
+    out.push({ key: 'wd:' + pick, isWord: true, isCheck: false, isProbe: false });
+    prev = pick;
+  }
+  return out;
+}
+
+// ---- src/logic/clock.js ----
+// clock.js — じかん の セクション（秒・分・時間・日、時刻と時間）。設計 §13.20、D-016
+// 倍率は 10 のべき乗ではない。ここ（CK_FACTORS）に1か所だけ置き、テストで独立した正解表と照合する。答えはすべて整数。
+
+// 1 大きい単位 ＝ f 小さい単位
+const CK_FACTORS = { '日>時間': 24, '時間>分': 60, '分>秒': 60 };
+const CK_SESSION_SIZE = 5;
+const CK_MAX_CHECKS = 2;
+
+const CK_ITEMS = [
+  { id: 'c1', kind: 'conv', from: '分', to: '秒', dir: 'x', pair: '分>秒', label: '分 → 秒' },
+  { id: 'c2', kind: 'conv', from: '秒', to: '分', dir: 'd', pair: '分>秒', label: '秒 → 分' },
+  { id: 'c3', kind: 'conv', from: '時間', to: '分', dir: 'x', pair: '時間>分', label: '時間 → 分' },
+  { id: 'c4', kind: 'conv', from: '分', to: '時間', dir: 'd', pair: '時間>分', label: '分 → 時間' },
+  { id: 'c5', kind: 'conv', from: '日', to: '時間', dir: 'x', pair: '日>時間', label: '日 → 時間' },
+  { id: 'c6', kind: 'conv', from: '時間', to: '日', dir: 'd', pair: '日>時間', label: '時間 → 日' },
+  { id: 'c7', kind: 'mix', label: '時間と分 → 分' },
+  { id: 'c8', kind: 'split', label: '分 → 時間と分' },
+  { id: 'c9', kind: 'after', label: 'なん分後の 時こく' },
+  { id: 'c10', kind: 'diff', label: '時こくと 時こくの あいだ' },
+];
+
+function ckById(id) {
+  const it = CK_ITEMS.find((x) => x.id === id);
+  if (!it) throw new Error('ckById: 未知の項目 ' + id);
+  return it;
+}
+
+function ckOpLabel(op) {
+  return (op.dir === 'x' ? '×' : '÷') + op.f;
+}
+
+const ckR = (rng, lo, hi, step = 1) => lo + step * rng.int(Math.floor((hi - lo) / step) + 1);
+const ckTime = (h, m) => h + '時' + (m ? m + '分' : '');
+
+// ①の4択: 正解、向きの逆（dir）、10進法との取り違え（dec: ×100 など）、ほかの倍率（mag: 60 と 24）
+function ckOptions(rng, it) {
+  const f = CK_FACTORS[it.pair];
+  const other = f === 60 ? 24 : 60;
+  const opp = it.dir === 'x' ? 'd' : 'x';
+  const list = [
+    { dir: it.dir, f, correct: true, t: null },
+    { dir: opp, f, correct: false, t: 'dir' },
+    { dir: it.dir, f: 100, correct: false, t: 'dec' },
+    { dir: it.dir, f: other, correct: false, t: 'mag' },
+  ];
+  return qShuffle(rng, list).map((o) => ({ ...o, label: ckOpLabel(o) }));
+}
+
+// 問題。support 2 は小さい数（1〜5）、それ以外は 1〜12。答えはすべて整数
+// 返す: { id, kind, text, fields: [{ unit }], answers: [整数], steps, options（conv だけ）, op（conv だけ） }
+function ckMakeQuestion(rng, id, support) {
+  const it = ckById(id);
+  if (it.kind === 'conv') {
+    const f = CK_FACTORS[it.pair];
+    const n = ckR(rng, 1, support >= 2 ? 5 : 12);
+    const value = it.dir === 'x' ? n : n * f;
+    const answer = it.dir === 'x' ? n * f : n;
+    return {
+      id, kind: 'conv', text: value + ' ' + it.from + ' は なん ' + it.to + '？', value, from: it.from, to: it.to,
+      fields: [{ unit: it.to }], answers: [answer], op: { dir: it.dir, f }, options: ckOptions(rng, it),
+      steps: ['1 ' + (it.dir === 'x' ? it.from : it.to) + ' ＝ ' + f + ' ' + (it.dir === 'x' ? it.to : it.from), value + ' ' + ckOpLabel({ dir: it.dir, f }) + ' ＝ ' + answer],
+    };
+  }
+  if (it.kind === 'mix') {
+    const h = ckR(rng, 1, 5);
+    const m = ckR(rng, 5, 55, 5);
+    const ans = h * 60 + m;
+    return { id, kind: 'mix', text: h + '時間' + m + '分 は なん分？', params: { h, m }, fields: [{ unit: '分' }], answers: [ans],
+      steps: ['1時間 ＝ 60分 だから ' + h + '時間 ＝ ' + h * 60 + '分', h * 60 + ' ＋ ' + m + ' ＝ ' + ans + '分'] };
+  }
+  if (it.kind === 'split') {
+    const h = ckR(rng, 1, 4);
+    const m = ckR(rng, 5, 55, 5);
+    const total = h * 60 + m;
+    return { id, kind: 'split', text: total + '分 は なん時間なん分？', params: { total }, fields: [{ unit: '時間' }, { unit: '分' }], answers: [h, m],
+      steps: ['60分 ＝ 1時間。' + total + ' の 中に 60 が ' + h + 'こ（' + h * 60 + '分）', total + ' − ' + h * 60 + ' ＝ ' + m + ' だから ' + h + '時間' + m + '分'] };
+  }
+  if (it.kind === 'after') {
+    const H = ckR(rng, 7, 10);
+    const M = ckR(rng, 0, 55, 5);
+    const d = ckR(rng, 10, 50, 5);
+    const t = H * 60 + M + d; // 10時55分 ＋ 50分 ＝ 11時45分 なので 12時をこえない
+    const h2 = Math.floor(t / 60);
+    const m2 = t % 60;
+    const toNext = 60 - M;
+    const steps = M + d < 60
+      ? [M + ' ＋ ' + d + ' ＝ ' + (M + d) + '分（60分に ならない）', 'こたえは ' + ckTime(h2, m2)]
+      : [ckTime(H, M) + ' から ' + (H + 1) + '時 まで ' + toNext + '分', d + ' − ' + toNext + ' ＝ ' + (d - toNext) + '分 だから ' + ckTime(h2, m2)];
+    return { id, kind: 'after', text: ckTime(H, M) + ' の ' + d + '分後は なん時なん分？', params: { H, M, d }, fields: [{ unit: '時' }, { unit: '分' }], answers: [h2, m2], steps };
+  }
+  if (it.kind === 'diff') {
+    const H = ckR(rng, 8, 10);
+    const M = ckR(rng, 0, 55, 5);
+    const d = ckR(rng, 15, 55, 5);
+    const t = H * 60 + M + d;
+    const h2 = Math.floor(t / 60);
+    const m2 = t % 60;
+    const steps = h2 === H
+      ? [m2 + ' − ' + M + ' ＝ ' + d + '分']
+      : [ckTime(H, M) + ' から ' + h2 + '時 まで ' + (60 - M) + '分', h2 + '時 から ' + ckTime(h2, m2) + ' まで ' + m2 + '分', (60 - M) + ' ＋ ' + m2 + ' ＝ ' + d + '分'];
+    if (steps.length === 1) steps.unshift('おなじ ' + H + '時の あいだ');
+    return { id, kind: 'diff', text: ckTime(H, M) + ' から ' + ckTime(h2, m2) + ' までは なん分？', params: { H, M, h2, m2 }, fields: [{ unit: '分' }], answers: [d], steps };
+  }
+  throw new Error('ckMakeQuestion: 未知の種類');
+}
+
+// ---------- 1問の流れ（必ず終わる。§5 と同じ記録の種類） ----------
+// stage: 's1'（①を選ぶ）/ 's2'（②を計算）/ 'direct'（直接）/ 'input'（組み合わせの入力）/ 'done'
+function ckFlowStart(q, support) {
+  let stage;
+  if (q.kind !== 'conv') stage = 'input';
+  else stage = support === 0 ? 'direct' : 's1';
+  return { stage, disabled: [], first: null, inputErrors: 0, hint: false, showAnswer: false, feedback: null, wentS1: false };
+}
+
+function ckFlowHint(f) {
+  return { ...f, hint: true };
+}
+
+function ckFlowChoose(f, q, i) {
+  if (f.stage !== 's1') return f;
+  const o = q.options[i];
+  if (!o || f.disabled.includes(i)) return { ...f, feedback: { kind: 'disabled' } };
+  if (o.correct) return { ...f, stage: 's2', feedback: { kind: 'ok1' } };
+  return { ...f, disabled: [...f.disabled, i], first: f.first || { stage: 's1', t: o.t }, feedback: { kind: 'ng1', t: o.t } };
+}
+
+// values: 入力の文字列の配列。数でなければ 'invalid'
+function ckFlowInput(f, q, values) {
+  if (!['s2', 'direct', 'input'].includes(f.stage)) return f;
+  const nums = values.map((v) => {
+    const s = String(v || '').replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0)).trim();
+    return /^\d+$/.test(s) ? Number(s) : null;
+  });
+  if (nums.length !== q.answers.length || nums.some((x) => x === null)) return { ...f, feedback: { kind: 'invalid' } };
+  const ok = nums.every((x, i) => x === q.answers[i]);
+  if (ok) return { ...f, stage: 'done', feedback: { kind: 'ok' } };
+  if (f.stage === 'direct') {
+    // 直接で誤り: ①から（§5 の段階0と同じ）
+    return { ...f, stage: 's1', wentS1: true, first: f.first || { stage: 'direct', t: null }, feedback: { kind: 'ng0' } };
+  }
+  const n = f.inputErrors + 1;
+  const first = f.first || { stage: f.stage === 's2' ? 's2' : 'input', t: null };
+  if (n >= 2) return { ...f, inputErrors: n, first, stage: 'done', showAnswer: true, feedback: { kind: 'ng2' } };
+  return { ...f, inputErrors: n, first, feedback: { kind: 'ng2' } };
+}
+
+// 記録（§5 と同じ形）。最初の誤りの段階で決める
+function ckFlowRecord(f, support) {
+  let r = 'ok';
+  let t = null;
+  if (f.first) {
+    if (f.first.stage === 'direct' || support === 0) r = 'e0';
+    else if (f.first.stage === 's1') { r = 'e1'; t = f.first.t; }
+    else r = 'e2';
+  }
+  return { r, t, s: support, h: f.hint };
+}
+
+function ckFirstRecord(f, support) {
+  return f.first ? ckFlowRecord(f, support) : null;
+}
+
+// ---------- 出題 ----------
+function ckPick(rng, states, today) {
+  const st = states || {};
+  const keys = CK_ITEMS.map((x) => x.id);
+  const due = keys.filter((k) => pgIsCheckDue(st[k], today));
+  const out = [];
+  const pool = due.slice();
+  while (out.length < CK_MAX_CHECKS && pool.length) out.push({ key: pool.splice(rng.int(pool.length), 1)[0], isCheck: true });
+  let prev = out.length ? out[out.length - 1].key : null;
+  while (out.length < CK_SESSION_SIZE) {
+    let cands = keys.filter((k) => k !== prev);
+    const w = (k) => pgWeight(st[k]);
+    if (!cands.some((k) => w(k) > 0)) cands = keys.some((k) => w(k) > 0) ? keys : cands;
+    const any = cands.some((k) => w(k) > 0);
+    const total = cands.reduce((a, k) => a + (any ? w(k) : 1), 0);
+    let r = rng.int(total);
+    let pick = cands[cands.length - 1];
+    for (const k of cands) {
+      r -= any ? w(k) : 1;
+      if (r < 0) { pick = k; break; }
+    }
+    out.push({ key: pick, isCheck: false });
+    prev = pick;
+  }
+  return out.map((x) => ({ ...x, key: 'ck:' + x.key, isClock: true, isProbe: false }));
+}
+
+function ckHasWork(states, today) {
+  const st = states || {};
+  return CK_ITEMS.some((it) => {
+    const s = st[it.id];
+    return !s || s.support > 0 || s.weak || pgIsCheckDue(s, today);
+  });
+}
+
+function ckPickLabel(id) {
+  return ckById(id).label;
+}
+
+
+// ---- src/logic/memtest.js ----
+// memtest.js — きおくテスト（1日1回、できた から古い順に5問、ヒントなし）と、ログイン・週のスタンプ。設計 §13.21、D-017
+
+// 最初の答えで正解した数 → 点。5問中 5 → 40、4 → 20、それ以下 → 5
+const MT_POINTS = [5, 5, 5, 5, 20, 40];
+const MT_MIN_MASTERED = 5;
+const MT_LOGIN_BONUS = 10;
+const MT_WEEK_STAMPS = 5;
+const MT_WEEK_BONUS = 50;
+
+function mtPoints(correct, n) {
+  if (!Number.isInteger(correct) || correct < 0 || correct > n || n !== PG_SESSION_SIZE) throw new Error('mtPoints: 正解数が不正 ' + correct + '/' + n);
+  return MT_POINTS[correct];
+}
+
+// できた の項目: [{ key, lastSeen }]。レベル1〜3は単位のキー、じかん は 'ck:cN'
+function mtCandidates(items, clock) {
+  const out = [];
+  for (const it of unitItemsAll()) if (pgMastered((items || {})[it.key])) out.push({ key: it.key, lastSeen: items[it.key].lastSeen });
+  for (const it of CK_ITEMS) if (pgMastered((clock || {})[it.id])) out.push({ key: 'ck:' + it.id, lastSeen: clock[it.id].lastSeen });
+  return out;
+}
+
+function mtAvailable(items, clock) {
+  return mtCandidates(items, clock).length >= MT_MIN_MASTERED;
+}
+
+function mtDoneToday(sessions, today) {
+  return (sessions || []).some((s) => s.date === today && s.mode === 'memtest');
+}
+
+// 5問。lastSeen が古い順（記録が無ければいちばん古い扱い）。同じ日は乱数で並べる。同じ項目は1回だけ
+function mtPick(rng, items, clock, today) {
+  const c = mtCandidates(items, clock);
+  if (c.length < MT_MIN_MASTERED) return [];
+  const age = (x) => (x.lastSeen ? pgDaysBetween(x.lastSeen, today) : 100000);
+  const tagged = c.map((x) => ({ x, a: age(x), r: rng.int(1000000) }));
+  tagged.sort((p, q) => q.a - p.a || p.r - q.r);
+  return tagged.slice(0, PG_SESSION_SIZE).map(({ x }) => (x.key.startsWith('ck:')
+    ? { key: x.key, isClock: true, isCheck: true, isProbe: false, isMemtest: true }
+    : { key: x.key, isCheck: true, isProbe: false, isMemtest: true }));
+}
+
+// その日の週（月曜はじまり）の月曜日
+function mtWeekStart(day) {
+  const [y, m, d] = day.split('-').map(Number);
+  const t = Date.UTC(y, m - 1, d);
+  const dow = new Date(t).getUTCDay(); // 0 日曜
+  const mon = new Date(t - ((dow + 6) % 7) * 86400000);
+  const p = (n) => String(n).padStart(2, '0');
+  return mon.getUTCFullYear() + '-' + p(mon.getUTCMonth() + 1) + '-' + p(mon.getUTCDate());
+}
+
+// 今週のスタンプの数（きおくテストを受けた日の数）
+function mtWeekStamps(sessions, today) {
+  const w = mtWeekStart(today);
+  const days = new Set((sessions || []).filter((s) => s.mode === 'memtest' && s.date && mtWeekStart(s.date) === w).map((s) => s.date));
+  return days.size;
+}
+
+// 回を足した後の sessions で、まだもらっていないボーナス: [{ id, points, kind: 'login'|'week' }]
+function mtDueBonuses(sessions, today) {
+  const ss = sessions || [];
+  const has = (id) => ss.some((s) => s.id === id);
+  const out = [];
+  if (ss.some((s) => s.date === today && s.mode !== 'bonus') && !has('login-' + today)) out.push({ id: 'login-' + today, points: MT_LOGIN_BONUS, kind: 'login' });
+  const wid = 'week-' + mtWeekStart(today);
+  if (mtWeekStamps(ss, today) >= MT_WEEK_STAMPS && !has(wid)) out.push({ id: wid, points: MT_WEEK_BONUS, kind: 'week' });
+  return out;
+}
+
+// ---- src/logic/challenge.js ----
+// challenge.js — タイムチャレンジ（60秒・4択）。問題、得点、1日のポイントの回数。設計 §13.8、D-010
+
+const TC_SECONDS = 60;
+const TC_DAILY_MAX = 1; // D-017（D-011 は 3）
+const TC_UNLOCK_MASTERED = 8;
+const TC_WRONG_SHOW_MS = 1000;
+
+// 1問。masteredKeys: できた 項目、prefixKeys: おぼえた（box 3）接頭語の問題、prevKey: 直前の問題のキー
+// 返す: { key, kind: 'conv'|'prefix', text, options: [{ label, correct }] }
+function tcMakeQuestion(rng, masteredKeys, prefixKeys, prevKey) {
+  let pk = prefixKeys.filter((k) => k !== prevKey);
+  let mk = masteredKeys.filter((k) => k !== prevKey);
+  if (!pk.length && !mk.length) {
+    pk = prefixKeys.slice();
+    mk = masteredKeys.slice();
+  }
+  const usePrefix = pk.length > 0 && (mk.length === 0 || rng.int(4) === 0);
+  if (usePrefix) {
+    const q = prefixMakeQuestion(rng, qPick(rng, pk));
+    return { key: q.key, kind: 'prefix', text: q.text, options: q.options.map((o) => ({ label: o.label, correct: o.correct })) };
+  }
+  if (!mk.length) throw new Error('tcMakeQuestion: 出せる問題が無い');
+  const item = unitItemByKey(qPick(rng, mk));
+  const q = qMakeQuestion(rng, item, 1);
+  const options = q.options.map((o) => ({ label: decToString(qApplyOp(q.value, o)) + ' ' + item.to, correct: o.correct }));
+  return { key: item.key, kind: 'conv', text: decToString(q.value) + ' ' + item.from + ' は なん ' + item.to + '？', options };
+}
+
+// 1問の得点。combo はその直前までの連続正解数
+function tcPoints(combo) {
+  return 2 + Math.min(3, Math.floor(combo / 5));
+}
+
+// 答えの列（true/false）から得点と式を作る
+function tcScore(results) {
+  let combo = 0;
+  let correct = 0;
+  let bonus = 0;
+  for (const ok of results) {
+    if (ok) {
+      bonus += tcPoints(combo) - 2;
+      correct += 1;
+      combo += 1;
+    } else {
+      combo = 0;
+    }
+  }
+  const score = correct * 2 + bonus;
+  return { n: results.length, correct, bonus, score, formula: 'せいかい ' + correct + ' × 2 ＋ コンボ ' + bonus + ' ＝ ' + score };
+}
+
+// 今日すでに終えたタイムチャレンジの回数（最初の TC_DAILY_MAX 回だけポイントになる）
+function tcCountToday(sessions, today) {
+  return (sessions || []).filter((s) => s.mode === 'time' && s.date === today).length;
+}
+
+// ポイントは得点の 1/3 を四捨五入（0.5 切り上げ）。D-011、保護者の決定
+function tcPointsFromScore(score) {
+  return Math.floor((2 * score + 3) / 6);
+}
+
+function tcPointsFor(score, sessions, today) {
+  return tcCountToday(sessions, today) < TC_DAILY_MAX ? tcPointsFromScore(score) : 0;
+}
+
+function tcReady(items) {
+  return pgMasteredKeys(items).length >= TC_UNLOCK_MASTERED;
+}
+
+// ---- src/logic/coach.js ----
+// coach.js — きょうの れんしゅう（おすすめ）、回の終わりの出来事、解放。設計 §13.5〜13.8、D-010
+
+// じかん の クリア: 10項目がすべて できた（D-016。段位の「クリア」には数えない）
+function coClockCleared(p) {
+  return CK_ITEMS.every((it) => pgMastered((p.clock || {})[it.id]));
+}
+function coClockMastered(p) {
+  return CK_ITEMS.filter((it) => pgMastered((p.clock || {})[it.id])).length;
+}
+
+// 文章題を出せるレベル: できた が半分以上（D-015）
+function coWordLevels(p) {
+  return [1, 2, 3].filter((lv) => {
+    const g = pgLevelProgress(p.items, lv);
+    return g.mastered >= Math.ceil(g.total / 2);
+  });
+}
+
+// レベルのクリア: 換算の項目がすべて できた、かつ 意味の問題がすべて「わかった」（D-014）
+function coLevelCleared(p, level) {
+  const g = pgLevelProgress(p.items, level);
+  return g.mastered === g.total && mnLevelDone(p.meaning, level);
+}
+
+const CO_RECENT_DAYS = 7;
+const CO_ERR_MIN = 3;
+
+function coDoneToday(p, today, mode) {
+  return (p.sessions || []).some((s) => s.date === today && s.mode === mode);
+}
+
+// 最近（lastSeen が7日以内）の項目の recent にある e1・e2 の件数
+function coRecentErrors(items, today) {
+  const c = { e1: 0, e2: 0 };
+  for (const it of unitItemsAll()) {
+    const st = items[it.key];
+    if (!st || !st.lastSeen || pgDaysBetween(st.lastSeen, today) > CO_RECENT_DAYS) continue;
+    for (const r of st.recent) if (r.r === 'e1' || r.r === 'e2') c[r.r] += 1;
+  }
+  return c;
+}
+
+// そのレベルで今日すすめられることがあるか（段階1・2、記録なし、今日の確認）
+function coLevelHasWork(items, level, today) {
+  return unitItems(level).some((it) => {
+    const st = items[it.key];
+    return !st || st.support > 0 || pgIsCheckDue(st, today);
+  });
+}
+
+function coL4Available(p) {
+  return !!(p.unlocked && p.unlocked.L4) || pgL4Ready(p.items);
+}
+
+function coTimeAvailable(p) {
+  return !!(p.unlocked && p.unlocked.time) || tcReady(p.items);
+}
+
+// きょうの れんしゅう。返す: { mode, level, reason, rest? }
+function coRecommend(p, today) {
+  const items = p.items;
+  // きおくテスト（D-017）: 使えて今日まだなら、いちばん初めに
+  if (mtAvailable(items, p.clock) && !mtDoneToday(p.sessions, today)) return { mode: 'memtest', level: null, reason: 'きょうの きおくテスト' };
+  if (pgWeakKeys(items).length > 0 && !coDoneToday(p, today, 'review')) return { mode: 'review', level: null, reason: 'がんばり中を なおそう' };
+  const err = coRecentErrors(items, today);
+  if (err.e1 >= CO_ERR_MIN && prefixLearned(p.prefix) < prefixKeys().length && !coDoneToday(p, today, 'prefix')) {
+    return { mode: 'prefix', level: null, reason: 'たんいの なまえを おぼえよう' };
+  }
+  if (err.e2 >= CO_ERR_MIN && !coDoneToday(p, today, 'drill')) return { mode: 'drill', level: 1, reason: '×10 の けいさんを きたえよう' };
+  // じかん（D-016）: クリアしておらず、今日すすめられることがあり、今日まだなら（1日1回）
+  if (!coClockCleared(p) && ckHasWork(p.clock, today) && !coDoneToday(p, today, 'clock')) return { mode: 'clock', level: null, reason: 'タイミーと じかんの れんしゅう' };
+  for (const lv of [1, 2, 3]) {
+    if (!coLevelCleared(p, lv) && (coLevelHasWork(items, lv, today) || mnNextFor(p.meaning, lv, today))) return { mode: 'normal', level: lv, reason: 'レベル' + lv + ' を すすめよう' };
+  }
+  // レベル1〜3でやることが無く、出せる文章題に「とけた」でないものがあれば文章題（D-015）
+  if (wdKeysFor(coWordLevels(p)).some((k) => !wdDone((p.word || {})[k])) && !coDoneToday(p, today, 'word')) return { mode: 'word', level: null, reason: 'ぶんしょうだいに チャレンジ' };
+  // レベル1〜3でやることが無く、接頭語がまだなら接頭語クイズ（八段への道。D-013）
+  if (prefixLearned(p.prefix) < prefixKeys().length && !coDoneToday(p, today, 'prefix')) return { mode: 'prefix', level: null, reason: 'キロ・ミリ クイズで つぎの だんへ' };
+  // レベル4とタイムチャレンジ: 次の段位に足りないほうを先に。両方足りている・両方足りないときは、今日やった回数が少ないほう（R-007）
+  const l4 = coL4Available(p) && pgMasteredKeys(items).length >= PG_SESSION_SIZE;
+  const tm = coTimeAvailable(p) && tcCountToday(p.sessions, today) < TC_DAILY_MAX;
+  const L4R = { mode: 'l4', level: 4, reason: 'ごちゃまぜで たしかめよう' };
+  const TMR = { mode: 'time', level: null, reason: 'タイムチャレンジで かせごう' };
+  if (l4 && tm) {
+    const st = coRankStats(p);
+    const needL4 = st.l4perfect < 3;
+    const needTm = st.tcBest < 60;
+    if (needL4 !== needTm) return needL4 ? L4R : TMR;
+    const n = (m) => (p.sessions || []).filter((s) => s.date === today && s.mode === m).length;
+    return n('time') < n('l4') ? TMR : L4R;
+  }
+  if (l4) return L4R;
+  if (tm) return TMR;
+  return { mode: 'drill', level: 1, reason: 'きょうは ここまで。あした たしかめよう', rest: true };
+}
+
+// 回の初め（before）と終わり（after）のプロファイルを比べた出来事（clear・prefix・unlock）。設計 §13.5
+// 返す: { events: [{ date, kind, key }], unlock: ['L4'|'time'] }
+function coSessionEvents(before, after, today) {
+  const events = [];
+  const unlock = [];
+  const log = after.log || [];
+  for (const lv of [1, 2, 3]) {
+    const key = 'L' + lv;
+    if (coLevelCleared(after, lv) && !log.some((x) => x.kind === 'clear' && x.key === key)) events.push({ date: today, kind: 'clear', key });
+  }
+  const bp = before.prefix || {};
+  const ap = after.prefix || {};
+  for (const k of prefixKeys()) {
+    const was = bp[k] && bp[k].box >= PREFIX_BOX_MAX;
+    const now = ap[k] && ap[k].box >= PREFIX_BOX_MAX;
+    if (!was && now) events.push({ date: today, kind: 'prefix', key: k });
+  }
+  if (coClockCleared(after) && !log.some((x) => x.kind === 'clockclear')) events.push({ date: today, kind: 'clockclear', key: 'clock' });
+  const un = after.unlocked || {};
+  if (!un.L4 && pgL4Ready(after.items)) { unlock.push('L4'); events.push({ date: today, kind: 'unlock', key: 'L4' }); }
+  if (!un.time && tcReady(after.items)) { unlock.push('time'); events.push({ date: today, kind: 'unlock', key: 'time' }); }
+  return { events, unlock };
+}
+
+// ---------- 段位（設計 §13.16、D-013） ----------
+// 条件: mastered（できた の数）、clears（クリアしたレベルの数）、prefix（おぼえた接頭語の数）、l4perfect（レベル4 全問正解の回数）、tcBest（タイムチャレンジ じこベスト）
+const CO_RANKS = [
+  { name: '初段', need: 'はじめから', ok: () => true },
+  { name: '二段', need: 'できた を 4こ にしよう', ok: (s) => s.mastered >= 4 },
+  { name: '三段', need: 'レベルを 1つ クリアしよう', ok: (s) => s.clears >= 1 },
+  { name: '四段', need: 'できた を 14こ にしよう', ok: (s) => s.mastered >= 14 },
+  { name: '五段', need: 'レベルを 2つ クリアしよう', ok: (s) => s.clears >= 2 },
+  { name: '六段', need: 'できた を 28こ にしよう', ok: (s) => s.mastered >= 28 },
+  { name: '七段', need: 'レベル1〜3を ぜんぶ クリアしよう', ok: (s) => s.clears >= 3 },
+  { name: '八段', need: 'キロ・ミリ クイズを ぜんぶ おぼえよう', ok: (s) => s.prefix >= s.prefixTotal },
+  { name: '師範', need: 'レベル4 で ぜんもん せいかい しよう', ok: (s) => s.l4perfect >= 1 },
+  { name: '免許皆伝', need: 'レベル4 で ぜんもん せいかいを 3かい、タイムチャレンジで 60てん', ok: (s) => s.l4perfect >= 3 && s.tcBest >= 60 },
+];
+
+function coRankStats(p) {
+  const clearKeys = new Set((p.log || []).filter((x) => x.kind === 'clear').map((x) => x.key));
+  for (const lv of [1, 2, 3]) if (coLevelCleared(p, lv)) clearKeys.add('L' + lv);
+  return {
+    mastered: pgMasteredKeys(p.items).length,
+    clears: clearKeys.size,
+    prefix: prefixLearned(p.prefix),
+    prefixTotal: prefixKeys().length,
+    // 全問を最初の1回・ヒントなしで正解した回（clean。R-007）。clean の無い記録は数えない
+    l4perfect: (p.sessions || []).filter((s) => s.mode === 'l4' && s.n > 0 && s.clean === s.n).length,
+    tcBest: (p.best && p.best.time) || 0,
+  };
+}
+
+// 今の段位の番号（記録した段位から上へ、条件を満たすだけ上げる。下がらない）
+function coRankIndex(p) {
+  const st = coRankStats(p);
+  let i = p.rank ? p.rank.i : 0;
+  while (i + 1 < CO_RANKS.length && CO_RANKS[i + 1].ok(st)) i += 1;
+  return i;
+}
+
+globalThis.KR = { decMake, decShift, decToString, decFromString, decParseInput, decEquals, decDigits, decFromFraction, decGcd, UNIT_LEVELS, UNIT_PAIRS, unitExp, unitItemsAll, unitItems, unitItemByKey, unitLadder, rngCrypto, qPick, qShuffle, qAllowedTypes, qMakeS, qOpLabel, qApplyOp, qOptions, qMakeQuestion, qMakeDrill, qCheck, qFlowStart, qFlowHint, qFlowChoose, qFlowInput, qFlowRecord, qFlowFirstRecord, qFlowRetried, PG_STREAK_TO_DOWN, PG_RECENT_MAX, PG_CHECK_INTERVAL_DAYS, PG_SESSION_SIZE, PG_MAX_CHECKS, PG_SLIP_DAYS, PG_PROBE_MAX, pgToday, pgDaysBetween, pgNewItem, pgMastered, pgRecord, pgRecordProbe, pgPlace, pgMarks, pgIsCheckDue, pgWeight, pgPickNormal, pgMarkProbes, pgLevelProgress, pgEvents, pgNextStep, pgMasteredKeys, pgPickL4, pgL4Ready, pgL4Need, pgWeakKeys, pgPickReview, pgJumpKeys, pgPickJump, pgRecordJump, SLOT_SYMBOLS, SLOT_REEL, SLOT_REEL_RIGHT, SLOT_DRILL_GIVES_SLOT, slotCompute, slotFormula, slotSpin, SLOT_THEMES, slotThemesFor, RS_DEFAULT, RS_MAX_TICKETS, rsValidate, rsExpected, rsSig, rsNewBox, rsBoxEmpty, rsCurrentBox, rsDraw, STORE_SCHEMA, STORE_KEY, STORE_KEY_BROKEN, STORE_KEY_BEFORE_IMPORT, STORE_KEY_LOCK, STORE_LOCK_TTL_MS, STORE_SESSIONS_MAX, STORE_UNDO_HOURS, STORE_PREFIX_KEY_RE, STORE_LOG_MAX, STORE_LOG_KINDS, STORE_BEST_MAX, STORE_DEFAULT_NAMES, storeClone, storeInitial, storeValidate, storeLoad, storeLockAcquire, storeLockRelease, storeSave, storeProfile, storeSetItem, storeSetPrefix, storeApplyTime, storeApplyMemtest, storeApplyBonus, storeAddLog, storeSetRank, storeSetUnlocked, storeSetClock, storeSetWord, storeSetMeaning, storeAddDrill, storeApplySession, storeClearPending, storeExchange, storeRewardSlot, storeSetRewardSlot, storeSpinReward, storeSetRewards, storeRename, storeSetTheme, storeMarkExported, storeExportText, storeParseImport, storeImportSummary, storeBackupBeforeImport, storeReadBeforeImport, storeClearBeforeImport, storeAdoptImported, CHARA_LIST, CHARA_MOODS, charaForLevel, charaSvg, charaLiterSvg, PREFIXES, PREFIX_KINDS, PREFIX_BOX_MAX, prefixById, prefixKeys, prefixFactorLabel, prefixMakeQuestion, prefixRecord, prefixLearned, prefixPick, prefixTableHtml, MN_DONE_BOX, MEANING, mnById, mnForLevel, mnMakeQuestion, mnRecord, mnDone, mnNextFor, mnLevelDone, WD_DONE_BOX, WORD, wdById, wdMakeQuestion, wdRecord, wdDone, wdKeysFor, wdPick, CK_FACTORS, CK_SESSION_SIZE, CK_MAX_CHECKS, CK_ITEMS, ckById, ckOpLabel, ckOptions, ckMakeQuestion, ckFlowStart, ckFlowHint, ckFlowChoose, ckFlowInput, ckFlowRecord, ckFirstRecord, ckPick, ckHasWork, ckPickLabel, MT_POINTS, MT_MIN_MASTERED, MT_LOGIN_BONUS, MT_WEEK_STAMPS, MT_WEEK_BONUS, mtPoints, mtCandidates, mtAvailable, mtDoneToday, mtPick, mtWeekStart, mtWeekStamps, mtDueBonuses, TC_SECONDS, TC_DAILY_MAX, TC_UNLOCK_MASTERED, TC_WRONG_SHOW_MS, tcMakeQuestion, tcPoints, tcScore, tcCountToday, tcPointsFromScore, tcPointsFor, tcReady, coClockCleared, coClockMastered, coWordLevels, coLevelCleared, CO_RECENT_DAYS, CO_ERR_MIN, coRecentErrors, coLevelHasWork, coL4Available, coTimeAvailable, coRecommend, coSessionEvents, CO_RANKS, coRankStats, coRankIndex };
+if (typeof document !== 'undefined') {
+// ---- src/ui/app.js ----
+// ui/app.js — 画面の描画とイベント。logic の関数は同じスコープに連結されている（build.mjs）。設計 §9
+// このファイルでは import を使わない。トップレベルの名前は ui で始める
+
+const uiApp = document.getElementById('app');
+const uiBanner = document.getElementById('banner');
+const uiRng = rngCrypto();
+const uiTabId = 't' + Date.now().toString(36) + uiRng.int(1e9).toString(36);
+const uiNowIso = () => new Date().toISOString();
+
+const uiS = {
+  data: null,
+  ctx: null, // { ls, tabId, rev, mode }
+  mode: 'normal',
+  warnings: [],
+  rawBroken: null,
+  screen: 'who',
+  pid: null,
+  play: null,
+  result: null,
+  adult: { ok: false, askSaved: false, importPlan: null, msg: null },
+  exchange: null,
+  blocked: false,
+  tc: null, // タイムチャレンジの回（設計 §13.8）
+};
+
+function uiEsc(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// ---------- 保存 ----------
+function uiMemoryLS() {
+  const m = new Map();
+  return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k) };
+}
+
+function uiInitStore() {
+  let ls = null;
+  try {
+    ls = window.localStorage;
+    ls.getItem(STORE_KEY);
+  } catch (err) {
+    ls = null;
+  }
+  if (!ls) {
+    uiS.data = storeInitial(uiNowIso());
+    uiS.mode = 'nostorage';
+    uiS.ctx = { ls: uiMemoryLS(), tabId: uiTabId, rev: 0, mode: 'nostorage' };
+    uiS.warnings.push('この ブラウザでは きろくが のこりません（保存が使えません）。');
+    return;
+  }
+  // 先に lock を取る。別の窓が使用中なら、読み込み（壊れたデータの退避を含む）もしない
+  const lk = storeLockAcquire(ls, uiTabId, Date.now());
+  if (lk === 'busy') {
+    uiS.blocked = true;
+    return;
+  }
+  const r = storeLoad(ls, uiNowIso(), { noWrite: lk === 'error' });
+  uiS.data = r.data;
+  uiS.mode = r.mode;
+  uiS.rawBroken = r.rawBroken;
+  uiS.rawOriginal = r.rawOriginal || null;
+  uiS.ctx = { ls, tabId: uiTabId, rev: r.data.rev, mode: r.mode };
+  if (r.warning === 'broken_saved') uiS.warnings.push('きろくが こわれていたので、べつの ばしょに とっておき、はじめから はじめます。おとなの人に しらせてね。');
+  if (r.warning === 'broken_unsaved') uiS.warnings.push('きろくが こわれていて、とっておくことも できませんでした。きろくは のこりません。おとなの人の画面から もとの データを かきだせます。');
+  if (r.warning === 'nostorage') uiS.warnings.push('この ブラウザでは きろくが のこりません。');
+  if (r.warning === 'nowrite') uiS.warnings.push('きろくを ほぞん できない じょうたいです（ようりょう など）。これからの きろくは のこりません。おとなの人の画面で かきだしてください。');
+  if (uiS.mode === 'normal') {
+    setInterval(() => {
+      if (uiS.blocked || uiS.mode !== 'normal') return;
+      if (storeLockAcquire(ls, uiTabId, Date.now()) === 'busy') uiBlock();
+    }, 2000);
+    window.addEventListener('pagehide', () => storeLockRelease(ls, uiTabId));
+    window.addEventListener('storage', (e) => {
+      if (e.key !== STORE_KEY || uiS.blocked) return;
+      try {
+        const rev = JSON.parse(e.newValue || 'null');
+        if (!rev || rev.rev !== uiS.ctx.rev) uiBlock();
+      } catch (err) {
+        uiBlock();
+      }
+    });
+  }
+}
+
+function uiBlock() {
+  uiS.blocked = true;
+  if (uiS.tc) {
+    clearInterval(uiS.tc.timer);
+    uiS.tc = null;
+  }
+  uiRender();
+}
+
+// 保存して状態を更新する。成功なら true
+// opts.atomic: 保存できなかったら状態を変えずに false を返す（読み込み・取り消し・交換に使う）
+function uiSave(next, opts) {
+  const atomic = !!(opts && opts.atomic);
+  if (uiS.mode === 'readonly') return false;
+  if (uiS.mode !== 'normal') {
+    uiS.data = next;
+    return true;
+  }
+  const r = storeSave(uiS.ctx, next, uiNowIso());
+  if (r.ok) {
+    uiS.data = r.data;
+    return true;
+  }
+  if (r.reason === 'conflict') {
+    uiBlock();
+    return false;
+  }
+  if (atomic) return false;
+  // 書き込みに失敗（容量など）: メモリだけで続け、知らせる
+  uiS.mode = 'memory';
+  uiS.ctx.mode = 'memory';
+  uiS.data = next;
+  uiS.warnings.push('きろくを ほぞん できませんでした（' + uiEsc(r.reason) + '）。これからの きろくは のこりません。おとなの人の画面で かきだしてください。');
+  uiShowBanner();
+  return true;
+}
+
+function uiShowBanner() {
+  if (uiS.warnings.length) {
+    uiBanner.hidden = false;
+    uiBanner.innerHTML = uiS.warnings.map((w) => '<div>⚠ ' + w + '</div>').join('');
+  } else {
+    uiBanner.hidden = true;
+  }
+}
+
+const uiProfile = () => storeProfile(uiS.data, uiS.pid);
+
+// ---------- 図 ----------
+function uiFactorLabel(k) {
+  return k === 0 ? '×1' : '×1' + '0'.repeat(k);
+}
+
+// はしごの図（大きい単位 → 小さい単位）
+function uiLadderSvg(level, from, to) {
+  const steps = unitLadder(level);
+  const w = 120;
+  const gap = 70;
+  const W = steps.length * w + (steps.length - 1) * gap + 20;
+  let s = '<svg viewBox="0 0 ' + W + ' 120" width="' + W + '" role="img" aria-label="たんいの はしご">';
+  steps.forEach((st, i) => {
+    const x = 10 + i * (w + gap);
+    const on = st.units.includes(from) || st.units.includes(to);
+    s += '<rect x="' + x + '" y="30" width="' + w + '" height="56" rx="12" fill="' + (on ? '#ffd34d' : '#fff') + '" stroke="#2b2b2b" stroke-width="2"/>';
+    s += '<text x="' + (x + w / 2) + '" y="66" text-anchor="middle" font-size="' + (st.units.join('').length > 5 ? 20 : 26) + '" font-weight="bold">' + uiEsc(st.units.join(' = ')) + '</text>';
+    if (i < steps.length - 1) {
+      const d = st.exp - steps[i + 1].exp;
+      const ax = x + w + 6;
+      s += '<line x1="' + ax + '" y1="58" x2="' + (ax + gap - 14) + '" y2="58" stroke="#2f7de1" stroke-width="3" marker-end="url(#ah)"/>';
+      s += '<text x="' + (ax + (gap - 8) / 2) + '" y="22" text-anchor="middle" font-size="18" fill="#2f7de1">' + uiFactorLabel(d) + '</text>';
+    }
+  });
+  s += '<defs><marker id="ah" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2f7de1"/></marker></defs>';
+  s += '<text x="10" y="112" font-size="16" fill="#6b6b6b">→ の むき（大きい たんい から 小さい たんい）は ×、ぎゃくは ÷</text>';
+  return s + '</svg>';
+}
+
+// 面積・体積の図（長さと取り違えたとき）
+function uiDimFigure(q) {
+  const lin = '1' + '0'.repeat(q.dim);
+  const isVol = q.level === 3;
+  const big = q.dir === 'x' ? q.from : q.to;
+  const small = q.dir === 'x' ? q.to : q.from;
+  const bigLen = big.replace(/[²³]/, '');
+  const smallLen = small.replace(/[²³]/, '');
+  const total = '1' + '0'.repeat(q.k);
+  let svg = '<svg viewBox="0 0 220 200" width="220" role="img" aria-label="ずけい">';
+  if (isVol) {
+    svg += '<polygon points="40,70 140,70 140,170 40,170" fill="#e6f0fd" stroke="#2b2b2b" stroke-width="2"/>';
+    svg += '<polygon points="40,70 80,30 180,30 140,70" fill="#cfe2fb" stroke="#2b2b2b" stroke-width="2"/>';
+    svg += '<polygon points="140,70 180,30 180,130 140,170" fill="#b7d3f7" stroke="#2b2b2b" stroke-width="2"/>';
+  } else {
+    svg += '<rect x="30" y="20" width="150" height="150" fill="#e6f0fd" stroke="#2b2b2b" stroke-width="2"/>';
+    for (let i = 1; i < 10; i++) {
+      svg += '<line x1="' + (30 + i * 15) + '" y1="20" x2="' + (30 + i * 15) + '" y2="170" stroke="#9bbcf0" stroke-width="1"/>';
+      svg += '<line x1="30" y1="' + (20 + i * 15) + '" x2="180" y2="' + (20 + i * 15) + '" stroke="#9bbcf0" stroke-width="1"/>';
+    }
+  }
+  svg += '<text x="95" y="192" text-anchor="middle" font-size="16">よこ ' + lin + ' ' + uiEsc(smallLen) + '</text>';
+  svg += '</svg>';
+  const expr = isVol ? lin + ' × ' + lin + ' × ' + lin : lin + ' × ' + lin;
+  return '<div class="figure row">' + svg + '<div>1 ' + uiEsc(bigLen) + ' ＝ ' + lin + ' ' + uiEsc(smallLen) + ' だから、<br><b>1 ' + uiEsc(big) + ' ＝ ' + expr + ' ＝ ' + total + ' ' + uiEsc(small) + '</b><br>' +
+    (isVol ? 'たて・よこ・たかさ の 3つを かけるよ。' : 'たて と よこ の 2つを かけるよ。') + '</div></div>';
+}
+
+const UI_PLACE_NAMES = ['百万', '十万', '一万', '千', '百', '十', '一', '0.1', '0.01', '0.001'];
+
+// 位取り表（10列のうち使う列だけ。D-014 で 0.001 の位まで）
+function uiPlaceTable(before, after, op) {
+  const cols = (x) => {
+    const [i, f = ''] = decToString(x).split('.');
+    const m = {};
+    for (let j = 0; j < i.length; j++) m[6 - (i.length - 1 - j)] = i[j];
+    for (let j = 0; j < f.length && j < 3; j++) m[7 + j] = f[j];
+    return m;
+  };
+  const a = cols(before);
+  const b = cols(after);
+  const used = Object.keys(a).concat(Object.keys(b)).map(Number);
+  const lo = Math.min(...used, 6);
+  const hi = Math.max(...used, 6);
+  const shift = (op.dir === 'x' ? -1 : 1) * op.k * 36;
+  let h = '<table class="place"><tr><th></th>';
+  for (let c = lo; c <= hi; c++) h += '<th>' + UI_PLACE_NAMES[c] + '</th>';
+  h += '</tr>';
+  const row = (m, cls, lab) => {
+    let r = '<tr class="' + cls + '" style="--from:' + -shift + 'px"><td class="lab">' + lab + '</td>';
+    for (let c = lo; c <= hi; c++) r += '<td class="' + (c === 7 ? 'pt' : '') + '">' + (m[c] !== undefined ? m[c] : '') + '</td>';
+    return r + '</tr>';
+  };
+  h += row(a, 'before', 'まえ') + row(b, 'after', qOpLabel(op) + ' のあと') + '</table>';
+  const dirText = op.k === 0 ? 'うごかない' : op.k + 'けた ' + (op.dir === 'x' ? 'ひだり' : 'みぎ') + 'へ うごく';
+  return '<div class="figure">' + h + '<div class="muted">' + qOpLabel(op) + ' で、すうじが ' + dirText + 'よ（小数点の いちが かわる）。</div></div>';
+}
+
+// ---------- 画面: だれ？ ----------
+function uiWho() {
+  let h = '<h1>だれが やる？</h1><div class="grid2 who">';
+  for (const p of uiS.data.profiles) h += '<button class="big" data-act="pick" data-id="' + p.id + '">' + uiEsc(p.name) + '</button>';
+  h += '</div><button class="small adult-link" data-act="adult">おとなの人</button>';
+  return h;
+}
+
+// ---------- 画面: ホーム ----------
+// 項目の短い名前（m → cm）
+function uiItemLabel(key) {
+  if (key.startsWith('ck:')) return ckById(key.slice(3)).label;
+  const it = unitItemByKey(key);
+  return it.from + ' → ' + it.to;
+}
+
+// 項目の見え方（設計 §13.1）
+function uiItemState(st) {
+  if (pgMastered(st)) return 'done';
+  if (st && st.weak) return 'weak';
+  if (st && st.attempts > 0) return 'learn';
+  return 'fresh';
+}
+const UI_STATE_NAME = { done: 'できた', weak: 'がんばり中', learn: 'れんしゅう中', fresh: 'まだ' };
+
+// できるようになったことの文（設計 §13.5）
+function uiEventText(e) {
+  if (e.kind === 'clear') return 'レベル' + e.key.slice(1) + '（' + UNIT_LEVELS[Number(e.key.slice(1))].name + '）を ぜんぶ クリア！';
+  if (e.kind === 'daily') return 'きょうの もくひょう たっせい！';
+  if (e.kind === 'clockclear') return 'じかん を ぜんぶ クリア！ タイミーも にやり。';
+  if (e.kind === 'word') { const w = WORD.find((x) => x.id === e.key); return 'ぶんしょうだい「' + (w ? w.title : e.key) + '」が とけた！'; }
+  if (e.kind === 'meaning') { const m = MEANING.find((x) => x.id === e.key); return (m ? m.short : e.key) + ' が わかった！'; }
+  if (e.kind === 'rank') return (CO_RANKS[Number(e.key)] ? CO_RANKS[Number(e.key)].name : '') + ' に なった！';
+  if (e.kind === 'unlock') return (e.key === 'L4' ? 'レベル4 ごちゃまぜ' : 'タイムチャレンジ') + ' が えらべるように なった！';
+  if (e.kind === 'prefix') {
+    const [id, kind] = e.key.split(':');
+    const pr = prefixById(id);
+    return 'おぼえた: ' + (kind === 'sym' ? pr.sym + ' ＝ ' + pr.name : pr.name + ' ＝ ' + prefixFactorLabel(pr.exp));
+  }
+  const l = uiItemLabel(e.key);
+  if (e.kind === 'nofig') return l + ' は ずつきで れんぞく せいかい！ つぎは ずなしで チャレンジ';
+  if (e.kind === 'direct') return l + ' は ずなしで れんぞく せいかい！ つぎは いきなり こたえる もんだいに チャレンジ';
+  if (e.kind === 'jump') return l + ' に いきなり こたえられた！';
+  if (e.kind === 'mastered') return l + ' が できるように なった！';
+  if (e.kind === 'overcome') return l + ' の がんばり中を クリア！';
+  return l;
+}
+
+function uiNextStepText(ns) {
+  const l = uiItemLabel(ns.key);
+  if (ns.kind === 'nofig') return l + ' は あと ' + ns.rest + 'かい せいかい すると、ずなしに なるよ。';
+  if (ns.kind === 'direct') return l + ' は あと ' + ns.rest + 'かい せいかい すると、いきなり こたえる もんだいに なるよ。';
+  return l + ' は あした たしかめよう。できたら「できた」に なるよ。';
+}
+
+function uiMap(p) {
+  let h = '<div class="map">';
+  for (const lv of [1, 2, 3]) {
+    const g = pgLevelProgress(p.items, lv);
+    h += '<div class="map-row"><span class="map-lv">' + UNIT_LEVELS[lv].name + '</span>';
+    for (const it of unitItems(lv)) {
+      const stt = uiItemState(p.items[it.key]);
+      h += '<span class="chip ' + stt + '" title="' + UI_STATE_NAME[stt] + '">' + uiEsc(it.from + '→' + it.to) + '</span>';
+    }
+    // 意味の問題（D-014）: わかった / れんしゅう中 / まだ
+    mnForLevel(lv).forEach((m, i) => {
+      const st = (p.meaning || {})[m.id];
+      const cls = mnDone(st) ? 'done' : st ? 'learn' : 'fresh';
+      h += '<span class="chip ' + cls + '" title="' + uiEsc(m.short) + '">いみ' + (i + 1) + '</span>';
+    });
+    h += '<span class="muted">できた ' + g.mastered + '/' + g.total + '・いみ ' + mnForLevel(lv).filter((m) => mnDone((p.meaning || {})[m.id])).length + '/' + mnForLevel(lv).length + (coLevelCleared(p, lv) ? ' <b class="clear">クリア</b>' : '') + '</span></div>';
+  }
+  {
+    h += '<div class="map-row"><span class="map-lv">じかん</span>';
+    for (const it of CK_ITEMS) {
+      const stt = uiItemState((p.clock || {})[it.id]);
+      h += '<span class="chip ' + stt + '" title="' + UI_STATE_NAME[stt] + '">' + uiEsc(it.label.replace(/ /g, '')) + '</span>';
+    }
+    h += '<span class="muted">できた ' + coClockMastered(p) + '/' + CK_ITEMS.length + (coClockCleared(p) ? ' <b class="clear">クリア</b>' : '') + '</span></div>';
+  }
+  h += '<p class="muted map-legend"><span class="chip done">できた</span><span class="chip weak">がんばり中</span><span class="chip learn">れんしゅう中</span><span class="chip fresh">まだ</span></p></div>';
+  return h;
+}
+
+function uiHome() {
+  const p = uiProfile();
+  const ri = coRankIndex(p);
+  const weakN = pgWeakKeys(p.items).length;
+  const themes = slotThemesFor(p.total);
+  let h = '<div class="row"><h1>' + uiEsc(p.name) + ' さん</h1><span class="title-badge">' + uiEsc(CO_RANKS[ri].name) + '</span></div>';
+  if (ri + 1 < CO_RANKS.length) h += '<p class="muted">つぎの だん「' + uiEsc(CO_RANKS[ri + 1].name) + '」: ' + uiEsc(CO_RANKS[ri + 1].need) + '</p>';
+  else h += '<p class="fb ok">免許皆伝！ ぜんぶ できるように なったね。</p>';
+  h += '<div class="row stat"><div>つかえる ポイント <b>' + p.available + '</b></div><div>これまでの ごうけい <b>' + p.total + '</b></div></div>';
+  if (uiS.mode === 'readonly') h += '<p class="fb hint">この ばんでは れんしゅう できません。あたらしい ばんで ひらいてね。</p>';
+  const dis = uiS.mode === 'readonly' ? ' disabled' : '';
+  const today = pgToday();
+  const rec = coRecommend(p, today);
+  h += '<div class="rec">';
+  if (rec.rest) h += '<p class="fb info">' + uiEsc(rec.reason) + '</p>';
+  h += '<button class="primary big rec-btn" data-act="start" data-mode="rec"' + dis + '>きょうの れんしゅう<br><span class="rec-why">' + uiEsc(rec.rest ? 'ドリルで ウォーミングアップ' : rec.reason) + '</span></button></div>';
+  // きおくテスト と 週のスタンプ（D-017）
+  {
+    const mOk = mtAvailable(p.items, p.clock);
+    const mDone = mtDoneToday(p.sessions, today);
+    const stamps = Math.min(MT_WEEK_STAMPS, mtWeekStamps(p.sessions, today));
+    const mn = mtCandidates(p.items, p.clock).length;
+    h += '<div class="memtest-row"><button class="big memtest-btn" data-act="start" data-mode="memtest"' + (mOk && !mDone ? dis : ' disabled') + '>きおくテスト<br><span class="muted">'
+      + (mDone ? 'きょうは うけたよ。また あした！' : mOk ? '1日1かい・ヒントなし・まんてんで ' + MT_POINTS[5] + 'てん' : 'できた が ' + MT_MIN_MASTERED + 'こに なったら（いま ' + mn + 'こ）') + '</span></button>';
+    h += '<p class="daily-bar">こんしゅうの スタンプ <span class="stamps">' + '●'.repeat(stamps) + '○'.repeat(MT_WEEK_STAMPS - stamps) + '</span> ' + stamps + ' / ' + MT_WEEK_STAMPS + (stamps >= MT_WEEK_STAMPS ? ' <b class="clear">＋' + MT_WEEK_BONUS + '！</b>' : '（5こで ＋' + MT_WEEK_BONUS + 'てん）') + '</p></div>';
+  }
+  const weakKeys = pgWeakKeys(p.items).concat(CK_ITEMS.filter((it) => (p.clock || {})[it.id] && p.clock[it.id].weak).map((it) => 'ck:' + it.id));
+  if (weakKeys.length) h += '<p>いま がんばっていること: ' + weakKeys.map((k) => '<span class="chip weak">' + uiEsc(uiItemLabel(k)) + '</span>').join('') + '</p>';
+  h += '<h2>れんしゅう</h2><div class="grid2">';
+  for (const lv of [1, 2, 3]) h += '<button class="big level-btn" data-act="start" data-mode="normal" data-level="' + lv + '"' + dis + '>' + charaSvg(charaForLevel(lv).id, 'normal', 64) + '<span>レベル' + lv + '<br>' + UNIT_LEVELS[lv].name + '<br><span class="muted">' + charaForLevel(lv).name + '・できた ' + pgLevelProgress(p.items, lv).mastered + '/' + unitItems(lv).length + (coLevelCleared(p, lv) ? ' <b class="clear">クリア</b>' : '') + '</span></span></button>';
+  {
+    const cm = coClockMastered(p);
+    h += '<button class="big level-btn" data-act="start" data-mode="clock"' + dis + '>' + charaSvg('timmy', 'normal', 64) + '<span>じかん<br>びょう・ふん・じかん・にち<br><span class="muted">タイミー・できた ' + cm + '/' + CK_ITEMS.length + (coClockCleared(p) ? ' <b class="clear">クリア</b>' : '') + '</span></span></button>';
+  }
+  h += '</div><div class="row jump-row">';
+  for (const lv of [1, 2, 3]) {
+    if (pgJumpKeys(p.items, lv).length) h += '<button class="small" data-act="start" data-mode="jump" data-level="' + lv + '"' + dis + '>レベル' + lv + ' ほじょなしで チャレンジ！</button>';
+  }
+  h += '</div><div class="grid2">';
+  const l4ok = coL4Available(p) && pgMasteredKeys(p.items).length >= PG_SESSION_SIZE;
+  h += '<button class="big" data-act="start" data-mode="l4" data-level="4"' + (l4ok ? dis : ' disabled') + '>レベル4<br>ごちゃまぜ<br><span class="muted">' + (l4ok ? 'できた もんだいを まぜて' : 'あと ' + Math.max(1, pgL4Need(p.items)) + 'こ できたら') + '</span></button>';
+  const tcok = coTimeAvailable(p);
+  const tcLeft = Math.max(0, TC_DAILY_MAX - tcCountToday(p.sessions, today));
+  const best = (p.best && p.best.time) || 0;
+  h += '<button class="big" data-act="start" data-mode="time"' + (tcok ? dis : ' disabled') + '>タイムチャレンジ<br><span class="muted">' + (tcok ? 'じこベスト ' + best + '・ポイント あと ' + tcLeft + 'かい' : 'できた が ' + TC_UNLOCK_MASTERED + 'こに なったら（いま ' + pgMasteredKeys(p.items).length + 'こ）') + '</span></button>';
+  h += '</div><h2>ほかの れんしゅう</h2><div class="grid2">';
+  h += '<button data-act="start" data-mode="review"' + (weakN === 0 ? ' disabled' : dis) + '>にがて ふくしゅう（' + weakN + 'こ）</button>';
+  h += '<button data-act="start" data-mode="drill" data-level="1"' + dis + '>かけざん・わりざん ドリル1<br><span class="muted">×10・×100・×1000</span></button>';
+  h += '<button data-act="start" data-mode="drill" data-level="2"' + dis + '>かけざん・わりざん ドリル2<br><span class="muted">×10000・×1000000 も</span></button>';
+  h += '<button data-act="start" data-mode="prefix"' + dis + '>キロ・ミリ クイズ<br><span class="muted">おぼえた ' + prefixLearned(p.prefix) + ' / ' + prefixKeys().length + '</span></button>';
+  const wl = coWordLevels(p);
+  const wdn = WORD.filter((w) => wdDone((p.word || {})[w.id])).length;
+  h += '<button data-act="start" data-mode="word"' + (wl.length ? dis : ' disabled') + '>ぶんしょうだい<br><span class="muted">' + (wl.length ? 'とけた ' + wdn + ' / ' + WORD.length : 'レベル1で できた を 4こ にしよう') + '</span></button>';
+  h += '<button data-act="rewards">ごほうび</button>';
+  h += '</div>';
+  if (weakN === 0) h += '<p class="muted">にがては ありません。れんしゅうを してみよう。</p>';
+  if (themes.length > 1) {
+    h += '<h3>スロットの いろ</h3><div class="row">';
+    for (const th of themes) h += '<button class="small' + (p.theme === th.id ? ' primary' : '') + '" data-act="theme" data-id="' + th.id + '">' + th.name + '</button>';
+    h += '</div>';
+  }
+  h += '<h2>できること マップ</h2>' + uiMap(p);
+  const log = (p.log || []).filter((e) => STORE_LOG_KINDS.includes(e.kind)).slice(0, 5);
+  if (log.length) {
+    h += '<h3>できるように なった ノート</h3><ul class="list note">';
+    for (const e of log) h += '<li><span class="muted">' + Number(e.date.slice(5, 7)) + '/' + Number(e.date.slice(8, 10)) + '</span> ' + uiEsc(uiEventText(e)) + '</li>';
+    h += '</ul>';
+  }
+  h += '<p><button data-act="who">← ひとを えらびなおす</button></p>';
+  return h;
+}
+
+// ---------- 学習の回 ----------
+function uiStart(mode, level, fromRec) {
+  const p = uiProfile();
+  const today = pgToday();
+  if (mode === 'rec') {
+    const rec = coRecommend(p, today);
+    uiStart(rec.mode, rec.level, true);
+    return;
+  }
+  if (mode === 'time') {
+    uiTimeStart();
+    return;
+  }
+  let list;
+  if (mode === 'normal') list = pgPickNormal(uiRng, p.items, level, today);
+  else if (mode === 'review') list = pgPickReview(uiRng, p.items);
+  else if (mode === 'prefix') list = prefixPick(uiRng, p.prefix);
+  else if (mode === 'l4') list = pgPickL4(uiRng, p.items, today);
+  else if (mode === 'jump') list = pgPickJump(uiRng, p.items, level);
+  else if (mode === 'word') list = wdPick(uiRng, p.word, coWordLevels(p), PG_SESSION_SIZE);
+  else if (mode === 'clock') list = ckPick(uiRng, p.clock, today);
+  else if (mode === 'memtest') list = mtDoneToday(p.sessions, today) ? [] : mtPick(uiRng, p.items, p.clock, today);
+  else list = Array.from({ length: PG_SESSION_SIZE }, () => ({ key: 'drill', isCheck: false }));
+  if (!list.length) return;
+  // 意味の問題（D-014）: 通常の回で、そのレベルに「わかった」でない問題があり今日まだ答えていなければ、確認でない最後の1問と入れ替える
+  if (mode === 'normal') {
+    const mid = mnNextFor(p.meaning, level, today);
+    let j = list.length - 1;
+    while (j > 0 && list[j].isCheck) j -= 1;
+    if (mid && !list[j].isCheck) list[j] = { key: 'mn:' + mid, isMeaning: true, isCheck: false, isProbe: false };
+  }
+  uiS.play = { rec: !!fromRec, before: storeClone(p), events: [], id: uiTabId + '-' + Date.now(), mode, level, list, idx: 0, correct: 0, retried: 0, missed: [], q: null, flow: null, support: 2, placeAid: false, drillTries: 0, drillShow: false };
+  uiNextQ();
+  uiS.screen = 'play';
+}
+
+function uiNextQ() {
+  const pl = uiS.play;
+  const p = uiProfile();
+  const entry = pl.list[pl.idx];
+  pl.isMeaning = !!entry.isMeaning;
+  pl.isWord = !!entry.isWord;
+  pl.isClock = !!entry.isClock;
+  uiS.lastInput = 'ans';
+  if (pl.isClock) {
+    const id = entry.key.slice(3);
+    const st = (p.clock || {})[id] || pgNewItem();
+    pl.support = st.support;
+    pl.q = ckMakeQuestion(uiRng, id, pl.support);
+    pl.ck = ckFlowStart(pl.q, pl.support);
+    pl.flow = null;
+    pl.recorded = false;
+    pl.counted = false;
+    return;
+  }
+  if (pl.isWord) {
+    pl.q = wdMakeQuestion(uiRng, entry.key.slice(3));
+    pl.flow = null;
+    pl.drillHint = false;
+    pl.wd = { tries: 0, show: false, fb: null };
+    return;
+  }
+  if (pl.isMeaning) {
+    pl.q = mnMakeQuestion(uiRng, entry.key.slice(3));
+    pl.flow = null;
+    pl.drillHint = false;
+    pl.pf = { disabled: [], wrongs: 0, done: false, lastWrong: null };
+    return;
+  }
+  if (pl.mode === 'prefix') {
+    pl.q = prefixMakeQuestion(uiRng, entry.key);
+    pl.flow = null;
+    pl.drillHint = false;
+    pl.pf = { disabled: [], wrongs: 0, done: false, lastWrong: null };
+    return;
+  }
+  if (pl.mode === 'drill') {
+    pl.q = qMakeDrill(uiRng, pl.level);
+    pl.flow = null;
+    pl.drillTries = 0;
+    pl.drillShow = false;
+    pl.drillFb = null;
+    pl.drillHint = false;
+    return;
+  }
+  const item = unitItemByKey(entry.key);
+  const st = p.items[entry.key] || pgNewItem();
+  pl.isProbe = !!entry.isProbe;
+  pl.isJump = !!entry.isJump;
+  pl.support = pl.isProbe || pl.isJump ? 0 : st.support; // ためし問題・ほじょなしで チャレンジは段階0で出す（設計 §13.2・13.13）
+  pl.placeAid = st.placeAid;
+  pl.q = qMakeQuestion(uiRng, item, pl.support);
+  pl.flow = qFlowStart(pl.q, pl.support);
+  pl.recorded = false;
+  pl.placeDone = false;
+  pl.counted = false;
+}
+
+// flow が変わるたびに呼ぶ。最初の誤答の時点で記録し（途中でやめても残る）、②の成否で位取り表を切り替える
+function uiAfterFlow() {
+  const pl = uiS.play;
+  const f = pl.flow;
+  const entry = pl.list[pl.idx];
+  const today = pgToday();
+  let st = uiProfile().items[entry.key];
+  let changed = false;
+  if (!pl.recorded) {
+    const rec = f.stage === 'done' ? qFlowRecord(f, pl.support) : qFlowFirstRecord(f, pl.support);
+    if (rec) {
+      if (pl.isJump) {
+        const before = st;
+        st = pgRecordJump(st, rec, today);
+        // ほじょなしで チャレンジは、実際に直接答えて正解したので「いきなり こたえられた」（R-007）
+        if (before && before.support > 0 && st.support === 0) pl.events.push({ date: today, kind: 'jump', key: entry.key });
+      } else if (pl.isProbe) {
+        st = pgRecordProbe(rec, today);
+      } else {
+        const before = st;
+        st = pgRecord(st, rec, today, entry.isCheck);
+        for (const kind of pgEvents(before, st)) pl.events.push({ date: today, kind, key: entry.key });
+        if (rec.r !== 'ok' && pl.missed) pl.missed.push(entry.key);
+      }
+      pl.recorded = true;
+      changed = true;
+    }
+  }
+  if (!pl.placeDone && (f.s2Errors > 0 || f.stage === 'done')) {
+    st = pgPlace(st, f.s2Errors === 0, f.hint);
+    pl.placeDone = true;
+    changed = true;
+  }
+  if (changed) uiSave(storeSetItem(uiS.data, uiS.pid, entry.key, st));
+  if (f.stage === 'done' && !pl.counted) {
+    pl.counted = true;
+    // スロットの正解数はヒントありも数える（ヒントを使うことを罰しない）。段位の「全問正解」は clean（最初の1回・ヒントなし）で数える（R-007）
+    if (!f.first) pl.correct += 1;
+    else if (qFlowRetried(f)) pl.retried += 1;
+    if (!f.first && !f.hint) pl.clean = (pl.clean || 0) + 1;
+  }
+}
+
+function uiQText(q) {
+  return '<span>' + decToString(q.value) + '</span> <span class="u">' + uiEsc(q.from) + '</span> は なん <span class="u">' + uiEsc(q.to) + '</span>？';
+}
+
+// レベル3で L・dL・mL・cm³ どうしの問題なら、りっぽー（いっぺん 10 cm の りっぽうたい ＝ 1 L）の図を出す（D-007）
+const UI_LITER_UNITS = ['L', 'dL', 'mL', 'cm³'];
+function uiLiterFig(q) {
+  return q.level === 3 && UI_LITER_UNITS.includes(q.from) && UI_LITER_UNITS.includes(q.to) ? '<div class="figure">' + charaLiterSvg() + '</div>' : '';
+}
+
+// 問題の画面の「fb ok」「fb hint」の箱に、キャラクターを添える（正解は happy、それ以外は think）
+function uiCharaId(pl, q) {
+  if (pl.mode === 'prefix') return 'shikaku';
+  if (pl.mode === 'drill') return pl.level === 2 ? 'shikaku' : 'naga';
+  return charaForLevel(q.level).id;
+}
+function uiWithChara(h, id) {
+  return h
+    .replaceAll('<div class="fb ok">', '<div class="fb ok say">' + charaSvg(id, 'happy', 72))
+    .replaceAll('<div class="fb hint">', '<div class="fb hint say">' + charaSvg(id, 'think', 72) + '<b>いっしょに ずを みよう。</b> ');
+}
+
+function uiExplain(q, t) {
+  if (t === 'dim' && q.dim) return '<div class="fb hint">おしい！ ながさ と ちがって、' + (q.level === 3 ? 'たいせき' : 'めんせき') + 'は かけざんを かさねるよ。' + uiDimFigure(q) + '</div>';
+  if (t === 'dir') return '<div class="fb hint">おしい！ むきを みてみよう。大きい たんい → 小さい たんい は かずが 大きく なる（×）。小さい たんい → 大きい たんい は かずが 小さく なる（÷）。<div class="figure">' + uiLadderSvg(q.level, q.from, q.to) + '</div>' + uiLiterFig(q) + '</div>';
+  return '<div class="fb hint">おしい！ となりどうしの ばいりつを たどってみよう。<div class="figure">' + uiLadderSvg(q.level, q.from, q.to) + '</div>' + uiLiterFig(q) + '</div>';
+}
+
+function uiPlay() {
+  const pl = uiS.play;
+  const q = pl.q;
+  let h = '<div class="row"><span class="progress">' + (pl.idx + 1) + ' / ' + pl.list.length + '</span>';
+  if (pl.mode === 'review') h += '<span class="tag">にがて ふくしゅう</span>';
+  if (pl.mode === 'memtest') h += '<span class="tag">きおくテスト（ヒントなし）</span>';
+  else if (pl.mode === 'l4') h += '<span class="tag">ごちゃまぜ</span>';
+  else if (pl.list[pl.idx].isCheck) h += '<span class="tag">たしかめ</span>';
+  if (pl.list[pl.idx].isProbe) h += '<span class="tag">ためし もんだい</span>';
+  if (pl.mode === 'jump') h += '<span class="tag">ほじょなしで チャレンジ</span>';
+  h += '<span style="flex:1"></span>';
+  if (pl.mode !== 'memtest') h += '<button class="small" data-act="hint">ヒント</button>';
+  h += '<button class="small" data-act="quit">やめる</button></div>';
+  if (pl.mode === 'drill') return uiWithChara(h + uiDrill(), uiCharaId(pl, q));
+  if (pl.mode === 'prefix') return uiWithChara(h + uiPrefix(), uiCharaId(pl, q));
+  if (pl.isMeaning) return uiWithChara(h + uiMeaning(), charaForLevel(q.level).id);
+  if (pl.isWord) return uiWithChara(h + uiWord(), charaForLevel(q.level).id);
+  if (pl.isClock) return uiWithChara(h + uiClock(), 'timmy');
+  const f = pl.flow;
+  const showFig = pl.support === 2 || f.hint;
+  h += '<div class="qtext">' + uiQText(q) + '</div>';
+  if (f.stage === 's1') {
+    h += '<p>① ' + uiEsc(q.from) + ' を ' + uiEsc(q.to) + ' に するには、どれ？</p><div class="options">';
+    q.options.forEach((o, i) => {
+      h += '<button data-act="choose" data-i="' + i + '"' + (f.disabled.includes(i) ? ' disabled' : '') + '><span class="key">' + (i + 1) + '</span>' + o.label + '</button>';
+    });
+    h += '</div>';
+    if (f.feedback && f.feedback.kind === 'ng1') h += uiExplain(q, f.feedback.t);
+    else if (f.feedback && f.feedback.kind === 'ng0') h += '<div class="fb hint">おしい！ ①から いっしょに やってみよう。</div>';
+    else if (showFig) h += '<div class="figure">' + uiLadderSvg(q.level, q.from, q.to) + '</div>' + uiLiterFig(q);
+  } else if (f.stage === 's2' || f.stage === 'direct') {
+    if (f.stage === 's2') {
+      h += '<div class="fb ok">① ' + qOpLabel(q.op) + ' で せいかい！</div>';
+      h += '<p>② けいさん しよう</p><div class="answer-row">' + decToString(q.value) + ' ' + qOpLabel(q.op).replace('（そのまま）', '') + ' ＝ ';
+    } else {
+      h += '<div class="answer-row">' + decToString(q.value) + ' ' + uiEsc(q.from) + ' ＝ ';
+    }
+    h += '<input id="ans" type="text" inputmode="decimal" autocomplete="off" aria-label="こたえ"> ' + (f.stage === 'direct' ? uiEsc(q.to) : '') + '<button class="primary" data-act="submit">けってい</button></div>';
+    h += uiTenkey();
+    if (f.feedback && f.feedback.kind === 'invalid') h += '<div class="fb info">すうじで いれてね。</div>';
+    if (f.feedback && f.feedback.kind === 'ng2') h += '<div class="fb hint">おしい！ くらいどりの ひょうを みてみよう。' + uiPlaceTable(q.value, q.answer, q.op).replace(/<tr class="after"[\s\S]*?<\/tr>/, '') + '</div>';
+    else if (f.stage === 's2' && (pl.support === 2 || pl.placeAid || f.hint)) h += '<div class="fb info">くらいどりの ひょう' + uiPlaceTable(q.value, q.answer, q.op).replace(/<tr class="after"[\s\S]*?<\/tr>/, '') + '</div>';
+    if (f.stage === 'direct' && f.hint) h += '<div class="figure">' + uiLadderSvg(q.level, q.from, q.to) + '</div>';
+  } else {
+    const fb = f.feedback || {};
+    if (f.showAnswer) h += '<div class="fb hint">こたえは <b>' + decToString(q.answer) + ' ' + uiEsc(q.to) + '</b> だよ。ひょうで たしかめよう。' + uiPlaceTable(q.value, q.answer, q.op) + '</div>';
+    else h += '<div class="fb ok">せいかい！ ' + decToString(q.value) + ' ' + uiEsc(q.from) + ' ＝ <b>' + decToString(q.answer) + ' ' + uiEsc(q.to) + '</b>' + (f.first ? '（やりなおして できたね）' : '') + uiPlaceTable(q.value, q.answer, q.op) + '</div>';
+    void fb;
+    h += '<p><button class="primary big" data-act="next">つぎへ（Enter）</button></p>';
+  }
+  return uiWithChara(h, uiCharaId(pl, q));
+}
+
+function uiTenkey() {
+  const keys = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '0', '.', '⌫'];
+  return '<div class="tenkey">' + keys.map((k) => '<button data-act="key" data-k="' + k + '">' + k + '</button>').join('') + '</div>';
+}
+
+function uiDrill() {
+  const pl = uiS.play;
+  const q = pl.q;
+  let h = '<p>かけざん・わりざん ドリル' + pl.level + '</p><div class="answer-row">' + decToString(q.value) + ' ' + qOpLabel(q.op) + ' ＝ ';
+  if (pl.drillShow) {
+    h += '<b>' + decToString(q.answer) + '</b></div>';
+    h += '<div class="fb ' + (pl.drillTries === 0 ? 'ok">せいかい！' : pl.drillFb === 'ok' ? 'ok">できたね！' : 'hint">こたえは ' + decToString(q.answer) + ' だよ。') + uiPlaceTable(q.value, q.answer, q.op) + '</div>';
+    h += '<p><button class="primary big" data-act="next">つぎへ（Enter）</button></p>';
+    return h;
+  }
+  h += '<input id="ans" type="text" inputmode="decimal" autocomplete="off" aria-label="こたえ"> <button class="primary" data-act="submit">けってい</button></div>' + uiTenkey();
+  if (pl.drillFb === 'invalid') h += '<div class="fb info">すうじで いれてね。</div>';
+  if (pl.drillFb === 'ng') h += '<div class="fb hint">おしい！ くらいどりの ひょうを みてみよう。' + uiPlaceTable(q.value, q.answer, q.op).replace(/<tr class="after"[\s\S]*?<\/tr>/, '') + '</div>';
+  else if (pl.drillHint) h += '<div class="fb info">ヒント: ' + uiPlaceTable(q.value, q.answer, q.op).replace(/<tr class="after"[\s\S]*?<\/tr>/, '') + '</div>';
+  return h;
+}
+
+// ---------- 接頭語クイズ（D-009） ----------
+function uiPrefix() {
+  const pl = uiS.play;
+  const q = pl.q;
+  const pf = pl.pf;
+  let h = '<p>キロ・ミリ クイズ</p><div class="qtext">' + uiEsc(q.text) + '</div><div class="options">';
+  q.options.forEach((o, i) => {
+    const dis = pf.disabled.includes(i) || (pf.done && !o.correct);
+    h += '<button data-act="choose" data-i="' + i + '"' + (dis ? ' disabled' : '') + (pf.done && o.correct ? ' class="primary"' : '') + '><span class="key">' + (i + 1) + '</span>' + uiEsc(o.label) + '</button>';
+  });
+  h += '</div>';
+  if (pf.done) {
+    h += '<div class="fb ok">' + (pf.wrongs === 0 ? 'せいかい！' : 'できたね！') + prefixTableHtml(q.prefix, null) + '</div>';
+    h += '<p><button class="primary big" data-act="next">つぎへ（Enter）</button></p>';
+  } else if (pf.lastWrong) {
+    h += '<div class="fb hint">おしい！ ひょうで たしかめよう。' + prefixTableHtml(null, pf.lastWrong) + '</div>';
+  } else if (pl.drillHint) {
+    h += '<div class="fb info">ヒント' + prefixTableHtml(null, null) + '</div>';
+  }
+  return h;
+}
+
+// ---------- じかん（D-016） ----------
+function uiClockFig() {
+  return '<div class="figure clock-fig"><b>1日 ＝ 24時間</b>　→　<b>1時間 ＝ 60分</b>　→　<b>1分 ＝ 60秒</b><div class="muted">じかんは 60（1日は 24）で くりあがるよ。100 では ないよ。</div></div>';
+}
+
+function uiClockInputs(q) {
+  return q.fields.map((fd, i) => '<input id="' + (i === 0 ? 'ans' : 'ans' + (i + 1)) + '" type="text" inputmode="numeric" autocomplete="off" aria-label="こたえ' + (i + 1) + '" class="ck-in"> ' + uiEsc(fd.unit)).join(' ');
+}
+
+function uiClock() {
+  const pl = uiS.play;
+  const q = pl.q;
+  const f = pl.ck;
+  const steps = (list) => '<ol class="steps">' + list.map((x) => '<li>' + uiEsc(x) + '</li>').join('') + '</ol>';
+  const showFig = pl.support === 2 || f.hint;
+  let h = '<p>じかん</p><div class="qtext">' + uiEsc(q.text) + '</div>';
+  if (f.stage === 'done') {
+    const ans = q.answers.map((a, i) => a + ' ' + q.fields[i].unit).join(' ');
+    if (f.showAnswer) h += '<div class="fb hint">こたえは <b>' + uiEsc(ans) + '</b> だよ。' + steps(q.steps) + uiClockFig() + '</div>';
+    else h += '<div class="fb ok">' + (f.first ? 'できたね！ ' : 'せいかい！ ') + '<b>' + uiEsc(ans) + '</b>' + steps(q.steps) + '</div>';
+    h += '<p><button class="primary big" data-act="next">つぎへ（Enter）</button></p>';
+    return h;
+  }
+  if (f.stage === 's1') {
+    h += '<p>① ' + uiEsc(q.from) + ' を ' + uiEsc(q.to) + ' に するには、どれ？</p><div class="options">';
+    q.options.forEach((o, i) => {
+      h += '<button data-act="choose" data-i="' + i + '"' + (f.disabled.includes(i) ? ' disabled' : '') + '><span class="key">' + (i + 1) + '</span>' + o.label + '</button>';
+    });
+    h += '</div>';
+    const fb = f.feedback || {};
+    if (fb.kind === 'ng1') {
+      const msg = fb.t === 'dec' ? 'じかんは 10 ずつ では なく、60（1日は 24）で くりあがるよ。'
+        : fb.t === 'mag' ? '60 と 24 を まちがえないでね。1日 ＝ 24時間、1時間 ＝ 60分、1分 ＝ 60秒。'
+          : '大きい たんい → 小さい たんい は かずが 大きく なる（×）。ぎゃくは ÷。';
+      h += '<div class="fb hint">おしい！ ' + msg + uiClockFig() + '</div>';
+    } else if (fb.kind === 'ng0') h += '<div class="fb hint">おしい！ ①から いっしょに やってみよう。</div>';
+    else if (showFig) h += uiClockFig();
+    return h;
+  }
+  if (f.stage === 's2') {
+    h += '<div class="fb ok">① ' + ckOpLabel(q.op) + ' で せいかい！</div><p>② けいさん しよう</p><div class="answer-row">' + q.value + ' ' + ckOpLabel(q.op) + ' ＝ ' + uiClockInputs(q) + ' <button class="primary" data-act="submit">けってい</button></div>';
+  } else if (f.stage === 'direct') {
+    h += '<div class="answer-row">' + q.value + ' ' + uiEsc(q.from) + ' ＝ ' + uiClockInputs(q) + ' <button class="primary" data-act="submit">けってい</button></div>';
+  } else {
+    h += '<div class="answer-row">' + uiClockInputs(q) + ' <button class="primary" data-act="submit">けってい</button></div>';
+  }
+  h += uiTenkey();
+  const fb = f.feedback || {};
+  if (fb.kind === 'invalid') h += '<div class="fb info">すうじで いれてね。</div>';
+  else if (fb.kind === 'ng2') h += '<div class="fb hint">おしい！ とき方を みて、もう いちど。' + steps(q.steps.slice(0, -1)) + uiClockFig() + '</div>';
+  else if (showFig) h += uiClockFig();
+  return h;
+}
+
+// flow が変わるたびに呼ぶ。最初の誤りの時点で記録する（途中でやめても残る）
+function uiClockAfter() {
+  const pl = uiS.play;
+  const f = pl.ck;
+  const entry = pl.list[pl.idx];
+  const id = pl.q.id;
+  if (!pl.recorded) {
+    const rec = f.stage === 'done' ? ckFlowRecord(f, pl.support) : ckFirstRecord(f, pl.support);
+    if (rec) {
+      const today = pgToday();
+      const before = (uiProfile().clock || {})[id];
+      const st = pgRecord(before, rec, today, entry.isCheck);
+      if (before) for (const kind of pgEvents(before, st)) pl.events.push({ date: today, kind, key: 'ck:' + id });
+      if (rec.r !== 'ok' && pl.missed) pl.missed.push('ck:' + id);
+      uiSave(storeSetClock(uiS.data, uiS.pid, id, st));
+      pl.recorded = true;
+    }
+  }
+  if (f.stage === 'done' && !pl.counted) {
+    pl.counted = true;
+    if (!f.first) {
+      pl.correct += 1;
+      if (!f.hint) pl.clean = (pl.clean || 0) + 1;
+    } else if (!f.showAnswer) pl.retried += 1;
+  }
+}
+
+// ---------- 文章題（D-015） ----------
+function uiWord() {
+  const pl = uiS.play;
+  const q = pl.q;
+  const wd = pl.wd;
+  const steps = (list) => '<ol class="steps">' + list.map((x) => '<li>' + uiEsc(x) + '</li>').join('') + '</ol>';
+  let h = '<p>ぶんしょうだい</p><div class="qtext word">' + uiEsc(q.text) + '</div>';
+  if (wd.show) {
+    const ans = decToString(q.answer) + ' ' + q.unit;
+    if (wd.fb === 'ok') h += '<div class="fb ok">' + (wd.tries === 0 ? 'せいかい！ ' : 'できたね！ ') + '<b>' + uiEsc(ans) + '</b>' + steps(q.steps) + '</div>';
+    else h += '<div class="fb hint">こたえは <b>' + uiEsc(ans) + '</b> だよ。とき方を みてみよう。' + steps(q.steps) + '</div>';
+    h += '<p><button class="primary big" data-act="next">つぎへ（Enter）</button></p>';
+    return h;
+  }
+  h += '<div class="answer-row"><input id="ans" type="text" inputmode="decimal" autocomplete="off" aria-label="こたえ"> ' + uiEsc(q.unit) + ' <button class="primary" data-act="submit">けってい</button></div>' + uiTenkey();
+  if (wd.fb === 'invalid') h += '<div class="fb info">すうじで いれてね。</div>';
+  if (wd.fb === 'ng') h += '<div class="fb hint">おしい！ とき方を みて、もう いちど。' + steps(q.steps.slice(0, -1)) + '</div>';
+  else if (pl.drillHint) h += '<div class="fb info">ヒント: ' + uiEsc(q.steps[0]) + '</div>';
+  return h;
+}
+
+function uiWordSubmit(val) {
+  const pl = uiS.play;
+  const q = pl.q;
+  const wd = pl.wd;
+  const r = qCheck(val, q.answer);
+  if (r === 'invalid') {
+    wd.fb = 'invalid';
+    return;
+  }
+  const ok = r === 'ok';
+  if (wd.tries === 0) {
+    // 最初の1回で記録する（ヒントを見て正解したときは進めない）
+    if (!(pl.drillHint && ok)) {
+      const today = pgToday();
+      const before = (uiProfile().word || {})[q.id];
+      const after = wdRecord(before, ok, today);
+      uiSave(storeSetWord(uiS.data, uiS.pid, q.id, after));
+      if (!wdDone(before) && wdDone(after)) pl.events.push({ date: today, kind: 'word', key: q.id });
+    }
+    if (ok) {
+      pl.correct += 1;
+      if (!pl.drillHint) pl.clean = (pl.clean || 0) + 1;
+    }
+  } else if (ok) {
+    pl.retried += 1;
+  }
+  if (ok) {
+    wd.fb = 'ok';
+    wd.show = true;
+  } else {
+    wd.tries += 1;
+    wd.fb = 'ng';
+    if (wd.tries >= 2) wd.show = true;
+  }
+}
+
+// ---------- 意味の問題（D-014） ----------
+function uiMeaning() {
+  const pl = uiS.play;
+  const q = pl.q;
+  const pf = pl.pf;
+  let h = '<p>たんいの いみ</p><div class="qtext">' + uiEsc(q.text) + '</div><div class="options">';
+  q.options.forEach((o, i) => {
+    const dis = pf.disabled.includes(i) || (pf.done && !o.correct);
+    h += '<button data-act="choose" data-i="' + i + '"' + (dis ? ' disabled' : '') + (pf.done && o.correct ? ' class="primary"' : '') + '><span class="key">' + (i + 1) + '</span>' + uiEsc(o.label) + '</button>';
+  });
+  h += '</div>';
+  const fig = q.level === 3 && /L|cm³|mL/.test(q.text) ? '<div class="figure">' + charaLiterSvg() + '</div>' : '';
+  if (pf.done) {
+    h += '<div class="fb ok">' + (pf.wrongs === 0 ? 'せいかい！ ' : 'できたね！ ') + uiEsc(q.explain) + fig + '</div>';
+    h += '<p><button class="primary big" data-act="next">つぎへ（Enter）</button></p>';
+  } else if (pf.lastWrong !== null) {
+    h += '<div class="fb hint">おしい！ ' + uiEsc(q.explain.split('。')[0]) + '。' + fig + '</div>';
+  } else if (pl.drillHint) {
+    h += '<div class="fb info">ヒント: ' + uiEsc(q.explain) + fig + '</div>';
+  }
+  return h;
+}
+
+function uiMeaningChoose(i) {
+  const pl = uiS.play;
+  const pf = pl.pf;
+  const o = pl.q.options[i];
+  if (!o || pf.done || pf.disabled.includes(i)) return;
+  // ヒントを見て正解したときは進めない。誤りは記録する（D-014）
+  if (pf.wrongs === 0 && !(pl.drillHint && o.correct)) {
+    const today = pgToday();
+    const before = (uiProfile().meaning || {})[pl.q.id];
+    const after = mnRecord(before, o.correct, today);
+    uiSave(storeSetMeaning(uiS.data, uiS.pid, pl.q.id, after));
+    if (!mnDone(before) && mnDone(after)) pl.events.push({ date: today, kind: 'meaning', key: pl.q.id });
+  }
+  if (o.correct) {
+    if (pf.wrongs === 0) pl.correct += 1;
+    else pl.retried += 1;
+    pf.done = true;
+  } else {
+    pf.wrongs += 1;
+    pf.disabled.push(i);
+    pf.lastWrong = i;
+  }
+}
+
+// 最初の1回の答えで記録する（途中でやめても残る）
+function uiPrefixChoose(i) {
+  const pl = uiS.play;
+  const pf = pl.pf;
+  const o = pl.q.options[i];
+  if (!o || pf.done || pf.disabled.includes(i)) return;
+  // ヒント（表）を見て正解したときは、箱を進めない（R-007）。誤りは記録する
+  if (pf.wrongs === 0 && !(pl.drillHint && o.correct)) {
+    const st = (uiProfile().prefix || {})[pl.q.key];
+    uiSave(storeSetPrefix(uiS.data, uiS.pid, pl.q.key, prefixRecord(st, o.correct, pgToday())));
+  }
+  if (o.correct) {
+    if (pf.wrongs === 0) pl.correct += 1;
+    else pl.retried += 1;
+    pf.done = true;
+  } else {
+    pf.wrongs += 1;
+    pf.disabled.push(i);
+    pf.lastWrong = o.id;
+  }
+}
+
+function uiSubmit() {
+  const el = document.getElementById('ans');
+  const val = el ? el.value : '';
+  const pl = uiS.play;
+  if (pl.isClock) {
+    const vals = pl.q.fields.map((_, i) => { const e = document.getElementById(i === 0 ? 'ans' : 'ans' + (i + 1)); return e ? e.value : ''; });
+    pl.ck = ckFlowInput(pl.ck, pl.q, vals);
+    uiClockAfter();
+    uiRender();
+    return;
+  }
+  if (pl.isWord) {
+    uiWordSubmit(val);
+    uiRender();
+    return;
+  }
+  if (pl.mode === 'drill') {
+    const r = qCheck(val, pl.q.answer);
+    if (r === 'invalid') pl.drillFb = 'invalid';
+    else {
+      if (pl.drillTries === 0) {
+        uiSave(storeAddDrill(uiS.data, uiS.pid, (pl.q.dir === 'x' ? 'x' : 'd') + pl.q.k, r === 'ok'));
+        if (r === 'ok') pl.correct += 1;
+      }
+      if (r === 'ok') {
+        if (pl.drillTries > 0) pl.retried += 1;
+        pl.drillFb = 'ok';
+        pl.drillShow = true;
+      } else {
+        pl.drillTries += 1;
+        pl.drillFb = 'ng';
+        if (pl.drillTries >= 2) pl.drillShow = true;
+      }
+    }
+    uiRender();
+    return;
+  }
+  pl.flow = qFlowInput(pl.flow, pl.q, val);
+  uiAfterFlow();
+  uiRender();
+}
+
+function uiNext() {
+  const pl = uiS.play;
+  pl.idx += 1;
+  if (pl.idx < pl.list.length) {
+    uiNextQ();
+    return;
+  }
+  uiFinishSession();
+}
+
+function uiFinishSession() {
+  const pl = uiS.play;
+  const p = uiProfile();
+  const before = p.total;
+  if (pl.mode === 'drill' && !SLOT_DRILL_GIVES_SLOT) {
+    uiS.play = null;
+    uiS.screen = 'home';
+    return;
+  }
+  if (pl.mode === 'memtest') {
+    uiFinishMemtest();
+    return;
+  }
+  const spin = slotSpin(uiRng, pl.correct);
+  const session = {
+    id: pl.id, date: pgToday(), mode: pl.mode, level: pl.level || null, n: pl.list.length, correct: pl.correct,
+    retried: pl.retried, clean: pl.clean || 0, rec: !!pl.rec, mid: spin.mi, right: spin.ri, points: spin.points, formula: spin.formula, totalBefore: before,
+  };
+  // アニメーションの前に確定して保存する（途中で閉じても引き直せない）
+  const r = storeApplySession(uiS.data, uiS.pid, session);
+  // できるようになったこと（設計 §13.5）: 1問ごとの出来事 ＋ 回の終わりの出来事。同じ日の重複は storeAddLog が落とす
+  const today = pgToday();
+  let d = r.data;
+  const se = coSessionEvents(pl.before, storeProfile(d, uiS.pid), today);
+  for (const k of se.unlock) d = storeSetUnlocked(d, uiS.pid, k, today);
+  // 段位（設計 §13.16）: 上がったら記録して出来事にする
+  {
+    const pr = storeProfile(d, uiS.pid);
+    const before = pr.rank ? pr.rank.i : 0;
+    const ri = coRankIndex(pr);
+    if (ri > before || !pr.rank) {
+      d = storeSetRank(d, uiS.pid, ri, today);
+      for (let k = before + 1; k <= ri; k++) se.events.push({ date: today, kind: 'rank', key: String(k) });
+    }
+  }
+  // ログイン・週のスタンプ（D-017。§13.12 の もくひょう は廃止）
+  const bn = uiApplyBonuses(d, today);
+  d = bn.data;
+  const lg = storeAddLog(d, uiS.pid, pl.events.concat(se.events));
+  d = lg.data;
+  uiSave(d);
+  const shown = lg.added;
+  const nextStep = shown.length || !(pl.mode === 'normal' && pl.level) ? null : pgNextStep(storeProfile(d, uiS.pid).items, pl.level);
+  uiS.play = null;
+  uiS.result = { session, phase: 0, events: shown.filter((e) => e.kind !== 'daily'), nextStep, bonuses: bn.got };
+  uiS.screen = 'result';
+}
+
+// まだもらっていない ログイン・週のスタンプ のボーナスを足す。返す: { data, got: [{ kind, points }] }
+function uiApplyBonuses(data, today) {
+  let d = data;
+  const got = [];
+  for (const b of mtDueBonuses(storeProfile(d, uiS.pid).sessions, today)) {
+    const r = storeApplyBonus(d, uiS.pid, b.id, today, b.points);
+    d = r.data;
+    if (r.added) got.push(b);
+  }
+  return { data: d, got };
+}
+
+function uiBonusHtml(list) {
+  return (list || []).map((b) => '<div class="fb ok daily">' + (b.kind === 'week' ? 'こんしゅうの スタンプ ' + MT_WEEK_STAMPS + 'こ たまった！' : 'きょうも きてくれて ありがとう！ ログインボーナス') + ' <b>＋' + b.points + ' ポイント</b></div>').join('');
+}
+
+// きおくテストの終わり（D-017）: 点は正解数で決まる。スロットは回さない
+function uiFinishMemtest() {
+  const pl = uiS.play;
+  const p = uiProfile();
+  const today = pgToday();
+  const points = mtPoints(pl.correct, pl.list.length);
+  const session = { id: pl.id, date: today, mode: 'memtest', level: null, n: pl.list.length, correct: pl.correct, retried: pl.retried, clean: pl.clean || 0, rec: !!pl.rec, mid: null, right: null, points, totalBefore: p.total };
+  let d = storeApplyMemtest(uiS.data, uiS.pid, session).data;
+  const se = coSessionEvents(pl.before, storeProfile(d, uiS.pid), today);
+  for (const k of se.unlock) d = storeSetUnlocked(d, uiS.pid, k, today);
+  {
+    const pr = storeProfile(d, uiS.pid);
+    const before = pr.rank ? pr.rank.i : 0;
+    const ri = coRankIndex(pr);
+    if (ri > before || !pr.rank) {
+      d = storeSetRank(d, uiS.pid, ri, today);
+      for (let k = before + 1; k <= ri; k++) se.events.push({ date: today, kind: 'rank', key: String(k) });
+    }
+  }
+  const bn = uiApplyBonuses(d, today);
+  d = bn.data;
+  const lg = storeAddLog(d, uiS.pid, pl.events.concat(se.events));
+  uiSave(lg.data);
+  uiS.result = { session, missed: [...new Set(pl.missed)], events: lg.added, bonuses: bn.got, stamps: mtWeekStamps(storeProfile(lg.data, uiS.pid).sessions, today) };
+  uiS.play = null;
+  uiS.screen = 'mresult';
+}
+
+function uiMemtestResult() {
+  const res = uiS.result;
+  const s = res.session;
+  const perfect = s.correct === s.n;
+  let h = '<h1>きおくテスト おしまい！</h1>';
+  h += '<div class="chara-row">' + CHARA_LIST.map((c) => charaSvg(c.id, perfect ? 'cheer' : 'happy', 80)).join('') + '</div>';
+  h += '<p class="stat" style="text-align:center">おぼえていた: <b>' + s.correct + '</b> / ' + s.n + ' もん' + (perfect ? ' <b class="clear">まんてん！</b>' : '') + '</p>';
+  h += '<div class="points">+' + s.points + ' ポイント</div>';
+  h += '<p class="muted" style="text-align:center">まんてん ' + MT_POINTS[5] + '・4もん ' + MT_POINTS[4] + '・それより すくないと ' + MT_POINTS[3] + '</p>';
+  if (res.missed.length) h += '<div class="fb info say">' + charaSvg('shikaku', 'normal', 72) + '<b>わすれかけを みつけた！</b> ふくしゅうで とりもどそう。<ul class="list">' + res.missed.map((k) => '<li>' + uiEsc(uiItemLabel(k)) + '</li>').join('') + '</ul></div>';
+  if (res.events && res.events.length) h += '<div class="fb ok say">' + charaSvg('shikaku', 'cheer', 72) + '<b>きょう できるように なったこと</b><ul class="list">' + res.events.map((e) => '<li>' + uiEsc(uiEventText(e)) + '</li>').join('') + '</ul></div>';
+  h += '<p class="daily-bar" style="text-align:center">こんしゅうの スタンプ <span class="stamps">' + '●'.repeat(Math.min(MT_WEEK_STAMPS, res.stamps)) + '○'.repeat(Math.max(0, MT_WEEK_STAMPS - res.stamps)) + '</span></p>';
+  h += uiBonusHtml(res.bonuses);
+  h += '<p style="text-align:center"><button class="primary big" data-act="mresultdone">ホームへ（Enter）</button></p>';
+  return h;
+}
+
+// ---------- タイムチャレンジ（設計 §13.8） ----------
+function uiTimeKeys() {
+  const p = uiProfile();
+  const pk = prefixKeys().filter((k) => p.prefix && p.prefix[k] && p.prefix[k].box >= PREFIX_BOX_MAX);
+  return { mk: pgMasteredKeys(p.items), pk };
+}
+
+function uiTimeStart() {
+  const p = uiProfile();
+  if (!coTimeAvailable(p)) return;
+  const keys = uiTimeKeys();
+  if (!keys.mk.length && !keys.pk.length) return;
+  const now = Date.now();
+  uiS.tc = { id: uiTabId + '-t' + now, end: now + TC_SECONDS * 1000, results: [], q: null, prevKey: null, wrong: null, timer: null, keys };
+  uiTimeNext();
+  uiS.screen = 'time';
+  uiS.tc.timer = setInterval(uiTimeTick, 200);
+}
+
+function uiTimeNext() {
+  const tc = uiS.tc;
+  tc.q = tcMakeQuestion(uiRng, tc.keys.mk, tc.keys.pk, tc.prevKey);
+  tc.prevKey = tc.q.key;
+  tc.wrong = null;
+}
+
+function uiTimeTick() {
+  const tc = uiS.tc;
+  if (!tc) return;
+  const left = Math.max(0, Math.ceil((tc.end - Date.now()) / 1000));
+  const el = document.getElementById('tc-left');
+  if (el) el.textContent = String(left);
+  if (Date.now() >= tc.end) uiTimeFinish();
+}
+
+function uiTimeAnswer(i) {
+  const tc = uiS.tc;
+  if (!tc || tc.wrong || Date.now() >= tc.end || Date.now() < (tc.lockUntil || 0)) return;
+  const o = tc.q.options[i];
+  if (!o) return;
+  tc.results.push(o.correct);
+  if (o.correct) {
+    uiTimeNext();
+    tc.lockUntil = Date.now() + 200; // 正解の直後の二度押しを次の問題の答えにしない
+  } else {
+    tc.wrong = { i };
+    const q = tc.q;
+    setTimeout(() => {
+      if (uiS.tc === tc && tc.q === q && Date.now() < tc.end) {
+        uiTimeNext();
+        uiRender();
+      }
+    }, TC_WRONG_SHOW_MS);
+  }
+  uiRender();
+}
+
+function uiTimeFinish() {
+  const tc = uiS.tc;
+  if (!tc) return;
+  clearInterval(tc.timer);
+  uiS.tc = null;
+  const p = uiProfile();
+  const today = pgToday();
+  const sc = tcScore(tc.results);
+  const points = tcPointsFor(sc.score, p.sessions, today);
+  const session = {
+    id: tc.id, date: today, mode: 'time', level: null, n: sc.n, correct: sc.correct, retried: 0, mid: null, right: null,
+    points, score: sc.score, formula: sc.formula, totalBefore: p.total,
+  };
+  const r = storeApplyTime(uiS.data, uiS.pid, session);
+  const bn = uiApplyBonuses(r.data, today);
+  uiSave(bn.data);
+  uiS.result = { time: true, session, newBest: r.newBest, bonuses: bn.got };
+  uiS.screen = 'tresult';
+  uiRender();
+}
+
+function uiTimeQuit() {
+  if (uiS.tc) clearInterval(uiS.tc.timer);
+  uiS.tc = null;
+  uiS.screen = 'home';
+}
+
+function uiTime() {
+  const tc = uiS.tc;
+  const left = Math.max(0, Math.ceil((tc.end - Date.now()) / 1000));
+  const sc = tcScore(tc.results);
+  let h = '<div class="row"><span class="tc-left" id="tc-left">' + left + '</span><span>びょう</span><span style="flex:1"></span>';
+  h += '<span class="stat">せいかい <b>' + sc.correct + '</b>　とくてん <b>' + sc.score + '</b></span>';
+  h += '<button class="small" data-act="tcquit">やめる</button></div>';
+  h += '<div class="qtext">' + uiEsc(tc.q.text) + '</div><div class="options">';
+  tc.q.options.forEach((o, i) => {
+    let cls = '';
+    if (tc.wrong) cls = o.correct ? ' class="primary"' : i === tc.wrong.i ? ' class="tc-ng"' : '';
+    h += '<button data-act="tcans" data-i="' + i + '"' + cls + (tc.wrong ? ' disabled' : '') + '><span class="key">' + (i + 1) + '</span>' + uiEsc(o.label) + '</button>';
+  });
+  h += '</div>';
+  if (tc.wrong) h += '<div class="fb hint">こたえは「' + uiEsc(tc.q.options.find((o) => o.correct).label) + '」</div>';
+  return h;
+}
+
+function uiTimeResult() {
+  const res = uiS.result;
+  const s = res.session;
+  let h = '<h1>タイムチャレンジ おしまい！</h1>';
+  h += '<div class="chara-row">' + CHARA_LIST.map((c) => charaSvg(c.id, 'happy', 80)).join('') + '</div>';
+  h += '<p class="stat">こたえた ' + s.n + ' もん / せいかい <b>' + s.correct + '</b> もん</p>';
+  h += '<div class="formula">' + uiEsc(s.formula) + '</div>';
+  if (res.newBest) h += '<div class="fb ok" style="text-align:center">じこベスト こうしん！ <b>' + s.score + '</b> てん</div>';
+  h += s.points > 0 ? '<div class="points">+' + s.points + ' ポイント</div><p class="muted" style="text-align:center">とくてん ' + s.score + ' ÷ 3 ＝ ' + s.points + ' ポイント（ししゃごにゅう）</p>' : '<p class="fb info" style="text-align:center">きょうの ポイントは ' + TC_DAILY_MAX + 'かい まで。いまのは れんしゅう だよ。</p>';
+  h += uiBonusHtml(res.bonuses);
+  h += '<p style="text-align:center"><button class="primary big" data-act="tresultdone">ホームへ（Enter）</button></p>';
+  return h;
+}
+
+// ---------- 画面: おわり（スロット） ----------
+function uiResult() {
+  const res = uiS.result;
+  const s = res.session;
+  const p = uiProfile();
+  const ph = res.phase; // 0: まわる 1: 中央止まる 2: 右止まる 3: けっか
+  const sym = (i) => SLOT_SYMBOLS[i].label;
+  let h = '<h1>おつかれさま！</h1>';
+  h += uiBonusHtml(res.bonuses);
+  if (res.events && res.events.length) {
+    h += '<div class="fb ok say">' + charaSvg('shikaku', 'cheer', 72) + '<b>きょう できるように なったこと</b><ul class="list">' + res.events.map((e) => '<li>' + uiEsc(uiEventText(e)) + '</li>').join('') + '</ul></div>';
+  } else if (res.nextStep) {
+    h += '<div class="fb info say">' + charaSvg('shikaku', 'normal', 72) + '<b>つぎの いっぽ</b><br>' + uiEsc(uiNextStepText(res.nextStep)) + '</div>';
+  }
+  h += '<p class="stat">できた: <b>' + s.correct + '</b> もん / ' + s.n + ' もん' + (s.retried ? '　やりなおして できた: <b>' + s.retried + '</b> もん' : '') + '</p>';
+  h += '<div class="chara-row">' + CHARA_LIST.map((c) => charaSvg(c.id, ph >= 3 ? 'happy' : 'cheer', 80)).join('') + '</div>';
+  h += '<div class="slot ' + uiEsc(p.theme) + '"><div class="reel">' + s.correct + '</div><span>×</span>';
+  h += '<div class="reel' + (ph < 1 ? ' spin' : '') + '" id="reel-m">' + (ph >= 1 ? sym(s.mid) : '?') + '</div><span>÷</span>';
+  h += '<div class="reel' + (ph < 2 ? ' spin' : '') + '" id="reel-r">' + (ph >= 2 ? sym(s.right) : '?') + '</div></div>';
+  if (ph >= 3) {
+    h += '<div class="formula">' + uiEsc(s.formula) + '</div><div class="points">+' + s.points + ' ポイント</div>';
+    h += '<p style="text-align:center"><button class="primary big" data-act="resultdone">ホームへ（Enter）</button></p>';
+    if (s.mode === 'normal' && s.level && pgJumpKeys(p.items, s.level).length) h += '<p style="text-align:center"><button data-act="jumpnow" data-level="' + s.level + '">かんたん だった？ レベル' + s.level + ' ほじょなしで チャレンジ！</button></p>';
+  }
+  return h;
+}
+
+function uiRunSlot() {
+  const res = uiS.result;
+  if (!res || res.running) return;
+  res.running = true;
+  const reels = SLOT_SYMBOLS.map((x) => x.label);
+  const reelsR = [...new Set(SLOT_REEL_RIGHT)].sort((a, b) => a - b).map((i) => SLOT_SYMBOLS[i].label);
+  let tick = 0;
+  const iv = setInterval(() => {
+    tick += 1;
+    const m = document.getElementById('reel-m');
+    const r = document.getElementById('reel-r');
+    if (m && res.phase < 1) m.textContent = reels[tick % reels.length];
+    if (r && res.phase < 2) r.textContent = reelsR[(tick * 3) % reelsR.length];
+  }, 90);
+  setTimeout(() => { res.phase = 1; uiRender(); }, 1400);
+  setTimeout(() => { res.phase = 2; uiRender(); }, 2400);
+  setTimeout(() => { clearInterval(iv); res.phase = 3; uiRender(); }, 3000);
+}
+
+// ---------- 画面: ごほうび ----------
+function uiRewards() {
+  const p = uiProfile();
+  let h = '<h1>ごほうび</h1><p class="stat">つかえる ポイント <b>' + p.available + '</b></p>';
+  const rs = storeRewardSlot(uiS.data);
+  if (uiS.rspin) {
+    // くじの結果（設計 §13.22）
+    const sp = uiS.rspin;
+    h += '<div class="card rs"><h2>ごほうびくじ</h2>';
+    h += '<div class="reel big-reel" id="rs-reel">' + (sp.shown ? sp.prize.yen + '円' : '?') + '</div>';
+    if (sp.shown) {
+      h += '<p class="fb ok" style="text-align:center">' + (sp.prize.last ? '<b>ラストワンしょう！</b> ' : '') + '<b>' + sp.prize.yen + '円</b> あたり！ おとなの人に みせてね。</p>';
+      if (rsBoxEmpty(p.rbox)) h += '<p class="muted" style="text-align:center">はこが からっぽに なった。つぎは あたらしい はこ だよ。</p>';
+      h += '<p style="text-align:center"><button class="primary big" data-act="rsdone">OK</button></p>';
+    }
+    return h + '</div>';
+  }
+  if (uiS.rsAsk) {
+    h += '<div class="card"><h2>ごほうびくじを ひく？（' + rs.cost + ' ポイント）</h2><p>おとなの人に みせてね。</p>';
+    h += '<div class="row"><button class="primary big" data-act="rsok">おとなの人: OK</button><button data-act="rscancel">やめる</button></div></div>';
+    return h;
+  }
+  h += '<div class="card rs"><h3>ごほうびくじ（1かい ' + rs.cost + ' ポイント）</h3>' + uiBoxHtml(rs, rsCurrentBox(rs, p.rbox));
+  h += '<button class="primary" data-act="rsask"' + (p.available < rs.cost || uiS.mode === 'readonly' ? ' disabled' : '') + '>ひく</button></div>';
+  if (uiS.exchange) {
+    const r = uiS.data.rewards.find((x) => x.id === uiS.exchange);
+    h += '<div class="card"><h2>「' + uiEsc(r.name) + '」（' + r.cost + ' ポイント）と こうかんする？</h2><p>おとなの人に みせてね。</p>';
+    h += '<div class="row"><button class="primary big" data-act="exok">おとなの人: OK</button><button data-act="excancel">やめる</button></div></div>';
+    return h;
+  }
+  if (!uiS.data.rewards.length) h += '<p class="muted">まだ ごほうびが ありません。おとなの人に きめてもらおう。</p>';
+  h += '<div class="grid2">';
+  for (const r of uiS.data.rewards) {
+    h += '<div class="card"><h3>' + uiEsc(r.name) + '</h3><p>' + r.cost + ' ポイント</p><button data-act="exchange" data-id="' + uiEsc(r.id) + '"' + (p.available < r.cost || uiS.mode === 'readonly' ? ' disabled' : '') + '>こうかん</button></div>';
+  }
+  h += '</div>';
+  if (uiS.adult.msg) h += '<p class="fb ok">' + uiS.adult.msg + '</p>';
+  h += '<p><button data-act="home">← もどる</button></p>';
+  return h;
+}
+
+// くじの箱の中身（設計 §13.22）。あたりごとの残り枚数と、ラストワン
+function uiBoxHtml(rs, box) {
+  const n = box.left.reduce((s, x) => s + x, 0) + (box.last ? 1 : 0);
+  let h = '<p>はこ ' + box.no + ' ばんめ・のこり <b>' + n + '</b> まい</p><div class="box-left">';
+  rs.prizes.forEach((x, i) => {
+    h += '<span class="chip' + (box.left[i] ? '' : ' gone') + '">' + x.yen + '円 × ' + box.left[i] + '</span>';
+  });
+  if (rs.last > 0) h += '<span class="chip last' + (box.last ? '' : ' gone') + '">ラストワン ' + rs.last + '円' + (box.last ? '' : '（でた）') + '</span>';
+  return h + '</div>';
+}
+
+// ---------- 画面: おとなの人 ----------
+function uiDays(iso) {
+  if (!iso) return null;
+  return pgDaysBetween(pgToday(new Date(iso)), pgToday());
+}
+
+function uiAdult() {
+  const a = uiS.adult;
+  if (!a.ok) {
+    return '<h1>おとなの人ですか？</h1><p>きろくや ごほうびの せってい を かえる画面です。</p><div class="row"><button class="primary big" data-act="adultyes">はい</button><button data-act="who">いいえ</button></div>';
+  }
+  const d = uiS.data;
+  let h = '<div class="adult"><h1>おとなの人の画面</h1>';
+  if (a.msg) h += '<p class="fb info">' + a.msg + '</p>';
+  // バックアップ
+  const days = uiDays(d.lastExportAt);
+  h += '<div class="card"><h2>きろくの かきだし（バックアップ）</h2>';
+  h += '<p>さいごに ほぞんを たしかめた日: <b>' + (d.lastExportAt ? pgToday(new Date(d.lastExportAt)) : 'まだ') + '</b>' + (days === null || days >= 7 ? ' <span class="danger">← 7日以上あいています。かきだしてください</span>' : '') + '</p>';
+  if (a.askSaved) {
+    h += '<p>ファイル（keisan_backup_…json）は ほぞん できましたか？ ダウンロード先を たしかめてください。</p><div class="row"><button class="primary" data-act="savedyes">できた</button><button data-act="savedno">できなかった</button></div>';
+  } else {
+    h += '<div class="row"><button class="primary" data-act="export">かきだす</button><label>よみこむ: <input type="file" id="importfile" accept=".json,application/json"></label></div>';
+  }
+  if (a.importPlan) {
+    const sm = a.importPlan.summary;
+    h += '<div class="fb hint"><b>よみこむと、いまの きろくが おきかわります。</b><br>ファイルの さいしゅう こうしん: ' + uiEsc(sm.nextUpdatedAt || '-') + '<ul class="list">';
+    for (const x of sm.profiles) h += '<li>' + uiEsc(x.name) + ': ごうけい ' + x.cur.total + ' → ' + x.next.total + '、つかえる ' + x.cur.available + ' → ' + x.next.available + (x.next.name !== x.name ? '（なまえ → ' + uiEsc(x.next.name) + '）' : '') + '</li>';
+    h += '</ul><div class="row"><button class="primary" data-act="importgo">おきかえる</button><button data-act="importcancel">やめる</button></div></div>';
+  }
+  if (a.undoPlan) {
+    const sm = a.undoPlan.summary;
+    h += '<div class="fb hint"><b>よみこむ まえの きろくに もどします。よみこんだ あとの きろく（ポイント・にがて）は きえます。</b><ul class="list">';
+    for (const x of sm.profiles) h += '<li>' + uiEsc(x.name) + ': ごうけい ' + x.cur.total + ' → ' + x.next.total + '、つかえる ' + x.cur.available + ' → ' + x.next.available + '</li>';
+    h += '</ul><div class="row"><button class="primary" data-act="undogo">もどす</button><button data-act="undocancel">やめる</button></div></div>';
+  } else if (storeReadBeforeImport(uiS.ctx.ls, Date.now())) {
+    h += '<p><button class="small" data-act="undoplan">まえの よみこみを とりけす（24じかん いない）</button></p>';
+  }
+  if (uiS.rawBroken) h += '<p class="danger">こわれていた もとの データ: <button class="small" data-act="exportbroken">かきだす</button></p>';
+  h += '</div>';
+  // 3人の きろく
+  h += '<h2>3人の きろく</h2><div class="grid2">';
+  for (const p of d.profiles) {
+    const weak = pgWeakKeys(p.items);
+    h += '<div class="card"><h3>' + uiEsc(p.name) + '</h3>';
+    h += '<div class="row"><input type="text" id="name-' + p.id + '" value="' + uiEsc(p.name) + '" maxlength="20"><button class="small" data-act="rename" data-id="' + p.id + '">なまえを かえる</button></div>';
+    h += '<p>ごうけい <b>' + p.total + '</b> / つかえる <b>' + p.available + '</b> / 段位 ' + uiEsc(CO_RANKS[coRankIndex(p)].name) + '</p>';
+    h += '<p>にがて（' + weak.length + '）</p><ul class="list">';
+    for (const k of weak) {
+      const it = unitItemByKey(k);
+      const mk = pgMarks(p.items[k]);
+      h += '<li>' + uiEsc(it.from) + ' → ' + uiEsc(it.to) + (mk.stage === 'unit' ? '<span class="tag">①たんいの かんけい</span>' : mk.stage === 'calc' ? '<span class="tag calc">②けいさん</span>' : '') + (mk.dimConfusion ? '<span class="tag">ながさと まちがえやすい</span>' : '') + '</li>';
+    }
+    if (!weak.length) h += '<li class="muted">なし</li>';
+    h += '</ul>';
+    const prone = Object.keys(p.items).filter((k) => !p.items[k].weak && pgMarks(p.items[k]).errorProne);
+    if (prone.length) h += '<p class="muted">まちがいやすい: ' + prone.map((k) => { const it = unitItemByKey(k); return uiEsc(it.from + '→' + it.to); }).join('、') + '</p>';
+    const dr = Object.entries(p.drill);
+    h += '<p class="muted">できた: ' + [1, 2, 3].map((lv) => 'レベル' + lv + ' ' + pgLevelProgress(p.items, lv).mastered + '/' + unitItems(lv).length).join('・') + '　タイムチャレンジ じこベスト ' + ((p.best && p.best.time) || 0) + '</p>';
+    h += '<p class="muted">じかん: できた ' + coClockMastered(p) + ' / ' + CK_ITEMS.length + '</p>';
+    h += '<p class="muted">ぶんしょうだい: とけた ' + WORD.filter((w) => wdDone((p.word || {})[w.id])).length + ' / ' + WORD.length + '</p>';
+    h += '<p class="muted">キロ・ミリ クイズ: おぼえた ' + prefixLearned(p.prefix) + ' / ' + prefixKeys().length + '</p>';
+    if (dr.length) h += '<p class="muted">ドリル: ' + dr.map(([k, v]) => (k[0] === 'x' ? '×' : '÷') + '1' + '0'.repeat(Number(k.slice(1))) + ' ' + v.ok + '/' + (v.ok + v.ng)).join('、') + '</p>';
+    const ex = p.exchanges.slice(-5).reverse();
+    if (ex.length) h += '<p class="muted">こうかん: ' + ex.map((e) => uiEsc(pgToday(new Date(e.date)) + ' ' + e.rewardName + '（' + e.cost + '）')).join('、') + '</p>';
+    h += '</div>';
+  }
+  h += '</div>';
+  // ごほうびの とうろく
+  h += '<h2>ごほうびの とうろく</h2><div class="card">';
+  d.rewards.forEach((r, i) => {
+    h += '<div class="row"><input type="text" id="rw-name-' + i + '" value="' + uiEsc(r.name) + '" maxlength="30"><input type="number" id="rw-cost-' + i + '" value="' + r.cost + '" min="1" step="1"> ポイント <button class="small" data-act="rwdel" data-i="' + i + '">けす</button></div>';
+  });
+  h += '<div class="row"><input type="text" id="rw-name-new" placeholder="なまえ（れい: おやつ）" maxlength="30"><input type="number" id="rw-cost-new" placeholder="300" min="1" step="1"> ポイント <button class="small" data-act="rwadd">ついか</button></div>';
+  h += '<p><button class="primary" data-act="rwsave">ごほうびを ほぞん</button></p></div>';
+  // ごほうびスロット（設計 §13.15）
+  const rs = storeRewardSlot(d);
+  const ev = rsExpected(rs);
+  h += '<h2>ごほうびくじ（くじの箱）</h2><div class="card">';
+  h += '<div class="row">1回 <input type="number" id="rs-cost" value="' + rs.cost + '" min="1" step="1"> ポイント</div>';
+  for (let i = 0; i < 10; i++) {
+    const x = rs.prizes[i] || { yen: '', w: '' };
+    h += '<div class="row">あたり' + (i + 1) + ': <input type="number" id="rs-yen-' + i + '" value="' + x.yen + '" min="0" step="1"> 円 × <input type="number" id="rs-w-' + i + '" value="' + x.w + '" min="1" step="1"> まい</div>';
+  }
+  h += '<div class="row">ラストワン（さいごの 1まい）: <input type="number" id="rs-last" value="' + (rs.last || 0) + '" min="0" step="1"> 円（0 なら なし）</div>';
+  h += '<p class="muted">1はこ: <b>' + ev.den + ' まい・' + ev.num + ' 円</b>。1まいの きたいち: <b>' + ev.label + ' 円</b>。空の行は つかいません。中身を かえると、つぎに ひくときから あたらしい はこに なります。</p>';
+  for (const pr of d.profiles) {
+    const bx = rsCurrentBox(rs, pr.rbox);
+    h += '<p class="muted">' + uiEsc(pr.name) + ': はこ ' + bx.no + ' ばんめ・のこり ' + (bx.left.reduce((s, x) => s + x, 0) + (bx.last ? 1 : 0)) + ' まい</p>';
+  }
+  h += '<p><button class="primary" data-act="rssave">ごほうびくじを ほぞん</button></p></div>';
+  h += '<p><button data-act="who">← もどる</button></p></div>';
+  return h;
+}
+
+function uiReadRewardSlotForm() {
+  const num = (id) => {
+    const el = document.getElementById(id);
+    const v = el ? el.value.trim() : '';
+    return v === '' ? null : Number(v);
+  };
+  const prizes = [];
+  for (let i = 0; i < 10; i++) {
+    const yen = num('rs-yen-' + i);
+    const w = num('rs-w-' + i);
+    if (yen === null && w === null) continue;
+    prizes.push({ yen, w });
+  }
+  return { cost: num('rs-cost'), prizes, last: num('rs-last') || 0 };
+}
+
+function uiRunRewardSpin() {
+  const sp = uiS.rspin;
+  const labels = storeRewardSlot(uiS.data).prizes.map((x) => x.yen + '円');
+  let t = 0;
+  const iv = setInterval(() => {
+    t += 1;
+    const el = document.getElementById('rs-reel');
+    if (el && !sp.shown) el.textContent = labels[t % labels.length];
+  }, 90);
+  setTimeout(() => {
+    clearInterval(iv);
+    if (uiS.rspin === sp) {
+      sp.shown = true;
+      uiRender();
+    }
+  }, 1800);
+}
+
+function uiDownload(name, text) {
+  const blob = new Blob([text], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+function uiReadRewardsForm() {
+  const list = [];
+  uiS.data.rewards.forEach((r, i) => {
+    const name = document.getElementById('rw-name-' + i).value.trim();
+    const cost = Number(document.getElementById('rw-cost-' + i).value);
+    list.push({ id: r.id, name, cost });
+  });
+  return list;
+}
+
+function uiSaveRewards(list) {
+  const bad = list.find((r) => !r.name || !Number.isInteger(r.cost) || r.cost < 1);
+  if (bad) {
+    uiS.adult.msg = 'なまえと ポイント（1いじょうの せいすう）を いれてください。';
+    return;
+  }
+  if (uiSave(storeSetRewards(uiS.data, list))) uiS.adult.msg = 'ごほうびを ほぞん しました。';
+}
+
+// ---------- 描画とイベント ----------
+function uiRender() {
+  uiShowBanner();
+  if (uiS.blocked) {
+    uiApp.innerHTML = '<h1>ほかの まどで ひらいています</h1><p>この まどを とじてね。（2つの まどで つかうと、きろくが きえることが あります）</p>' +
+      '<p class="muted">ほかの まどが ない ときは、5びょう まってから ひらきなおしてね。</p>';
+    return;
+  }
+  if (uiS.mode === 'readonly') {
+    uiApp.innerHTML = '<h1>あたらしい ばんで ひらいてね</h1><p>この きろくは、この アプリより あたらしい ばんで つくられています。この ばんでは きろくを みたり かえたり できません。</p>' +
+      '<p class="muted">おとなの人へ: いまの きろくは そのまま のこっています。あたらしい ばんの ファイル（app_v○.html）を ひらいてください。ねんのため、もとの データを かきだせます。</p>' +
+      '<p><button data-act="exportraw">もとの データを かきだす</button></p>';
+    return;
+  }
+  const scr = uiS.screen;
+  let h = '';
+  if (scr === 'who') h = uiWho();
+  else if (scr === 'home') h = uiHome();
+  else if (scr === 'play') h = uiPlay();
+  else if (scr === 'result') h = uiResult();
+  else if (scr === 'rewards') h = uiRewards();
+  else if (scr === 'adult') h = uiAdult();
+  else if (scr === 'time') h = uiS.tc ? uiTime() : uiHome();
+  else if (scr === 'tresult') h = uiTimeResult();
+  else if (scr === 'mresult') h = uiS.result ? uiMemtestResult() : uiHome();
+  uiApp.innerHTML = h;
+  const ans = document.getElementById('ans');
+  if (ans) ans.focus();
+  if (scr === 'result') uiRunSlot();
+  const imp = document.getElementById('importfile');
+  if (imp) imp.addEventListener('change', uiOnImportFile);
+}
+
+function uiOnImportFile(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    const r = storeParseImport(String(rd.result));
+    if (!r.ok) {
+      uiS.adult.msg = 'この ファイルは よみこめません: ' + uiEsc(r.errors.slice(0, 3).join(' / '));
+      uiS.adult.importPlan = null;
+    } else {
+      uiS.adult.importPlan = { data: r.data, summary: storeImportSummary(uiS.data, r.data) };
+      uiS.adult.msg = null;
+    }
+    uiRender();
+  };
+  rd.onerror = () => {
+    uiS.adult.msg = 'ファイルを よめませんでした。';
+    uiRender();
+  };
+  rd.readAsText(file);
+}
+
+function uiGoPick(pid) {
+  uiS.pid = pid;
+  const p = uiProfile();
+  if (p.pending) {
+    uiS.result = { session: p.pending, phase: 0 };
+    uiS.screen = 'result';
+  } else {
+    uiS.screen = 'home';
+  }
+}
+
+function uiOnClick(e) {
+  const b = e.target.closest('button[data-act]');
+  if (!b || b.disabled) return;
+  const act = b.dataset.act;
+  const a = uiS.adult;
+  switch (act) {
+    case 'pick': uiGoPick(b.dataset.id); break;
+    case 'who': uiS.screen = 'who'; uiS.pid = null; a.ok = false; a.msg = null; a.importPlan = null; a.askSaved = false; break;
+    case 'home': uiS.screen = 'home'; a.msg = null; break;
+    case 'adult': uiS.screen = 'adult'; a.ok = false; break;
+    case 'adultyes': a.ok = true; break;
+    case 'start': uiStart(b.dataset.mode, Number(b.dataset.level) || null); break;
+    case 'theme': uiSave(storeSetTheme(uiS.data, uiS.pid, b.dataset.id)); break;
+    case 'hint':
+      if (uiS.play && uiS.play.mode === 'memtest') break;
+      if (uiS.play && uiS.play.isClock) uiS.play.ck = ckFlowHint(uiS.play.ck);
+      else if (uiS.play && uiS.play.flow) uiS.play.flow = qFlowHint(uiS.play.flow);
+      else if (uiS.play) uiS.play.drillHint = true;
+      break;
+    case 'quit':
+      if (uiS.play && uiS.play.events && uiS.play.events.length) uiSave(storeAddLog(uiS.data, uiS.pid, uiS.play.events).data);
+      uiS.play = null;
+      uiS.screen = 'home';
+      break;
+    case 'choose': {
+      const pl = uiS.play;
+      if (pl.isClock) { pl.ck = ckFlowChoose(pl.ck, pl.q, Number(b.dataset.i)); uiClockAfter(); break; }
+      if (pl.isMeaning) { uiMeaningChoose(Number(b.dataset.i)); break; }
+      if (pl.mode === 'prefix') { uiPrefixChoose(Number(b.dataset.i)); break; }
+      pl.flow = qFlowChoose(pl.flow, pl.q, Number(b.dataset.i));
+      uiAfterFlow();
+      break;
+    }
+    case 'key': {
+      const el = document.getElementById(uiS.lastInput || 'ans') || document.getElementById('ans');
+      if (el) {
+        const k = b.dataset.k;
+        el.value = k === '⌫' ? el.value.slice(0, -1) : el.value + k;
+        el.focus();
+      }
+      return;
+    }
+    case 'submit': uiSubmit(); return;
+    case 'tcans': uiTimeAnswer(Number(b.dataset.i)); return;
+    case 'tcquit': uiTimeQuit(); break;
+    case 'tresultdone': uiS.result = null; uiS.screen = 'home'; break;
+    case 'jumpnow': uiSave(storeClearPending(uiS.data, uiS.pid)); uiS.result = null; uiS.screen = 'home'; uiStart('jump', Number(b.dataset.level)); break;
+    case 'next': uiNext(); break;
+    case 'mresultdone': uiS.result = null; uiS.screen = 'home'; break;
+    case 'resultdone': uiSave(storeClearPending(uiS.data, uiS.pid)); uiS.result = null; uiS.screen = 'home'; break;
+    case 'rewards': uiS.screen = 'rewards'; uiS.exchange = null; uiS.rsAsk = false; uiS.rspin = null; a.msg = null; break;
+    case 'exchange': uiS.exchange = b.dataset.id; break;
+    case 'excancel': uiS.exchange = null; break;
+    case 'rsask': uiS.rsAsk = true; a.msg = null; break;
+    case 'rscancel': uiS.rsAsk = false; break;
+    case 'rsok': {
+      uiS.rsAsk = false;
+      const draw = rsDraw(uiRng, storeRewardSlot(uiS.data), uiProfile().rbox);
+      const r = storeSpinReward(uiS.data, uiS.pid, draw, uiNowIso());
+      // 保存できたときだけ回す（atomic）
+      if (r.ok && uiSave(r.data, { atomic: true })) {
+        uiS.rspin = { prize: r.prize, shown: false };
+        uiRunRewardSpin();
+      } else if (r.ok) a.msg = 'ほぞん できなかったので、まわすのを やめました。';
+      break;
+    }
+    case 'rsdone': uiS.rspin = null; break;
+    case 'rssave': {
+      const cfg = uiReadRewardSlotForm();
+      try {
+        if (uiSave(storeSetRewardSlot(uiS.data, cfg), { atomic: true })) a.msg = 'ごほうびくじを ほぞん しました。';
+        else a.msg = 'ほぞん できませんでした。';
+      } catch (err) {
+        a.msg = 'ごほうびくじの 入力を たしかめてください（' + uiEsc(err.message) + '）';
+      }
+      break;
+    }
+    case 'exok': {
+      const r = storeExchange(uiS.data, uiS.pid, uiS.exchange, uiNowIso());
+      if (r.ok && uiSave(r.data, { atomic: true })) a.msg = 'こうかん しました！';
+      else if (r.ok) a.msg = 'ほぞん できなかったので、こうかんを やめました。';
+      uiS.exchange = null;
+      break;
+    }
+    case 'export': {
+      uiDownload('keisan_backup_' + pgToday().replace(/-/g, '') + '.json', storeExportText(uiS.data));
+      a.askSaved = true;
+      break;
+    }
+    case 'savedyes': a.askSaved = false; if (uiSave(storeMarkExported(uiS.data, uiNowIso()))) a.msg = 'ほぞんを たしかめた日を きろく しました。'; break;
+    case 'savedno': a.askSaved = false; a.msg = 'ほぞん できなかった ばあいは、もう いちど かきだしてください。'; break;
+    case 'exportbroken': uiDownload('keisan_broken_' + pgToday().replace(/-/g, '') + '.txt', uiS.rawBroken || ''); break;
+    case 'importcancel': a.importPlan = null; break;
+    case 'importgo': {
+      if (!a.importPlan) break;
+      if (uiS.mode === 'normal' && !storeBackupBeforeImport(uiS.ctx.ls, uiS.data, Date.now())) {
+        a.msg = 'いまの きろくを とっておけなかったので、よみこみを やめました。';
+        a.importPlan = null;
+        break;
+      }
+      const prev = uiS.data;
+      const next = storeAdoptImported(a.importPlan.data, uiS.ctx.rev);
+      if (uiSave(next, { atomic: true })) {
+        a.msg = uiS.mode === 'normal' ? 'よみこみました。24じかん いないなら「とりけす」で もどせます。' : 'よみこみました。ただし この ブラウザでは きろくが のこりません。';
+      } else {
+        uiS.data = prev;
+        if (uiS.mode === 'normal') storeClearBeforeImport(uiS.ctx.ls);
+        a.msg = 'よみこみを ほぞん できませんでした。もとの きろくの ままです。';
+      }
+      a.importPlan = null;
+      break;
+    }
+    case 'undoplan': {
+      const old = storeReadBeforeImport(uiS.ctx.ls, Date.now());
+      a.undoPlan = old ? { data: old, summary: storeImportSummary(uiS.data, old) } : null;
+      break;
+    }
+    case 'undocancel': a.undoPlan = null; break;
+    case 'undogo': {
+      if (!a.undoPlan) break;
+      if (uiSave(storeAdoptImported(a.undoPlan.data, uiS.ctx.rev), { atomic: true })) {
+        storeClearBeforeImport(uiS.ctx.ls);
+        a.msg = 'よみこみの まえに もどしました。';
+      } else {
+        a.msg = 'もどせませんでした。いまの きろくの ままです。';
+      }
+      a.undoPlan = null;
+      break;
+    }
+    case 'exportraw': uiDownload('keisan_original_' + pgToday().replace(/-/g, '') + '.json', uiS.rawOriginal || ''); break;
+    case 'rename': {
+      const v = document.getElementById('name-' + b.dataset.id).value;
+      try {
+        if (uiSave(storeRename(uiS.data, b.dataset.id, v))) a.msg = 'なまえを かえました。';
+      } catch (err) {
+        a.msg = 'なまえは 1〜20もじ で いれてください。';
+      }
+      break;
+    }
+    case 'rwdel': {
+      const list = uiReadRewardsForm();
+      list.splice(Number(b.dataset.i), 1);
+      uiSaveRewards(list);
+      break;
+    }
+    case 'rwadd': {
+      const list = uiReadRewardsForm();
+      const name = document.getElementById('rw-name-new').value.trim();
+      const cost = Number(document.getElementById('rw-cost-new').value);
+      list.push({ id: 'r' + Date.now().toString(36), name, cost });
+      uiSaveRewards(list);
+      break;
+    }
+    case 'rwsave': uiSaveRewards(uiReadRewardsForm()); break;
+    default: throw new Error('未知の操作 ' + act);
+  }
+  uiRender();
+}
+
+function uiOnKey(e) {
+  if (uiS.blocked) return;
+  const scr = uiS.screen;
+  if (scr === 'play') {
+    const pl = uiS.play;
+    const inInput = e.target && /^ans\d*$/.test(e.target.id || '');
+    if (inInput && e.key === 'Enter') {
+      e.preventDefault();
+      if (!e.repeat) uiSubmit();
+      return;
+    }
+    const done = pl.isClock ? pl.ck.stage === 'done' : pl.isWord ? pl.wd.show : pl.mode === 'drill' ? pl.drillShow : pl.mode === 'prefix' || pl.isMeaning ? pl.pf.done : pl.flow.stage === 'done';
+    if (done && e.key === 'Enter') {
+      if (e.repeat) return; // 押しっぱなしで答えを見ずに進まないようにする
+      e.preventDefault();
+      uiNext();
+      uiRender();
+      return;
+    }
+    if (pl.isClock && pl.ck.stage === 's1' && /^[1-4]$/.test(e.key)) {
+      e.preventDefault();
+      pl.ck = ckFlowChoose(pl.ck, pl.q, Number(e.key) - 1);
+      uiClockAfter();
+      uiRender();
+      return;
+    }
+    if ((pl.mode === 'prefix' || pl.isMeaning) && /^[1-4]$/.test(e.key)) {
+      e.preventDefault();
+      if (pl.isMeaning) uiMeaningChoose(Number(e.key) - 1);
+      else uiPrefixChoose(Number(e.key) - 1);
+      uiRender();
+      return;
+    }
+    if (pl.flow && pl.flow.stage === 's1' && /^[1-4]$/.test(e.key)) {
+      // 押した数字が、次に出る②の入力欄に入らないようにする
+      e.preventDefault();
+      const i = Number(e.key) - 1;
+      if (!pl.flow.disabled.includes(i)) {
+        pl.flow = qFlowChoose(pl.flow, pl.q, i);
+        uiAfterFlow();
+        uiRender();
+      }
+    }
+  } else if (scr === 'time' && uiS.tc && /^[1-4]$/.test(e.key) && !e.repeat) {
+    e.preventDefault();
+    uiTimeAnswer(Number(e.key) - 1);
+  } else if ((scr === 'tresult' || scr === 'mresult') && e.key === 'Enter' && !e.repeat) {
+    e.preventDefault();
+    uiS.result = null;
+    uiS.screen = 'home';
+    uiRender();
+  } else if (scr === 'result' && uiS.result && uiS.result.phase >= 3 && e.key === 'Enter' && !e.repeat) {
+    e.preventDefault();
+    uiSave(storeClearPending(uiS.data, uiS.pid));
+    uiS.result = null;
+    uiS.screen = 'home';
+    uiRender();
+  }
+}
+
+uiApp.addEventListener('click', (e) => {
+  try {
+    uiOnClick(e);
+  } catch (err) {
+    uiS.warnings.push('エラーが おきました: ' + uiEsc(String(err && err.message ? err.message : err)));
+    uiShowBanner();
+    throw err;
+  }
+});
+document.addEventListener('keydown', uiOnKey);
+// テンキーで入れる欄（じかん の 答えが2つの問題）: 最後に触った欄
+document.addEventListener('focusin', (e) => {
+  if (e.target && /^ans\d*$/.test(e.target.id || '')) uiS.lastInput = e.target.id;
+});
+// 日をまたいで開いたままでも、ホームの「きょうの れんしゅう」・もくひょうを今日の内容にする（D-014 の確認で発見）
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && uiS.screen === 'home' && !uiS.blocked) uiRender();
+});
+window.addEventListener('focus', () => {
+  if (uiS.screen === 'home' && !uiS.blocked) uiRender();
+});
+uiInitStore();
+uiRender();
+
+}
+})();
+</script>
+<script>if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js');</script>
+</body>
+</html>
