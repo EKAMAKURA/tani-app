@@ -924,6 +924,15 @@ function slotReviewBonus(spin) {
   return { ...spin, points, formula: spin.formula + ' → ' + spin.points + ' × ' + SLOT_REVIEW_MULT + '（復習ボーナス）＝ ' + points };
 }
 
+// 補助なしでチャレンジは 1.5倍（D-034）。ヒントを使った回は かけない（ui 側で判断）。整数で計算し、0.5 は切り上げ
+const SLOT_JUMP_MULT = { n: 3, d: 2, label: '1.5' };
+function slotJumpBonus(spin) {
+  const { n, d } = SLOT_JUMP_MULT;
+  const points = Math.floor((2 * spin.points * n + d) / (2 * d));
+  const exact = (spin.points * n) % d === 0 ? '' : '（四捨五入）';
+  return { ...spin, points, formula: spin.formula + ' → ' + spin.points + ' × ' + SLOT_JUMP_MULT.label + exact + '（補助なしボーナス）＝ ' + points };
+}
+
 // ドリルのあとにもスロットをまわすか（D-005 仮決め。保護者の判断待ち）
 const SLOT_DRILL_GIVES_SLOT = true;
 
@@ -2693,7 +2702,7 @@ function coWeekDone(p, today) {
   return (p.log || []).filter((e) => CO_WEEK_KINDS.includes(e.kind) && e.date && e.date >= w && e.date <= today);
 }
 
-globalThis.KR = { decMake, decShift, decToString, decFromString, decParseInput, decEquals, decDigits, decFromFraction, decGcd, UNIT_LEVELS, UNIT_PAIRS, unitExp, unitItemsAll, unitItems, unitItemByKey, unitLadder, rngCrypto, qPick, qShuffle, qAllowedTypes, qMakeS, qOpLabel, qApplyOp, qOptions, qMakeQuestion, qMakeDrill, qCheck, qFlowStart, qFlowHint, qFlowChoose, qFlowInput, qFlowRecord, qFlowFirstRecord, qFlowRetried, PG_STREAK_TO_DOWN, PG_RECENT_MAX, PG_CHECK_INTERVAL_DAYS, PG_SESSION_SIZE, PG_MAX_CHECKS, PG_SLIP_DAYS, PG_PROBE_MAX, pgToday, pgDaysBetween, pgNewItem, pgMastered, pgRecord, pgRecordProbe, pgPlace, pgMarks, pgIsCheckDue, pgWeight, pgPickNormal, pgMarkProbes, pgLevelProgress, pgEvents, pgNextStep, pgMasteredKeys, pgPickL4, pgL4Ready, pgL4Need, pgWeakKeys, pgPickReview, pgJumpKeys, pgPickJump, pgRecordJump, SLOT_SYMBOLS, SLOT_REEL, SLOT_REEL_RIGHT, SLOT_REVIEW_MULT, slotReviewBonus, SLOT_DRILL_GIVES_SLOT, slotCompute, slotFormula, slotSpin, SLOT_THEMES, slotThemesFor, RS_DEFAULT, RS_MAX_TICKETS, rsValidate, rsExpected, rsSig, rsNewBox, rsBoxEmpty, rsCurrentBox, rsDraw, STORE_SCHEMA, STORE_KEY, STORE_KEY_BROKEN, STORE_KEY_BEFORE_IMPORT, STORE_KEY_LOCK, STORE_LOCK_TTL_MS, STORE_SESSIONS_MAX, STORE_UNDO_HOURS, STORE_PREFIX_KEY_RE, STORE_LOG_MAX, STORE_LOG_KINDS, STORE_BEST_MAX, STORE_DEFAULT_NAMES, storeUpgrade, storeClone, storeInitial, storeValidate, storeLoad, storeLockAcquire, storeLockRelease, storeSave, storeProfile, storeSetItem, storeSetPrefix, storeApplyTime, storeApplyMemtest, storeApplyBonus, storeAddLog, storeSetRank, storeSetUnlocked, storeSetClock, storeSetWord, storeSetMeaning, storeAddDrill, storeApplySession, storeClearPending, storeExchange, storeRewardSlot, storeSetRewardSlot, storeSpinReward, storeSetRewards, storeRename, storeSetTheme, storeResetProfile, storeResetAll, storeMarkExported, storeExportText, storeParseImport, storeImportSummary, storeBackupBeforeImport, storeReadBeforeImport, storeClearBeforeImport, storeAdoptImported, CHARA_LIST, CHARA_MOODS, CHARA_LINES, charaLine, charaForLevel, charaSvg, charaLiterSvg, PREFIXES, PREFIX_KINDS, PREFIX_BOX_MAX, prefixById, prefixKeys, prefixFactorLabel, prefixMakeQuestion, prefixRecord, prefixLearned, prefixPick, prefixTableHtml, MN_DONE_BOX, MEANING, mnById, mnForLevel, mnMakeQuestion, mnRecord, mnDone, mnNextFor, mnLevelDone, WD_DONE_BOX, WORD, wdById, wdMakeQuestion, wdRecord, wdDone, wdKeysFor, wdPick, CK_FACTORS, CK_SESSION_SIZE, CK_MAX_CHECKS, CK_ITEMS, ckById, ckOpLabel, ckOptions, ckMakeQuestion, ckFlowStart, ckFlowHint, ckFlowChoose, ckFlowInput, ckFlowRecord, ckFirstRecord, ckPick, ckHasWork, ckPickLabel, MT_POINTS, MT_MIN_MASTERED, MT_LOGIN_BONUS, MT_WEEK_STAMPS, MT_WEEK_BONUS, mtPoints, mtCandidates, mtAvailable, mtDoneToday, mtPick, mtWeekStart, mtWeekStamps, mtDueBonuses, TC_SECONDS, TC_DAILY_MAX, TC_UNLOCK_MASTERED, TC_WRONG_SHOW_MS, tcMakeQuestion, tcPoints, tcScore, tcCountToday, tcPointsFromScore, tcPointsFor, tcReady, coClockCleared, coClockMastered, coWordLevels, coLevelCleared, CO_RECENT_DAYS, CO_ERR_MIN, coRecentErrors, coLevelHasWork, coL4Available, coTimeAvailable, coRecommend, coSessionEvents, CO_RANKS, coRankStats, coRankIndex, coCheckWaiting, coLevelStages, CO_WEEK_KINDS, coWeekDone };
+globalThis.KR = { decMake, decShift, decToString, decFromString, decParseInput, decEquals, decDigits, decFromFraction, decGcd, UNIT_LEVELS, UNIT_PAIRS, unitExp, unitItemsAll, unitItems, unitItemByKey, unitLadder, rngCrypto, qPick, qShuffle, qAllowedTypes, qMakeS, qOpLabel, qApplyOp, qOptions, qMakeQuestion, qMakeDrill, qCheck, qFlowStart, qFlowHint, qFlowChoose, qFlowInput, qFlowRecord, qFlowFirstRecord, qFlowRetried, PG_STREAK_TO_DOWN, PG_RECENT_MAX, PG_CHECK_INTERVAL_DAYS, PG_SESSION_SIZE, PG_MAX_CHECKS, PG_SLIP_DAYS, PG_PROBE_MAX, pgToday, pgDaysBetween, pgNewItem, pgMastered, pgRecord, pgRecordProbe, pgPlace, pgMarks, pgIsCheckDue, pgWeight, pgPickNormal, pgMarkProbes, pgLevelProgress, pgEvents, pgNextStep, pgMasteredKeys, pgPickL4, pgL4Ready, pgL4Need, pgWeakKeys, pgPickReview, pgJumpKeys, pgPickJump, pgRecordJump, SLOT_SYMBOLS, SLOT_REEL, SLOT_REEL_RIGHT, SLOT_REVIEW_MULT, slotReviewBonus, SLOT_JUMP_MULT, slotJumpBonus, SLOT_DRILL_GIVES_SLOT, slotCompute, slotFormula, slotSpin, SLOT_THEMES, slotThemesFor, RS_DEFAULT, RS_MAX_TICKETS, rsValidate, rsExpected, rsSig, rsNewBox, rsBoxEmpty, rsCurrentBox, rsDraw, STORE_SCHEMA, STORE_KEY, STORE_KEY_BROKEN, STORE_KEY_BEFORE_IMPORT, STORE_KEY_LOCK, STORE_LOCK_TTL_MS, STORE_SESSIONS_MAX, STORE_UNDO_HOURS, STORE_PREFIX_KEY_RE, STORE_LOG_MAX, STORE_LOG_KINDS, STORE_BEST_MAX, STORE_DEFAULT_NAMES, storeUpgrade, storeClone, storeInitial, storeValidate, storeLoad, storeLockAcquire, storeLockRelease, storeSave, storeProfile, storeSetItem, storeSetPrefix, storeApplyTime, storeApplyMemtest, storeApplyBonus, storeAddLog, storeSetRank, storeSetUnlocked, storeSetClock, storeSetWord, storeSetMeaning, storeAddDrill, storeApplySession, storeClearPending, storeExchange, storeRewardSlot, storeSetRewardSlot, storeSpinReward, storeSetRewards, storeRename, storeSetTheme, storeResetProfile, storeResetAll, storeMarkExported, storeExportText, storeParseImport, storeImportSummary, storeBackupBeforeImport, storeReadBeforeImport, storeClearBeforeImport, storeAdoptImported, CHARA_LIST, CHARA_MOODS, CHARA_LINES, charaLine, charaForLevel, charaSvg, charaLiterSvg, PREFIXES, PREFIX_KINDS, PREFIX_BOX_MAX, prefixById, prefixKeys, prefixFactorLabel, prefixMakeQuestion, prefixRecord, prefixLearned, prefixPick, prefixTableHtml, MN_DONE_BOX, MEANING, mnById, mnForLevel, mnMakeQuestion, mnRecord, mnDone, mnNextFor, mnLevelDone, WD_DONE_BOX, WORD, wdById, wdMakeQuestion, wdRecord, wdDone, wdKeysFor, wdPick, CK_FACTORS, CK_SESSION_SIZE, CK_MAX_CHECKS, CK_ITEMS, ckById, ckOpLabel, ckOptions, ckMakeQuestion, ckFlowStart, ckFlowHint, ckFlowChoose, ckFlowInput, ckFlowRecord, ckFirstRecord, ckPick, ckHasWork, ckPickLabel, MT_POINTS, MT_MIN_MASTERED, MT_LOGIN_BONUS, MT_WEEK_STAMPS, MT_WEEK_BONUS, mtPoints, mtCandidates, mtAvailable, mtDoneToday, mtPick, mtWeekStart, mtWeekStamps, mtDueBonuses, TC_SECONDS, TC_DAILY_MAX, TC_UNLOCK_MASTERED, TC_WRONG_SHOW_MS, tcMakeQuestion, tcPoints, tcScore, tcCountToday, tcPointsFromScore, tcPointsFor, tcReady, coClockCleared, coClockMastered, coWordLevels, coLevelCleared, CO_RECENT_DAYS, CO_ERR_MIN, coRecentErrors, coLevelHasWork, coL4Available, coTimeAvailable, coRecommend, coSessionEvents, CO_RANKS, coRankStats, coRankIndex, coCheckWaiting, coLevelStages, CO_WEEK_KINDS, coWeekDone };
 if (typeof document !== 'undefined') {
 // ---- src/ui/app.js ----
 // ui/app.js — 画面の描画とイベント。logic の関数は同じスコープに連結されている（build.mjs）。設計 §9
@@ -3065,7 +3074,7 @@ function uiHome() {
   }
   h += '</div><div class="row jump-row">';
   for (const lv of [1, 2, 3]) {
-    if (pgJumpKeys(p.items, lv).length) h += '<button class="small" data-act="start" data-mode="jump" data-level="' + lv + '"' + dis + '>レベル' + lv + ' 補助なしでチャレンジ！</button>';
+    if (pgJumpKeys(p.items, lv).length) h += '<button class="small" data-act="start" data-mode="jump" data-level="' + lv + '"' + dis + '>レベル' + lv + ' 補助なしでチャレンジ！<br><span class="muted">ポイント ' + SLOT_JUMP_MULT.label + '倍</span></button>';
   }
   h += '</div><div class="grid2">';
   const l4ok = coL4Available(p) && pgMasteredKeys(p.items).length >= PG_SESSION_SIZE;
@@ -3281,7 +3290,7 @@ function uiPlay() {
   else if (pl.mode === 'l4') h += '<span class="tag">ごちゃまぜ</span>';
   else if (pl.list[pl.idx].isCheck) h += '<span class="tag">確かめ</span>';
   if (pl.list[pl.idx].isProbe) h += '<span class="tag">試し問題</span>';
-  if (pl.mode === 'jump') h += '<span class="tag">補助なしでチャレンジ</span>';
+  if (pl.mode === 'jump') h += '<span class="tag">補助なしでチャレンジ</span><span class="tag">' + (pl.hintUsed ? 'ヒントを使ったので ポイントはふつう' : 'ポイント ' + SLOT_JUMP_MULT.label + '倍') + '</span>';
   h += '<span style="flex:1"></span>';
   if (pl.mode !== 'memtest') h += '<button class="small" data-act="hint">ヒント</button>';
   h += '<button class="small" data-act="quit">やめる</button></div>';
@@ -3643,7 +3652,8 @@ function uiFinishSession() {
     return;
   }
   const spin0 = slotSpin(uiRng, pl.correct);
-  const spin = pl.mode === 'review' ? slotReviewBonus(spin0) : spin0; // 苦手ふくしゅうは2倍（D-025）
+  // 苦手ふくしゅうは2倍（D-025）。補助なしは1.5倍、ただしヒントを使った回は ふつう（D-034）
+  const spin = pl.mode === 'review' ? slotReviewBonus(spin0) : pl.mode === 'jump' && !pl.hintUsed ? slotJumpBonus(spin0) : spin0;
   const session = {
     id: pl.id, date: pgToday(), mode: pl.mode, level: pl.level || null, n: pl.list.length, correct: pl.correct,
     retried: pl.retried, clean: pl.clean || 0, rec: !!pl.rec, mid: spin.mi, right: spin.ri, points: spin.points, formula: spin.formula, totalBefore: before,
@@ -4217,6 +4227,7 @@ function uiOnClick(e) {
     case 'theme': uiSave(storeSetTheme(uiS.data, uiS.pid, b.dataset.id)); break;
     case 'hint':
       if (uiS.play && uiS.play.mode === 'memtest') break;
+      if (uiS.play && uiS.play.mode === 'jump') uiS.play.hintUsed = true; // 補助なしの1.5倍が ふつうに戻る（D-034）
       if (uiS.play && uiS.play.isClock) uiS.play.ck = ckFlowHint(uiS.play.ck);
       else if (uiS.play && uiS.play.flow) uiS.play.flow = qFlowHint(uiS.play.flow);
       else if (uiS.play) uiS.play.drillHint = true;
