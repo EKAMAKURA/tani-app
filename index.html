@@ -48,6 +48,9 @@ button.small { min-height: 40px; font-size: 18px; padding: 4px 12px; }
 .banner { background: var(--warn-weak); border-bottom: 3px solid var(--warn); padding: 10px 16px; font-size: 18px; }
 .ver { text-align: center; color: var(--muted); font-size: 14px; padding: 8px; }
 .who button { font-size: 32px; min-height: 120px; }
+.who button { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.who button svg.avatar { flex: none; }
+.av-say { margin: 0 0 8px; font-weight: bold; color: var(--fg); }
 .adult-link { position: fixed; right: 12px; bottom: 30px; }
 .stat { font-size: 20px; }
 .stat b { font-size: 30px; }
@@ -1801,6 +1804,182 @@ function charaLiterSvg() {
   return s + '</svg>';
 }
 
+// ---- src/logic/avatar.js ----
+// avatar.js — メンバー5人のキャラクター（D-035）。SVG の文字列を返す純粋な関数だけを置く。設計 §13.37
+// 表情は学習の具合で変える（avMood）。どの表情も責めない（来ない日が続いたら「ねむっている」）。
+
+const AV_MOODS = ['star', 'happy', 'normal', 'sleepy', 'zzz'];
+
+const SKIN = '#ffe2cc';
+const INK = '#4a3428';
+const CHEEK = '#f7a8a0';
+
+// 目の位置
+const EL = 47;
+const ER = 73;
+const EY = 64;
+
+function avEyes(mood, big) {
+  const r = big ? 6.5 : 5;
+  let s = '';
+  for (const x of [EL, ER]) {
+    if (mood === 'star' || mood === 'happy') {
+      s += '<path d="M' + (x - 7) + ' ' + (EY + 2) + ' q7 -9 14 0" fill="none" stroke="' + INK + '" stroke-width="3.2" stroke-linecap="round"/>';
+    } else if (mood === 'sleepy') {
+      s += '<path d="M' + (x - 7) + ' ' + (EY + 1) + ' q7 3.5 14 0" fill="none" stroke="' + INK + '" stroke-width="2.6" stroke-linecap="round"/>';
+    } else if (mood === 'zzz') {
+      s += '<path d="M' + (x - 7) + ' ' + (EY - 1) + ' q7 7 14 0" fill="none" stroke="' + INK + '" stroke-width="3" stroke-linecap="round"/>';
+    } else {
+      s += '<ellipse cx="' + x + '" cy="' + EY + '" rx="' + r + '" ry="' + (r + 1) + '" fill="' + INK + '"/>';
+      s += '<circle cx="' + (x + r * 0.35) + '" cy="' + (EY - r * 0.4) + '" r="' + (r * 0.38) + '" fill="#fff"/>';
+      if (big) s += '<circle cx="' + (x - r * 0.35) + '" cy="' + (EY + r * 0.45) + '" r="' + (r * 0.18) + '" fill="#fff"/>';
+    }
+  }
+  return s;
+}
+
+function avMouth(mood, wide) {
+  const k = wide ? 1.4 : 1;
+  if (mood === 'star' || mood === 'happy') {
+    return '<path d="M' + (60 - 7 * k) + ' 76 q' + 7 * k + ' ' + 10 * k + ' ' + 14 * k + ' 0 z" fill="#c4525a"/>';
+  }
+  if (mood === 'sleepy') return '<ellipse cx="60" cy="79" rx="3" ry="2.6" fill="#c4525a"/>';
+  if (mood === 'zzz') return '<path d="M56 79 q4 2.5 8 0" fill="none" stroke="' + INK + '" stroke-width="2.4" stroke-linecap="round"/>';
+  return '<path d="M' + (60 - 6 * k) + ' 76 q' + 6 * k + ' ' + 6 * k + ' ' + 12 * k + ' 0" fill="none" stroke="' + INK + '" stroke-width="2.6" stroke-linecap="round"/>';
+}
+
+function avCheeks() {
+  return '<ellipse cx="' + (EL - 9) + '" cy="75" rx="6" ry="3.5" fill="' + CHEEK + '"/><ellipse cx="' + (ER + 9) + '" cy="75" rx="6" ry="3.5" fill="' + CHEEK + '"/>';
+}
+
+function avGlasses(color, square) {
+  const one = (x) => square
+    ? '<rect x="' + (x - 11) + '" y="' + (EY - 9) + '" width="22" height="18" rx="5" fill="rgba(255,255,255,.25)" stroke="' + color + '" stroke-width="2.6"/>'
+    : '<circle cx="' + x + '" cy="' + EY + '" r="11" fill="rgba(255,255,255,.25)" stroke="' + color + '" stroke-width="2.6"/>';
+  return one(EL) + one(ER) + '<path d="M' + (EL + 11) + ' ' + (EY - 1) + ' q' + (ER - EL - 22) / 2 + ' -4 ' + (ER - EL - 22) + ' 0" fill="none" stroke="' + color + '" stroke-width="2.6"/>';
+}
+
+// 4つの角の星（キラキラ）
+function avSpark(x, y, r) {
+  return '<path d="M' + x + ' ' + (y - r) + ' Q' + x + ' ' + y + ' ' + (x + r) + ' ' + y + ' Q' + x + ' ' + y + ' ' + x + ' ' + (y + r) + ' Q' + x + ' ' + y + ' ' + (x - r) + ' ' + y + ' Q' + x + ' ' + y + ' ' + x + ' ' + (y - r) + ' z" fill="#f5c242"/>';
+}
+
+function avExtra(mood) {
+  if (mood === 'star') return avSpark(14, 30, 8) + avSpark(106, 22, 7) + avSpark(108, 98, 6);
+  if (mood === 'sleepy') return '<g fill="#9aa8c4"><circle cx="96" cy="34" r="2.2"/><circle cx="103" cy="28" r="2.8"/><circle cx="111" cy="21" r="3.4"/></g>';
+  if (mood === 'zzz') return '<g fill="#7a8fb8" font-family="sans-serif" font-weight="bold"><text x="94" y="30" font-size="17">Z</text><text x="106" y="16" font-size="12">z</text></g>';
+  return '';
+}
+
+// 体（首から下）。w は胴の幅
+function avBody(color, w, neck) {
+  const x = 60 - w / 2;
+  return '<rect x="' + x + '" y="94" width="' + w + '" height="44" rx="' + Math.min(18, w / 2.5) + '" fill="' + color + '"/>' +
+    (neck ? '<path d="M52 94 l8 8 l8 -8" fill="none" stroke="' + neck + '" stroke-width="3" stroke-linejoin="round"/>' : '');
+}
+
+function avHead(r) {
+  return '<circle cx="24" cy="66" r="6" fill="' + SKIN + '"/><circle cx="96" cy="66" r="6" fill="' + SKIN + '"/>' +
+    '<circle cx="60" cy="60" r="' + (r || 36) + '" fill="' + SKIN + '"/>';
+}
+
+// テニスボール
+function avBall(x, y) {
+  return '<circle cx="' + x + '" cy="' + y + '" r="7" fill="#d4e157" stroke="#a8b43a" stroke-width="1"/>' +
+    '<path d="M' + (x - 6) + ' ' + (y - 3) + ' q6 4 12 0 M' + (x - 6) + ' ' + (y + 4) + ' q6 -4 12 0" fill="none" stroke="#fff" stroke-width="1.4"/>';
+}
+
+const AV_PARTS = {
+  // ちょーじょ: メガネ・ポニーテール。本を読むのが好き・テニスが好き
+  p1: {
+    name: 'ちょーじょ', hair: '#3b2a20', big: false,
+    back: (c) => '<ellipse cx="95" cy="40" rx="13" ry="24" transform="rotate(38 95 40)" fill="' + c + '"/>' +
+      '<circle cx="60" cy="56" r="38" fill="' + c + '"/>',
+    body: () => avBody('#b9a3e3', 52, '#fff'),
+    front: (c) => '<path d="M23 64 Q20 20 60 21 Q100 20 97 64 Q93 46 84 40 Q70 48 46 42 Q34 44 23 64 Z" fill="' + c + '"/>' +
+      '<circle cx="86" cy="27" r="4.5" fill="#e05a7a"/>',
+    face: () => avGlasses('#c0504d', false),
+    item: () => '<g transform="translate(60 118)"><path d="M-18 -8 L0 -4 L18 -8 L18 10 L0 14 L-18 10 Z" fill="#fff" stroke="#6b7fbf" stroke-width="2"/>' +
+      '<path d="M0 -4 V14" stroke="#6b7fbf" stroke-width="2"/><path d="M-14 -1 h10 M-14 3 h10 M4 -1 h10 M4 3 h10" stroke="#b0b8d8" stroke-width="1.5"/></g>' + avBall(98, 124),
+  },
+  // じーじょ: ボブ・細め・スポーツができそう。シール集めが趣味
+  p2: {
+    name: 'じーじょ', hair: '#4a2f22', big: false,
+    back: (c) => '<path d="M21 60 Q18 18 60 18 Q102 18 99 60 L99 84 Q97 92 88 90 L32 90 Q23 92 21 84 Z" fill="' + c + '"/>',
+    body: () => avBody('#35b39e', 42, null) + '<path d="M44 96 V138 M76 96 V138" stroke="#fff" stroke-width="3"/>',
+    front: (c) => '<path d="M21 84 L21 60 Q21 20 60 20 Q99 20 99 60 L99 84 Q97 90 92 88 L92 50 L28 50 L28 88 Q23 90 21 84 Z" fill="' + c + '"/>',
+    face: () => '',
+    item: () => avSpark(53, 112, 7).replace('#f5c242', '#ff7eb6') +
+      '<path d="M67 118 c-4 -6 -10 -2 -6 3 l6 6 l6 -6 c4 -5 -2 -9 -6 -3 z" fill="#ffd34d"/>' +
+      '<circle cx="58" cy="128" r="4" fill="#7ec8ff"/>',
+  },
+  // ちょーなん: ベリーショート・目がクリクリ。テニスと まんがが好き
+  p3: {
+    name: 'ちょーなん', hair: '#2e2018', big: true,
+    back: () => '',
+    body: () => avBody('#5b8fd9', 50, null) + '<rect x="50" y="104" width="20" height="14" rx="3" fill="#fff" opacity=".85"/><path d="M54 107 h6 M54 111 h12 M54 115 h9" stroke="#5b8fd9" stroke-width="2" stroke-linecap="round"/>',
+    front: (c) => '<path d="M25 56 Q26 21 60 21 Q94 21 95 56 Q90 40 76 37 L72 31 L66 37 L58 30 L52 37 Q32 38 25 56 Z" fill="' + c + '"/>',
+    face: () => '',
+    item: () => '<g transform="rotate(-25 100 112)"><ellipse cx="100" cy="102" rx="11" ry="14" fill="#fff" stroke="#e5534b" stroke-width="3"/>' +
+      '<path d="M94 92 V112 M100 89 V115 M106 92 V112 M90 98 H110 M90 104 H110 M91 110 H109" stroke="#ccc" stroke-width="1"/>' +
+      '<rect x="98" y="116" width="4" height="16" rx="2" fill="#333"/></g>' + avBall(18, 126),
+  },
+  // おかんぴん: 肩の上くらいのボブ・目がクリクリ・やさしいお母さん
+  p4: {
+    name: 'おかんぴん', hair: '#6b4433', big: true,
+    back: (c) => '<path d="M19 62 Q16 16 60 16 Q104 16 101 62 L102 92 Q98 100 88 96 L32 96 Q22 100 18 92 Z" fill="' + c + '"/>',
+    body: () => avBody('#f2a7b8', 56, null) + '<path d="M48 94 L60 112 L72 94" fill="#fff"/><path d="M60 112 V138" stroke="#e48aa0" stroke-width="2"/>' +
+      '<circle cx="60" cy="122" r="2" fill="#e48aa0"/><circle cx="60" cy="130" r="2" fill="#e48aa0"/>',
+    front: (c) => '<path d="M22 64 Q20 18 60 19 Q100 18 98 64 Q96 44 86 38 Q60 50 38 38 Q26 46 22 64 Z" fill="' + c + '"/>',
+    face: () => '<path d="M39 52 q8 -4 15 0 M66 52 q8 -4 15 0" fill="none" stroke="' + INK + '" stroke-width="2" stroke-linecap="round"/>' +
+      '<circle cx="22" cy="76" r="2.6" fill="#f5c242"/><circle cx="98" cy="76" r="2.6" fill="#f5c242"/>',
+  },
+  // おとんぴん: メガネ・短髪・髪ちょい少なめ・太め・おもしろい。つりが好き
+  p5: {
+    name: 'おとんぴん', hair: '#3a2c24', big: false, wideMouth: true, headR: 38,
+    back: () => '',
+    body: () => '<ellipse cx="60" cy="122" rx="38" ry="28" fill="#7dbf6a"/><path d="M50 96 l10 10 l10 -10" fill="none" stroke="#5a9a4a" stroke-width="3"/>',
+    front: (c) => '<path d="M23 62 Q22 44 30 36 L33 40 Q28 48 29 62 Z" fill="' + c + '"/><path d="M97 62 Q98 44 90 36 L87 40 Q92 48 91 62 Z" fill="' + c + '"/>' +
+      '<path d="M48 26 q4 -10 10 -2 M58 24 q5 -11 10 -1 M67 26 q6 -8 9 1" fill="none" stroke="' + c + '" stroke-width="3.4" stroke-linecap="round"/>',
+    face: () => avGlasses('#222', true) + '<path d="M38 50 h16 M66 50 h16" stroke="' + INK + '" stroke-width="3.4" stroke-linecap="round"/>',
+    item: () => '<path d="M16 138 L8 60" stroke="#8a5a2b" stroke-width="3" stroke-linecap="round"/><path d="M8 60 Q4 80 12 96" fill="none" stroke="#999" stroke-width="1"/>' +
+      '<g transform="translate(12 100)"><ellipse cx="0" cy="4" rx="8" ry="4.5" fill="#6fa8dc"/><path d="M7 4 l6 -4 v8 z" fill="#6fa8dc"/><circle cx="-4" cy="3" r="1.2" fill="#222"/></g>',
+  },
+};
+
+const AV_IDS = Object.keys(AV_PARTS);
+
+function avatarSvg(pid, mood, size) {
+  if (!AV_MOODS.includes(mood)) throw new Error('avatarSvg: 表情が不正 ' + mood);
+  const a = AV_PARTS[pid];
+  if (!a) throw new Error('avatarSvg: メンバーが不正 ' + pid);
+  const w = size || 72;
+  const h = Math.round(w * 140 / 120);
+  return '<svg class="avatar avatar-' + mood + '" viewBox="0 0 120 140" width="' + w + '" height="' + h + '" role="img" aria-label="' + a.name + '">' +
+    a.back(a.hair) + a.body() + avHead(a.headR) + a.front(a.hair) + avCheeks() + avEyes(mood, a.big) + avMouth(mood, a.wideMouth) + a.face() +
+    (a.item ? a.item() : '') + avExtra(mood) + '</svg>';
+}
+
+// 学習の具合で表情を選ぶ。学習の日 ＝ ボーナス以外の回を1回でも終えた日（週のスタンプと同じ。D-021）
+// 今日やった: 3日以上続いていれば star、そうでなければ happy。
+// 今日はまだ: 昨日やっていれば normal、2〜3日あいたら sleepy、4日以上は zzz。一度もやっていなければ normal
+const AV_STAR_STREAK = 3;
+function avMood(sessions, today) {
+  const days = new Set((sessions || []).filter((s) => s && s.mode && s.mode !== 'bonus' && typeof s.date === 'string').map((s) => s.date));
+  if (!days.size) return 'normal';
+  if (days.has(today)) {
+    let n = 0;
+    for (const d of days) {
+      const k = pgDaysBetween(d, today);
+      if (k >= 0 && k < AV_STAR_STREAK) n++;
+    }
+    return n >= AV_STAR_STREAK ? 'star' : 'happy';
+  }
+  const gap = Math.min(...[...days].map((d) => pgDaysBetween(d, today)).filter((k) => k > 0));
+  if (!Number.isFinite(gap) || gap <= 1) return 'normal';
+  return gap <= 3 ? 'sleepy' : 'zzz';
+}
+
 // ---- src/logic/prefix.js ----
 // prefix.js — 接頭語クイズ（キロ・ヘクト・デカ・デシ・センチ・ミリ）。問題、選択肢、覚えた度合い（箱）、出題。設計 §5a、D-009
 // 倍率は exp（10 の何乗か）だけで持つ。表示の文字列は exp から作る（浮動小数を使わない）
@@ -2702,7 +2881,7 @@ function coWeekDone(p, today) {
   return (p.log || []).filter((e) => CO_WEEK_KINDS.includes(e.kind) && e.date && e.date >= w && e.date <= today);
 }
 
-globalThis.KR = { decMake, decShift, decToString, decFromString, decParseInput, decEquals, decDigits, decFromFraction, decGcd, UNIT_LEVELS, UNIT_PAIRS, unitExp, unitItemsAll, unitItems, unitItemByKey, unitLadder, rngCrypto, qPick, qShuffle, qAllowedTypes, qMakeS, qOpLabel, qApplyOp, qOptions, qMakeQuestion, qMakeDrill, qCheck, qFlowStart, qFlowHint, qFlowChoose, qFlowInput, qFlowRecord, qFlowFirstRecord, qFlowRetried, PG_STREAK_TO_DOWN, PG_RECENT_MAX, PG_CHECK_INTERVAL_DAYS, PG_SESSION_SIZE, PG_MAX_CHECKS, PG_SLIP_DAYS, PG_PROBE_MAX, pgToday, pgDaysBetween, pgNewItem, pgMastered, pgRecord, pgRecordProbe, pgPlace, pgMarks, pgIsCheckDue, pgWeight, pgPickNormal, pgMarkProbes, pgLevelProgress, pgEvents, pgNextStep, pgMasteredKeys, pgPickL4, pgL4Ready, pgL4Need, pgWeakKeys, pgPickReview, pgJumpKeys, pgPickJump, pgRecordJump, SLOT_SYMBOLS, SLOT_REEL, SLOT_REEL_RIGHT, SLOT_REVIEW_MULT, slotReviewBonus, SLOT_JUMP_MULT, slotJumpBonus, SLOT_DRILL_GIVES_SLOT, slotCompute, slotFormula, slotSpin, SLOT_THEMES, slotThemesFor, RS_DEFAULT, RS_MAX_TICKETS, rsValidate, rsExpected, rsSig, rsNewBox, rsBoxEmpty, rsCurrentBox, rsDraw, STORE_SCHEMA, STORE_KEY, STORE_KEY_BROKEN, STORE_KEY_BEFORE_IMPORT, STORE_KEY_LOCK, STORE_LOCK_TTL_MS, STORE_SESSIONS_MAX, STORE_UNDO_HOURS, STORE_PREFIX_KEY_RE, STORE_LOG_MAX, STORE_LOG_KINDS, STORE_BEST_MAX, STORE_DEFAULT_NAMES, storeUpgrade, storeClone, storeInitial, storeValidate, storeLoad, storeLockAcquire, storeLockRelease, storeSave, storeProfile, storeSetItem, storeSetPrefix, storeApplyTime, storeApplyMemtest, storeApplyBonus, storeAddLog, storeSetRank, storeSetUnlocked, storeSetClock, storeSetWord, storeSetMeaning, storeAddDrill, storeApplySession, storeClearPending, storeExchange, storeRewardSlot, storeSetRewardSlot, storeSpinReward, storeSetRewards, storeRename, storeSetTheme, storeResetProfile, storeResetAll, storeMarkExported, storeExportText, storeParseImport, storeImportSummary, storeBackupBeforeImport, storeReadBeforeImport, storeClearBeforeImport, storeAdoptImported, CHARA_LIST, CHARA_MOODS, CHARA_LINES, charaLine, charaForLevel, charaSvg, charaLiterSvg, PREFIXES, PREFIX_KINDS, PREFIX_BOX_MAX, prefixById, prefixKeys, prefixFactorLabel, prefixMakeQuestion, prefixRecord, prefixLearned, prefixPick, prefixTableHtml, MN_DONE_BOX, MEANING, mnById, mnForLevel, mnMakeQuestion, mnRecord, mnDone, mnNextFor, mnLevelDone, WD_DONE_BOX, WORD, wdById, wdMakeQuestion, wdRecord, wdDone, wdKeysFor, wdPick, CK_FACTORS, CK_SESSION_SIZE, CK_MAX_CHECKS, CK_ITEMS, ckById, ckOpLabel, ckOptions, ckMakeQuestion, ckFlowStart, ckFlowHint, ckFlowChoose, ckFlowInput, ckFlowRecord, ckFirstRecord, ckPick, ckHasWork, ckPickLabel, MT_POINTS, MT_MIN_MASTERED, MT_LOGIN_BONUS, MT_WEEK_STAMPS, MT_WEEK_BONUS, mtPoints, mtCandidates, mtAvailable, mtDoneToday, mtPick, mtWeekStart, mtWeekStamps, mtDueBonuses, TC_SECONDS, TC_DAILY_MAX, TC_UNLOCK_MASTERED, TC_WRONG_SHOW_MS, tcMakeQuestion, tcPoints, tcScore, tcCountToday, tcPointsFromScore, tcPointsFor, tcReady, coClockCleared, coClockMastered, coWordLevels, coLevelCleared, CO_RECENT_DAYS, CO_ERR_MIN, coRecentErrors, coLevelHasWork, coL4Available, coTimeAvailable, coRecommend, coSessionEvents, CO_RANKS, coRankStats, coRankIndex, coCheckWaiting, coLevelStages, CO_WEEK_KINDS, coWeekDone };
+globalThis.KR = { decMake, decShift, decToString, decFromString, decParseInput, decEquals, decDigits, decFromFraction, decGcd, UNIT_LEVELS, UNIT_PAIRS, unitExp, unitItemsAll, unitItems, unitItemByKey, unitLadder, rngCrypto, qPick, qShuffle, qAllowedTypes, qMakeS, qOpLabel, qApplyOp, qOptions, qMakeQuestion, qMakeDrill, qCheck, qFlowStart, qFlowHint, qFlowChoose, qFlowInput, qFlowRecord, qFlowFirstRecord, qFlowRetried, PG_STREAK_TO_DOWN, PG_RECENT_MAX, PG_CHECK_INTERVAL_DAYS, PG_SESSION_SIZE, PG_MAX_CHECKS, PG_SLIP_DAYS, PG_PROBE_MAX, pgToday, pgDaysBetween, pgNewItem, pgMastered, pgRecord, pgRecordProbe, pgPlace, pgMarks, pgIsCheckDue, pgWeight, pgPickNormal, pgMarkProbes, pgLevelProgress, pgEvents, pgNextStep, pgMasteredKeys, pgPickL4, pgL4Ready, pgL4Need, pgWeakKeys, pgPickReview, pgJumpKeys, pgPickJump, pgRecordJump, SLOT_SYMBOLS, SLOT_REEL, SLOT_REEL_RIGHT, SLOT_REVIEW_MULT, slotReviewBonus, SLOT_JUMP_MULT, slotJumpBonus, SLOT_DRILL_GIVES_SLOT, slotCompute, slotFormula, slotSpin, SLOT_THEMES, slotThemesFor, RS_DEFAULT, RS_MAX_TICKETS, rsValidate, rsExpected, rsSig, rsNewBox, rsBoxEmpty, rsCurrentBox, rsDraw, STORE_SCHEMA, STORE_KEY, STORE_KEY_BROKEN, STORE_KEY_BEFORE_IMPORT, STORE_KEY_LOCK, STORE_LOCK_TTL_MS, STORE_SESSIONS_MAX, STORE_UNDO_HOURS, STORE_PREFIX_KEY_RE, STORE_LOG_MAX, STORE_LOG_KINDS, STORE_BEST_MAX, STORE_DEFAULT_NAMES, storeUpgrade, storeClone, storeInitial, storeValidate, storeLoad, storeLockAcquire, storeLockRelease, storeSave, storeProfile, storeSetItem, storeSetPrefix, storeApplyTime, storeApplyMemtest, storeApplyBonus, storeAddLog, storeSetRank, storeSetUnlocked, storeSetClock, storeSetWord, storeSetMeaning, storeAddDrill, storeApplySession, storeClearPending, storeExchange, storeRewardSlot, storeSetRewardSlot, storeSpinReward, storeSetRewards, storeRename, storeSetTheme, storeResetProfile, storeResetAll, storeMarkExported, storeExportText, storeParseImport, storeImportSummary, storeBackupBeforeImport, storeReadBeforeImport, storeClearBeforeImport, storeAdoptImported, CHARA_LIST, CHARA_MOODS, CHARA_LINES, charaLine, charaForLevel, charaSvg, charaLiterSvg, AV_MOODS, AV_IDS, avatarSvg, AV_STAR_STREAK, avMood, PREFIXES, PREFIX_KINDS, PREFIX_BOX_MAX, prefixById, prefixKeys, prefixFactorLabel, prefixMakeQuestion, prefixRecord, prefixLearned, prefixPick, prefixTableHtml, MN_DONE_BOX, MEANING, mnById, mnForLevel, mnMakeQuestion, mnRecord, mnDone, mnNextFor, mnLevelDone, WD_DONE_BOX, WORD, wdById, wdMakeQuestion, wdRecord, wdDone, wdKeysFor, wdPick, CK_FACTORS, CK_SESSION_SIZE, CK_MAX_CHECKS, CK_ITEMS, ckById, ckOpLabel, ckOptions, ckMakeQuestion, ckFlowStart, ckFlowHint, ckFlowChoose, ckFlowInput, ckFlowRecord, ckFirstRecord, ckPick, ckHasWork, ckPickLabel, MT_POINTS, MT_MIN_MASTERED, MT_LOGIN_BONUS, MT_WEEK_STAMPS, MT_WEEK_BONUS, mtPoints, mtCandidates, mtAvailable, mtDoneToday, mtPick, mtWeekStart, mtWeekStamps, mtDueBonuses, TC_SECONDS, TC_DAILY_MAX, TC_UNLOCK_MASTERED, TC_WRONG_SHOW_MS, tcMakeQuestion, tcPoints, tcScore, tcCountToday, tcPointsFromScore, tcPointsFor, tcReady, coClockCleared, coClockMastered, coWordLevels, coLevelCleared, CO_RECENT_DAYS, CO_ERR_MIN, coRecentErrors, coLevelHasWork, coL4Available, coTimeAvailable, coRecommend, coSessionEvents, CO_RANKS, coRankStats, coRankIndex, coCheckWaiting, coLevelStages, CO_WEEK_KINDS, coWeekDone };
 if (typeof document !== 'undefined') {
 // ---- src/ui/app.js ----
 // ui/app.js — 画面の描画とイベント。logic の関数は同じスコープに連結されている（build.mjs）。設計 §9
@@ -2929,7 +3108,8 @@ function uiPlaceTable(before, after, op) {
 // ---------- 画面: だれ？ ----------
 function uiWho() {
   let h = '<h1>だれが やる？</h1><div class="grid2 who">';
-  for (const p of uiS.data.profiles) h += '<button class="big" data-act="pick" data-id="' + p.id + '">' + uiEsc(p.name) + '</button>';
+  // 人を選ぶ画面では、みんな同じ表情にする（ほかの人の学習の具合を並べて見せない。D-035）
+  for (const p of uiS.data.profiles) h += '<button class="big" data-act="pick" data-id="' + p.id + '">' + (AV_IDS.includes(p.id) ? avatarSvg(p.id, 'happy', 64) : '') + '<span>' + uiEsc(p.name) + '</span></button>';
   h += '</div><button class="small adult-link" data-act="adult">大人の人</button>';
   return h;
 }
@@ -3021,12 +3201,21 @@ function uiMap(p) {
   return h;
 }
 
+// 学習の具合で変わる表情に添えることば（D-035）。来ない日が続いても責めない
+const UI_AV_SAY = {
+  star: '続けてがんばっているね！ キラキラだよ！',
+  happy: '今日もがんばったね！',
+  normal: '今日もいっしょにやろう！',
+  sleepy: 'ちょっと ねむくなってきた…。1回やると 目がさめるよ。',
+  zzz: 'ぐっすり ねむっているよ。1回やると 起きるよ！',
+};
 function uiHome() {
   const p = uiProfile();
   const ri = coRankIndex(p);
   const weakN = pgWeakKeys(p.items).length;
   const themes = slotThemesFor(p.total);
-  let h = '<div class="row"><h1>' + uiEsc(p.name) + ' さん</h1><span class="title-badge">' + uiEsc(CO_RANKS[ri].name) + '</span></div>';
+  let h = '<div class="row">' + (AV_IDS.includes(p.id) ? avatarSvg(p.id, avMood(p.sessions, pgToday()), 76) : '') + '<h1>' + uiEsc(p.name) + ' さん</h1><span class="title-badge">' + uiEsc(CO_RANKS[ri].name) + '</span></div>';
+  if (AV_IDS.includes(p.id)) h += '<p class="av-say">' + uiEsc(UI_AV_SAY[avMood(p.sessions, pgToday())]) + '</p>';
   if (ri + 1 < CO_RANKS.length) h += '<p class="muted">次の段「' + uiEsc(CO_RANKS[ri + 1].name) + '」: ' + uiEsc(CO_RANKS[ri + 1].need) + '</p>';
   else h += '<p class="fb ok">免許皆伝！ 全部できるようになったね。</p>';
   h += '<div class="row stat"><div>使えるポイント <b>' + p.available + '</b></div><div>これまでの合計 <b>' + p.total + '</b></div></div>';
