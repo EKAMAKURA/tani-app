@@ -107,6 +107,11 @@ table.place td.lab { border: none; font-size: 18px; text-align: right; width: au
 .level-btn .chara { flex: none; }
 .fb.say::after { content: ""; display: block; clear: both; }
 .fb.say > svg.chara { float: left; margin: 0 12px 4px 0; }
+/* どうして ×・÷ なの？（D-042） */
+.why { border: 2px solid var(--accent); border-radius: 14px; padding: 10px 14px; margin: 10px 0; background: var(--bg); }
+.why h3 { margin: 4px 0 8px; }
+.why-step { margin: 12px 0 4px; }
+.why-money svg { max-width: 100%; height: auto; }
 .chara-row { display: flex; justify-content: center; gap: 18px; margin: 4px 0 8px; }
 .chara-cheer { animation: chara-hop .6s ease-in-out infinite alternate; }
 @media (prefers-reduced-motion: reduce) { .chara-cheer { animation: none; } }
@@ -2535,6 +2540,36 @@ function realMakeQuestion(rng, id) {
   return { id: r.id, level: r.level, text: r.text, explain: r.explain, hint: r.hint, options: opts };
 }
 
+// ---- src/logic/why.js ----
+// why.js — 「どうして × ・ ÷ なの？」の説明に使う材料（D-042）。設計 §13.42
+// 係数は units.js の指数からだけ作る（ここに数を書かない）。
+
+// 大きい単位から小さい単位へ、となりどうしの段: [{ big, small, n }]（1 big ＝ n small）
+function whyChain(level, from, to) {
+  const ef = unitExp(level, from);
+  const et = unitExp(level, to);
+  const hi = Math.max(ef, et);
+  const lo = Math.min(ef, et);
+  const name = (g) => (g.units.includes(from) ? from : g.units.includes(to) ? to : g.units[0]);
+  const groups = unitLadder(level).filter((g) => g.exp <= hi && g.exp >= lo);
+  const out = [];
+  for (let i = 0; i + 1 < groups.length; i++) {
+    out.push({ big: name(groups[i]), small: name(groups[i + 1]), n: 10 ** (groups[i].exp - groups[i + 1].exp) });
+  }
+  return out;
+}
+
+// 大きい単位 1 つに、小さい単位がいくつ入るか（10 の k 乗）
+function whyFactor(level, from, to) {
+  return 10 ** Math.abs(unitExp(level, from) - unitExp(level, to));
+}
+
+// お金のたとえ: 1円玉と、その n 倍のお金（n が 10・100・1000・10000 のときだけ）
+const WHY_MONEY = { 10: '10円玉', 100: '100円玉', 1000: '1000円札', 10000: '1万円札' };
+function whyMoney(n) {
+  return WHY_MONEY[n] ? { small: '1円玉', big: WHY_MONEY[n], n } : null;
+}
+
 // ---- src/logic/clock.js ----
 // clock.js — じかん の セクション（秒・分・時間・日、時刻と時間）。設計 §13.20、D-016
 // 倍率は 10 のべき乗ではない。ここ（CK_FACTORS）に1か所だけ置き、テストで独立した正解表と照合する。答えはすべて整数。
@@ -3090,7 +3125,7 @@ function coRealLevels(p) {
   return [1, 2, 3].filter((lv) => lv === 1 || unitItems(lv).some((it) => items[it.key]));
 }
 
-globalThis.KR = { decMake, decShift, decToString, decFromString, decParseInput, decEquals, decDigits, decFromFraction, decGcd, UNIT_LEVELS, UNIT_PAIRS, unitExp, unitItemsAll, unitItems, unitItemByKey, unitLadder, rngCrypto, qPick, qShuffle, qAllowedTypes, qMakeS, qOpLabel, qApplyOp, qOptions, qMakeQuestion, qMakeDrill, qCheck, qFlowStart, qFlowHint, qFlowChoose, qFlowInput, qFlowRecord, qFlowFirstRecord, qFlowRetried, PG_STREAK_TO_DOWN, PG_RECENT_MAX, PG_CHECK_INTERVAL_DAYS, PG_SESSION_SIZE, PG_MAX_CHECKS, PG_SLIP_DAYS, PG_PROBE_MAX, pgToday, pgDaysBetween, pgNewItem, pgMastered, pgRecord, pgRecordProbe, pgPlace, pgMarks, pgIsCheckDue, pgWeight, pgPickNormal, pgMarkProbes, pgLevelProgress, pgEvents, pgNextStep, pgMasteredKeys, pgPickL4, pgL4Ready, pgL4Need, pgWeakKeys, pgPickReview, pgJumpKeys, pgPickJump, pgRecordJump, SLOT_SYMBOLS, SLOT_REEL, SLOT_REEL_RIGHT, SLOT_REVIEW_MULT, slotReviewBonus, SLOT_JUMP_MULT, slotJumpBonus, SLOT_DRILL_GIVES_SLOT, slotCompute, slotFormula, slotSpin, SLOT_THEMES, slotThemesFor, RS_DEFAULT, RS_MAX_TICKETS, rsValidate, rsExpected, rsSig, rsNewBox, rsBoxEmpty, rsCurrentBox, rsDraw, STORE_SCHEMA, STORE_KEY, STORE_KEY_BROKEN, STORE_KEY_BEFORE_IMPORT, STORE_KEY_LOCK, STORE_LOCK_TTL_MS, STORE_SESSIONS_MAX, STORE_UNDO_HOURS, STORE_PREFIX_KEY_RE, STORE_LOG_MAX, STORE_LOG_KINDS, STORE_BEST_MAX, STORE_DEFAULT_NAMES, storeUpgrade, storeClone, storeInitial, storeValidate, storeLoad, storeLockAcquire, storeLockRelease, storeSave, storeProfile, storeSetItem, storeSetPrefix, storeApplyTime, storeApplyMemtest, storeApplyBonus, storeAddLog, storeSetRank, storeSetUnlocked, storeSetClock, storeSetWord, storeSetMeaning, storeAddDrill, storeApplySession, storeClearPending, storeExchange, storeRewardSlot, storeSetRewardSlot, storeSpinReward, storeSetRewards, storeRename, storeSetTheme, storeResetProfile, storeResetAll, storeMarkExported, storeExportText, storeParseImport, storeImportSummary, storeBackupBeforeImport, storeReadBeforeImport, storeClearBeforeImport, storeAdoptImported, CHARA_LIST, CHARA_MOODS, CHARA_LINES, charaLine, charaForLevel, charaSvg, charaLiterSvg, AV_MOODS, AV_IDS, avatarSvg, avMoodFromResult, avMood, avIsFirst, PREFIXES, PREFIX_KINDS, PREFIX_BOX_MAX, prefixById, prefixKeys, prefixFactorLabel, prefixMakeQuestion, prefixRecord, prefixLearned, prefixPick, prefixTableHtml, MN_DONE_BOX, MEANING, mnById, mnForLevel, mnMakeQuestion, mnRecord, mnDone, mnNextFor, mnLevelDone, WD_DONE_BOX, WORD, wdById, wdMakeQuestion, wdRecord, wdDone, wdKeysFor, wdPick, REAL, realById, realPick, realMakeQuestion, CK_FACTORS, CK_SESSION_SIZE, CK_MAX_CHECKS, CK_ITEMS, ckById, ckOpLabel, ckOptions, ckMakeQuestion, ckFlowStart, ckFlowHint, ckFlowChoose, ckFlowInput, ckFlowRecord, ckFirstRecord, ckPick, ckHasWork, ckPickLabel, MT_POINTS, MT_MIN_MASTERED, MT_LOGIN_BONUS, MT_WEEK_STAMPS, MT_WEEK_BONUS, mtPoints, mtCandidates, mtAvailable, mtDoneToday, mtPick, mtWeekStart, mtWeekStamps, mtDueBonuses, TC_SECONDS, TC_DAILY_MAX, TC_UNLOCK_MASTERED, TC_WRONG_SHOW_MS, tcMakeQuestion, tcPoints, tcScore, tcCountToday, tcPointsFromScore, tcPointsFor, tcReady, coClockCleared, coClockMastered, coWordLevels, coLevelCleared, CO_RECENT_DAYS, CO_ERR_MIN, coRecentErrors, coLevelHasWork, coL4Available, coTimeAvailable, coRecommend, coSessionEvents, CO_RANKS, coRankStats, coRankIndex, coCheckWaiting, coLevelStages, CO_WEEK_KINDS, coWeekDone, CO_OTHER_MODES, CO_OTHER_DAILY_MAX, coOtherLeft, coRealLevels };
+globalThis.KR = { decMake, decShift, decToString, decFromString, decParseInput, decEquals, decDigits, decFromFraction, decGcd, UNIT_LEVELS, UNIT_PAIRS, unitExp, unitItemsAll, unitItems, unitItemByKey, unitLadder, rngCrypto, qPick, qShuffle, qAllowedTypes, qMakeS, qOpLabel, qApplyOp, qOptions, qMakeQuestion, qMakeDrill, qCheck, qFlowStart, qFlowHint, qFlowChoose, qFlowInput, qFlowRecord, qFlowFirstRecord, qFlowRetried, PG_STREAK_TO_DOWN, PG_RECENT_MAX, PG_CHECK_INTERVAL_DAYS, PG_SESSION_SIZE, PG_MAX_CHECKS, PG_SLIP_DAYS, PG_PROBE_MAX, pgToday, pgDaysBetween, pgNewItem, pgMastered, pgRecord, pgRecordProbe, pgPlace, pgMarks, pgIsCheckDue, pgWeight, pgPickNormal, pgMarkProbes, pgLevelProgress, pgEvents, pgNextStep, pgMasteredKeys, pgPickL4, pgL4Ready, pgL4Need, pgWeakKeys, pgPickReview, pgJumpKeys, pgPickJump, pgRecordJump, SLOT_SYMBOLS, SLOT_REEL, SLOT_REEL_RIGHT, SLOT_REVIEW_MULT, slotReviewBonus, SLOT_JUMP_MULT, slotJumpBonus, SLOT_DRILL_GIVES_SLOT, slotCompute, slotFormula, slotSpin, SLOT_THEMES, slotThemesFor, RS_DEFAULT, RS_MAX_TICKETS, rsValidate, rsExpected, rsSig, rsNewBox, rsBoxEmpty, rsCurrentBox, rsDraw, STORE_SCHEMA, STORE_KEY, STORE_KEY_BROKEN, STORE_KEY_BEFORE_IMPORT, STORE_KEY_LOCK, STORE_LOCK_TTL_MS, STORE_SESSIONS_MAX, STORE_UNDO_HOURS, STORE_PREFIX_KEY_RE, STORE_LOG_MAX, STORE_LOG_KINDS, STORE_BEST_MAX, STORE_DEFAULT_NAMES, storeUpgrade, storeClone, storeInitial, storeValidate, storeLoad, storeLockAcquire, storeLockRelease, storeSave, storeProfile, storeSetItem, storeSetPrefix, storeApplyTime, storeApplyMemtest, storeApplyBonus, storeAddLog, storeSetRank, storeSetUnlocked, storeSetClock, storeSetWord, storeSetMeaning, storeAddDrill, storeApplySession, storeClearPending, storeExchange, storeRewardSlot, storeSetRewardSlot, storeSpinReward, storeSetRewards, storeRename, storeSetTheme, storeResetProfile, storeResetAll, storeMarkExported, storeExportText, storeParseImport, storeImportSummary, storeBackupBeforeImport, storeReadBeforeImport, storeClearBeforeImport, storeAdoptImported, CHARA_LIST, CHARA_MOODS, CHARA_LINES, charaLine, charaForLevel, charaSvg, charaLiterSvg, AV_MOODS, AV_IDS, avatarSvg, avMoodFromResult, avMood, avIsFirst, PREFIXES, PREFIX_KINDS, PREFIX_BOX_MAX, prefixById, prefixKeys, prefixFactorLabel, prefixMakeQuestion, prefixRecord, prefixLearned, prefixPick, prefixTableHtml, MN_DONE_BOX, MEANING, mnById, mnForLevel, mnMakeQuestion, mnRecord, mnDone, mnNextFor, mnLevelDone, WD_DONE_BOX, WORD, wdById, wdMakeQuestion, wdRecord, wdDone, wdKeysFor, wdPick, REAL, realById, realPick, realMakeQuestion, whyChain, whyFactor, whyMoney, CK_FACTORS, CK_SESSION_SIZE, CK_MAX_CHECKS, CK_ITEMS, ckById, ckOpLabel, ckOptions, ckMakeQuestion, ckFlowStart, ckFlowHint, ckFlowChoose, ckFlowInput, ckFlowRecord, ckFirstRecord, ckPick, ckHasWork, ckPickLabel, MT_POINTS, MT_MIN_MASTERED, MT_LOGIN_BONUS, MT_WEEK_STAMPS, MT_WEEK_BONUS, mtPoints, mtCandidates, mtAvailable, mtDoneToday, mtPick, mtWeekStart, mtWeekStamps, mtDueBonuses, TC_SECONDS, TC_DAILY_MAX, TC_UNLOCK_MASTERED, TC_WRONG_SHOW_MS, tcMakeQuestion, tcPoints, tcScore, tcCountToday, tcPointsFromScore, tcPointsFor, tcReady, coClockCleared, coClockMastered, coWordLevels, coLevelCleared, CO_RECENT_DAYS, CO_ERR_MIN, coRecentErrors, coLevelHasWork, coL4Available, coTimeAvailable, coRecommend, coSessionEvents, CO_RANKS, coRankStats, coRankIndex, coCheckWaiting, coLevelStages, CO_WEEK_KINDS, coWeekDone, CO_OTHER_MODES, CO_OTHER_DAILY_MAX, coOtherLeft, coRealLevels };
 if (typeof document !== 'undefined') {
 // ---- src/ui/app.js ----
 // ui/app.js — 画面の描画とイベント。logic の関数は同じスコープに連結されている（build.mjs）。設計 §9
@@ -3499,6 +3534,7 @@ function uiHome() {
   const wdn = WORD.filter((w) => wdDone((p.word || {})[w.id])).length;
   h += '<button data-act="start" data-mode="word"' + (wl.length ? oDis('word') : ' disabled') + '>文章題<br><span class="muted">' + (wl.length ? '解けた ' + wdn + ' / ' + WORD.length : 'レベル1で できた を 4個にしよう') + '</span>' + (wl.length ? oNote('word') : '') + '</button>';
   h += '<button data-act="start" data-mode="real"' + oDis('real') + '>身近なもの クイズ<br><span class="muted">ベッド・テニスコート・牛乳パック</span>' + oNote('real') + '</button>';
+  h += '<button data-act="whyopen">どうして × ・ ÷ ？<br><span class="muted">単位を直すときの考え方</span></button>';
   h += '<button data-act="rewards">ごほうび</button>';
   h += '</div>';
   if (weakN === 0) h += '<p class="muted">苦手はありません。練習をしてみよう。</p>';
@@ -3562,6 +3598,7 @@ function uiNextQ() {
   const entry = pl.list[pl.idx];
   pl.isMeaning = !!entry.isMeaning;
   pl.isReal = !!entry.isReal;
+  pl.why = false;
   pl.isWord = !!entry.isWord;
   pl.isClock = !!entry.isClock;
   uiS.lastInput = 'ans';
@@ -3700,6 +3737,72 @@ function uiPlay() {
   const mood = h.includes('class="fb hint') ? 'fight' : h.includes('class="fb ok') ? 'happy' : 'normal';
   return h.replace('<span class="progress">', avatarSvg(p.id, mood, 48) + '<span class="progress">');
 }
+// ---------- どうして ×・÷ なの？（D-042） ----------
+// w = { level, from, to, dir: 'x'|'d', v: 元の数（文字）, a: 答え（文字） }
+function uiWhy(w) {
+  const n = whyFactor(w.level, w.from, w.to);
+  const big = w.dir === 'd' ? w.to : w.from; // 大きい単位
+  const small = w.dir === 'd' ? w.from : w.to;
+  const chain = whyChain(w.level, w.from, w.to);
+  let h = '<div class="why"><h3>どうして ' + (w.dir === 'd' ? '÷' : '×') + n + ' なの？</h3>';
+  // 1. 大きい単位 1つの中に、小さい単位がいくつ入っているか
+  h += '<p class="why-step"><b>① 1 ' + uiEsc(big) + ' の中に、1 ' + uiEsc(small) + ' は いくつ入っている？</b></p><ul class="list">';
+  for (const c of chain) h += '<li>1 ' + uiEsc(c.big) + ' ＝ ' + c.n + ' ' + uiEsc(c.small) + '</li>';
+  h += '</ul>';
+  if (chain.length > 1) h += '<p>だから 1 ' + uiEsc(big) + ' ＝ ' + chain.map((c) => c.n).join(' × ') + ' ＝ <b>' + n + ' ' + uiEsc(small) + '</b></p>';
+  else h += '<p>1 ' + uiEsc(big) + ' の中に、1 ' + uiEsc(small) + ' が <b>' + n + 'こ</b> 入っているよ。</p>';
+  // 2. その問題の数で
+  if (w.dir === 'd') {
+    h += '<p class="why-step"><b>② ' + uiEsc(w.v) + ' ' + uiEsc(small) + ' は、1 ' + uiEsc(small) + ' が ' + uiEsc(w.v) + 'こ。</b></p>';
+    h += '<p>' + n + 'こ集まるごとに 1 ' + uiEsc(big) + ' になる。<br>' + uiEsc(w.v) + ' の中に ' + n + ' が いくつ分？ → <b>' + uiEsc(w.v) + ' ÷ ' + n + ' ＝ ' + uiEsc(w.a) + '</b>　だから ' + uiEsc(w.a) + ' ' + uiEsc(big) + '</p>';
+  } else {
+    h += '<p class="why-step"><b>② ' + uiEsc(w.v) + ' ' + uiEsc(big) + ' は、1 ' + uiEsc(big) + ' が ' + uiEsc(w.v) + 'こ。</b></p>';
+    h += '<p>1 ' + uiEsc(big) + ' を ' + uiEsc(small) + ' に 分けると ' + n + 'こずつ。<br>→ <b>' + uiEsc(w.v) + ' × ' + n + ' ＝ ' + uiEsc(w.a) + '</b>　だから ' + uiEsc(w.a) + ' ' + uiEsc(small) + '</p>';
+  }
+  // 3. お金で考える
+  const m = whyMoney(n);
+  if (m) {
+    h += '<p class="why-step"><b>③ お金で考えると</b></p><div class="why-money">' + uiWhyMoneySvg(m) + '</div>';
+    if (w.dir === 'd') h += '<p>' + m.small + ' ' + n + 'まいで ' + m.big + ' 1まい。<br>大きいお金（大きい単位）に かえると、まい数（数）は <b>少なく</b> なる。だから <b>÷' + n + '</b>。</p>';
+    else h += '<p>' + m.big + ' 1まいを ' + m.small + 'に かえると ' + n + 'まい。<br>小さいお金（小さい単位）に かえると、まい数（数）は <b>多く</b> なる。だから <b>×' + n + '</b>。</p>';
+  }
+  h += '<p class="muted">大きい単位 → 小さい単位は ×（数が大きくなる）。小さい単位 → 大きい単位は ÷（数が小さくなる）。</p></div>';
+  return h;
+}
+
+// 1円玉の山 ＝ 大きいお金 1つ の絵
+function uiWhyMoneySvg(m) {
+  let s = '<svg viewBox="0 0 300 90" width="300" height="90" role="img" aria-label="' + m.small + ' ' + m.n + 'まいで ' + m.big + ' 1まい">';
+  for (let i = 0; i < 6; i++) {
+    const x = 40 + (i % 3) * 22;
+    const y = 62 - Math.floor(i / 3) * 18;
+    s += '<circle cx="' + x + '" cy="' + y + '" r="13" fill="#e6e6e6" stroke="#999" stroke-width="2"/><text x="' + x + '" y="' + (y + 5) + '" font-size="12" text-anchor="middle" fill="#666">1</text>';
+  }
+  s += '<text x="62" y="18" font-size="13" text-anchor="middle" fill="#444">1円 × ' + m.n + '</text>';
+  s += '<text x="140" y="56" font-size="26" text-anchor="middle" fill="#444">＝</text>';
+  if (m.big.endsWith('札')) s += '<rect x="175" y="25" width="110" height="52" rx="6" fill="#dff0d8" stroke="#5a9a4a" stroke-width="2"/><text x="230" y="58" font-size="18" text-anchor="middle" fill="#2e6b25">' + m.n + '円</text>';
+  else s += '<circle cx="230" cy="50" r="26" fill="#f2d48a" stroke="#b8923a" stroke-width="2"/><text x="230" y="56" font-size="16" text-anchor="middle" fill="#7a5a12">' + m.n + '</text>';
+  return s + '</svg>';
+}
+
+// 問題の画面の「どうして？」ボタンと説明（q は換算の問題）
+function uiWhyBlock(pl, q) {
+  if (pl.mode === 'memtest') return '';
+  // ボタンの文字で × か ÷ かが分からないようにする
+  let h = '<p><button class="small" data-act="why">' + (pl.why ? '説明を とじる' : 'どうして？ 考え方を見る') + '</button></p>';
+  if (pl.why) h += uiWhy({ level: q.level, from: q.from, to: q.to, dir: q.dir, v: decToString(q.value), a: decToString(q.answer) });
+  return h;
+}
+
+// ホームからの説明の画面（例: 2500 mm → m と 3 m → mm）
+function uiWhyScreen() {
+  let h = '<h1>どうして × ・ ÷ なの？</h1>';
+  h += uiWhy({ level: 1, from: 'mm', to: 'm', dir: 'd', v: '2500', a: '2.5' });
+  h += uiWhy({ level: 1, from: 'm', to: 'mm', dir: 'x', v: '3', a: '3000' });
+  h += '<p><button class="primary big" data-act="whyback">もどる</button></p>';
+  return h;
+}
+
 function uiPlayInner() {
   const pl = uiS.play;
   const q = pl.q;
@@ -3730,6 +3833,7 @@ function uiPlayInner() {
     if (f.feedback && f.feedback.kind === 'ng1') h += uiExplain(q, f.feedback.t);
     else if (f.feedback && f.feedback.kind === 'ng0') h += '<div class="fb hint">おしい！ ①から いっしょに やってみよう。</div>';
     else if (showFig) h += '<div class="figure">' + uiLadderSvg(q.level, q.from, q.to) + '</div>' + uiLiterFig(q);
+    if (q.k > 0 && f.feedback) h += uiWhyBlock(pl, q); // D-042: ①で まちがえたあとに出す
   } else if (f.stage === 's2' || f.stage === 'direct') {
     if (f.stage === 's2') {
       h += '<div class="fb ok">① ' + qOpLabel(q.op) + ' で正解！</div>';
@@ -3746,6 +3850,7 @@ function uiPlayInner() {
   } else {
     const fb = f.feedback || {};
     if (f.showAnswer) h += '<div class="fb hint">答えは <b>' + decToString(q.answer) + ' ' + uiEsc(q.to) + '</b> だよ。表で確かめよう。' + uiPlaceTable(q.value, q.answer, q.op) + '</div>';
+    if (q.k > 0) h += uiWhyBlock(pl, q); // D-042
     else h += '<div class="fb ok">正解！ ' + decToString(q.value) + ' ' + uiEsc(q.from) + ' ＝ <b>' + decToString(q.answer) + ' ' + uiEsc(q.to) + '</b>' + (f.first ? '（やりなおして できたね）' : '') + uiPlaceTable(q.value, q.answer, q.op) + '</div>';
     void fb;
     h += '<p><button class="primary big" data-act="next">次へ（Enter）</button></p>';
@@ -4595,6 +4700,7 @@ function uiRender() {
   else if (scr === 'result') h = uiResult();
   else if (scr === 'rewards') h = uiRewards();
   else if (scr === 'adult') h = uiAdult();
+  else if (scr === 'why') h = uiWhyScreen();
   else if (scr === 'time') h = uiS.tc ? uiTime() : uiHome();
   else if (scr === 'tresult') h = uiTimeResult();
   else if (scr === 'mresult') h = uiS.result ? uiMemtestResult() : uiHome();
@@ -4666,6 +4772,17 @@ function uiOnClick(e) {
     case 'adultyes': a.ok = true; break;
     case 'start': uiStart(b.dataset.mode, Number(b.dataset.level) || null); break;
     case 'theme': uiSave(storeSetTheme(uiS.data, uiS.pid, b.dataset.id)); break;
+    case 'why':
+      if (uiS.play && uiS.play.mode === 'memtest') break;
+      if (uiS.play) {
+        uiS.play.why = !uiS.play.why;
+        if (uiS.play.mode === 'jump' && uiS.play.why) uiS.play.hintUsed = true; // 説明を見たらヒントと同じ（D-034）
+        // 答える前に説明を見たら、ヒントを使ったのと同じに記録する
+        if (uiS.play.why && uiS.play.flow && uiS.play.flow.stage === 's1') uiS.play.flow = qFlowHint(uiS.play.flow);
+      }
+      break;
+    case 'whyopen': uiS.screen = 'why'; break;
+    case 'whyback': uiS.screen = 'home'; break;
     case 'hint':
       if (uiS.play && uiS.play.mode === 'memtest') break;
       if (uiS.play && uiS.play.mode === 'jump') uiS.play.hintUsed = true; // 補助なしの1.5倍が ふつうに戻る（D-034）
