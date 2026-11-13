@@ -1113,19 +1113,27 @@ const STORE_DEFAULT_NAMES = [
 ];
 const STORE_IDS = STORE_DEFAULT_NAMES.map((p) => p.id).join(',');
 
+// メンバーごとの くじ 1回のポイント（D-043）。ちょーじょは学年が上で解くのが速いので 200。書いていないメンバーは くじの設定の値
+const STORE_RS_COST_DEFAULT = { p1: 200 };
+
 function storeNewProfile(p) {
   return {
     id: p.id, name: p.name, theme: 'basic', available: 0, total: 0,
     items: {}, drill: {}, sessions: [], pending: null, exchanges: [],
+    ...(STORE_RS_COST_DEFAULT[p.id] ? { rsCost: STORE_RS_COST_DEFAULT[p.id] } : {}),
   };
 }
 
 // 3人分（p1〜p3）の記録に、足したメンバー（p4・p5）を初期の状態で足す。それ以外はそのまま返す（D-022）
+// あわせて、メンバーごとの くじのポイント（D-043）が無い記録には既定の値を足す（保護者が変えた値はそのまま）
 function storeUpgrade(d) {
   if (!isObj(d) || !Array.isArray(d.profiles)) return d;
   const ids = d.profiles.map((p) => p && p.id).join(',');
-  if (ids !== 'p1,p2,p3') return d;
-  return { ...d, profiles: [...d.profiles, ...STORE_DEFAULT_NAMES.slice(3).map(storeNewProfile)] };
+  let out = ids === 'p1,p2,p3' ? { ...d, profiles: [...d.profiles, ...STORE_DEFAULT_NAMES.slice(3).map(storeNewProfile)] } : d;
+  if (out.profiles.some((p) => isObj(p) && STORE_RS_COST_DEFAULT[p.id] && p.rsCost === undefined)) {
+    out = { ...out, profiles: out.profiles.map((p) => (isObj(p) && STORE_RS_COST_DEFAULT[p.id] && p.rsCost === undefined ? { ...p, rsCost: STORE_RS_COST_DEFAULT[p.id] } : p)) };
+  }
+  return out;
 }
 
 function storeClone(x) {
@@ -1211,6 +1219,8 @@ function storeValidate(d) {
       if (p.word !== undefined && (!isObj(p.word) || Object.entries(p.word).some(([k, v]) => !/^W[123][a-d]$/.test(k)
         || !isObj(v) || !isIntIn(v.box, 0, 3) || !isInt0(v.ok) || !isInt0(v.ng)
         || (v.day !== undefined && (typeof v.day !== 'string' || !isDate(v.day))) || (v.seen !== undefined && (typeof v.seen !== 'string' || !isDate(v.seen)))))) w('word が不正');
+      // rsCost は任意（D-043。メンバーごとの くじ 1回のポイント）
+      if (p.rsCost !== undefined && !isIntIn(p.rsCost, 1, 100000)) w('rsCost が不正');
       // rbox は任意（D-018。くじの箱）
       if (p.rbox !== undefined && (!isObj(p.rbox) || !Number.isInteger(p.rbox.no) || p.rbox.no < 1 || !Array.isArray(p.rbox.left)
         || p.rbox.left.some((n) => !isInt0(n)) || typeof p.rbox.last !== 'boolean' || typeof p.rbox.sig !== 'string')) w('rbox が不正');
@@ -1467,6 +1477,21 @@ function storeExchange(data, pid, rewardId, nowIso) {
 }
 
 // ごほうびスロット（設計 §13.15）
+// そのメンバーの くじ 1回のポイント（D-043）
+function storeRsCost(data, pid) {
+  const p = storeProfile(data, pid);
+  return p && Number.isInteger(p.rsCost) ? p.rsCost : storeRewardSlot(data).cost;
+}
+
+// メンバーごとの くじのポイントを変える。cost が null なら くじの設定の値を使う
+function storeSetRsCost(data, pid, cost) {
+  if (cost !== null && !(Number.isInteger(cost) && cost >= 1 && cost <= 100000)) throw new Error('storeSetRsCost: ポイントが不正 ' + cost);
+  return storeWithProfile(data, pid, (p) => {
+    if (cost === null) delete p.rsCost;
+    else p.rsCost = cost;
+  });
+}
+
 function storeRewardSlot(data) {
   return data.rewardSlot || RS_DEFAULT;
 }
@@ -1481,14 +1506,14 @@ function storeSetRewardSlot(data, cfg) {
 
 // くじを1枚引いた結果（rsDraw の { prize, box }）でポイントを引き、箱を保存し、交換の記録に残す。足りなければ拒否。累計は減らない（D-018）
 function storeSpinReward(data, pid, draw, nowIso) {
-  const cfg = storeRewardSlot(data);
+  const cost = storeRsCost(data, pid);
   if (!draw || !draw.prize || !draw.box) return { ok: false, reason: 'no_prize', data };
-  if (storeProfile(data, pid).available < cfg.cost) return { ok: false, reason: 'not_enough', data };
+  if (storeProfile(data, pid).available < cost) return { ok: false, reason: 'not_enough', data };
   const prize = draw.prize;
   const d = storeWithProfile(data, pid, (p) => {
-    p.available -= cfg.cost;
+    p.available -= cost;
     p.rbox = draw.box;
-    p.exchanges = [...p.exchanges, { date: nowIso, rewardName: (prize.last ? 'くじ ラストワン ' : 'くじ ') + prize.yen + '円', cost: cfg.cost }];
+    p.exchanges = [...p.exchanges, { date: nowIso, rewardName: (prize.last ? 'くじ ラストワン ' : 'くじ ') + prize.yen + '円', cost }];
   });
   return { ok: true, data: d, prize };
 }
@@ -1521,6 +1546,9 @@ function storeResetProfile(data, pid) {
   if (i < 0) throw new Error('storeResetProfile: 未知のメンバー ' + pid);
   const d = storeClone(data);
   d.profiles[i] = { ...storeNewProfile({ id: pid, name: data.profiles[i].name }) };
+  // くじのポイント（D-043）は保護者の設定なので、リセットしても残す
+  if (data.profiles[i].rsCost !== undefined) d.profiles[i].rsCost = data.profiles[i].rsCost;
+  else delete d.profiles[i].rsCost;
   return d;
 }
 
@@ -3125,7 +3153,7 @@ function coRealLevels(p) {
   return [1, 2, 3].filter((lv) => lv === 1 || unitItems(lv).some((it) => items[it.key]));
 }
 
-globalThis.KR = { decMake, decShift, decToString, decFromString, decParseInput, decEquals, decDigits, decFromFraction, decGcd, UNIT_LEVELS, UNIT_PAIRS, unitExp, unitItemsAll, unitItems, unitItemByKey, unitLadder, rngCrypto, qPick, qShuffle, qAllowedTypes, qMakeS, qOpLabel, qApplyOp, qOptions, qMakeQuestion, qMakeDrill, qCheck, qFlowStart, qFlowHint, qFlowChoose, qFlowInput, qFlowRecord, qFlowFirstRecord, qFlowRetried, PG_STREAK_TO_DOWN, PG_RECENT_MAX, PG_CHECK_INTERVAL_DAYS, PG_SESSION_SIZE, PG_MAX_CHECKS, PG_SLIP_DAYS, PG_PROBE_MAX, pgToday, pgDaysBetween, pgNewItem, pgMastered, pgRecord, pgRecordProbe, pgPlace, pgMarks, pgIsCheckDue, pgWeight, pgPickNormal, pgMarkProbes, pgLevelProgress, pgEvents, pgNextStep, pgMasteredKeys, pgPickL4, pgL4Ready, pgL4Need, pgWeakKeys, pgPickReview, pgJumpKeys, pgPickJump, pgRecordJump, SLOT_SYMBOLS, SLOT_REEL, SLOT_REEL_RIGHT, SLOT_REVIEW_MULT, slotReviewBonus, SLOT_JUMP_MULT, slotJumpBonus, SLOT_DRILL_GIVES_SLOT, slotCompute, slotFormula, slotSpin, SLOT_THEMES, slotThemesFor, RS_DEFAULT, RS_MAX_TICKETS, rsValidate, rsExpected, rsSig, rsNewBox, rsBoxEmpty, rsCurrentBox, rsDraw, STORE_SCHEMA, STORE_KEY, STORE_KEY_BROKEN, STORE_KEY_BEFORE_IMPORT, STORE_KEY_LOCK, STORE_LOCK_TTL_MS, STORE_SESSIONS_MAX, STORE_UNDO_HOURS, STORE_PREFIX_KEY_RE, STORE_LOG_MAX, STORE_LOG_KINDS, STORE_BEST_MAX, STORE_DEFAULT_NAMES, storeUpgrade, storeClone, storeInitial, storeValidate, storeLoad, storeLockAcquire, storeLockRelease, storeSave, storeProfile, storeSetItem, storeSetPrefix, storeApplyTime, storeApplyMemtest, storeApplyBonus, storeAddLog, storeSetRank, storeSetUnlocked, storeSetClock, storeSetWord, storeSetMeaning, storeAddDrill, storeApplySession, storeClearPending, storeExchange, storeRewardSlot, storeSetRewardSlot, storeSpinReward, storeSetRewards, storeRename, storeSetTheme, storeResetProfile, storeResetAll, storeMarkExported, storeExportText, storeParseImport, storeImportSummary, storeBackupBeforeImport, storeReadBeforeImport, storeClearBeforeImport, storeAdoptImported, CHARA_LIST, CHARA_MOODS, CHARA_LINES, charaLine, charaForLevel, charaSvg, charaLiterSvg, AV_MOODS, AV_IDS, avatarSvg, avMoodFromResult, avMood, avIsFirst, PREFIXES, PREFIX_KINDS, PREFIX_BOX_MAX, prefixById, prefixKeys, prefixFactorLabel, prefixMakeQuestion, prefixRecord, prefixLearned, prefixPick, prefixTableHtml, MN_DONE_BOX, MEANING, mnById, mnForLevel, mnMakeQuestion, mnRecord, mnDone, mnNextFor, mnLevelDone, WD_DONE_BOX, WORD, wdById, wdMakeQuestion, wdRecord, wdDone, wdKeysFor, wdPick, REAL, realById, realPick, realMakeQuestion, whyChain, whyFactor, whyMoney, CK_FACTORS, CK_SESSION_SIZE, CK_MAX_CHECKS, CK_ITEMS, ckById, ckOpLabel, ckOptions, ckMakeQuestion, ckFlowStart, ckFlowHint, ckFlowChoose, ckFlowInput, ckFlowRecord, ckFirstRecord, ckPick, ckHasWork, ckPickLabel, MT_POINTS, MT_MIN_MASTERED, MT_LOGIN_BONUS, MT_WEEK_STAMPS, MT_WEEK_BONUS, mtPoints, mtCandidates, mtAvailable, mtDoneToday, mtPick, mtWeekStart, mtWeekStamps, mtDueBonuses, TC_SECONDS, TC_DAILY_MAX, TC_UNLOCK_MASTERED, TC_WRONG_SHOW_MS, tcMakeQuestion, tcPoints, tcScore, tcCountToday, tcPointsFromScore, tcPointsFor, tcReady, coClockCleared, coClockMastered, coWordLevels, coLevelCleared, CO_RECENT_DAYS, CO_ERR_MIN, coRecentErrors, coLevelHasWork, coL4Available, coTimeAvailable, coRecommend, coSessionEvents, CO_RANKS, coRankStats, coRankIndex, coCheckWaiting, coLevelStages, CO_WEEK_KINDS, coWeekDone, CO_OTHER_MODES, CO_OTHER_DAILY_MAX, coOtherLeft, coRealLevels };
+globalThis.KR = { decMake, decShift, decToString, decFromString, decParseInput, decEquals, decDigits, decFromFraction, decGcd, UNIT_LEVELS, UNIT_PAIRS, unitExp, unitItemsAll, unitItems, unitItemByKey, unitLadder, rngCrypto, qPick, qShuffle, qAllowedTypes, qMakeS, qOpLabel, qApplyOp, qOptions, qMakeQuestion, qMakeDrill, qCheck, qFlowStart, qFlowHint, qFlowChoose, qFlowInput, qFlowRecord, qFlowFirstRecord, qFlowRetried, PG_STREAK_TO_DOWN, PG_RECENT_MAX, PG_CHECK_INTERVAL_DAYS, PG_SESSION_SIZE, PG_MAX_CHECKS, PG_SLIP_DAYS, PG_PROBE_MAX, pgToday, pgDaysBetween, pgNewItem, pgMastered, pgRecord, pgRecordProbe, pgPlace, pgMarks, pgIsCheckDue, pgWeight, pgPickNormal, pgMarkProbes, pgLevelProgress, pgEvents, pgNextStep, pgMasteredKeys, pgPickL4, pgL4Ready, pgL4Need, pgWeakKeys, pgPickReview, pgJumpKeys, pgPickJump, pgRecordJump, SLOT_SYMBOLS, SLOT_REEL, SLOT_REEL_RIGHT, SLOT_REVIEW_MULT, slotReviewBonus, SLOT_JUMP_MULT, slotJumpBonus, SLOT_DRILL_GIVES_SLOT, slotCompute, slotFormula, slotSpin, SLOT_THEMES, slotThemesFor, RS_DEFAULT, RS_MAX_TICKETS, rsValidate, rsExpected, rsSig, rsNewBox, rsBoxEmpty, rsCurrentBox, rsDraw, STORE_SCHEMA, STORE_KEY, STORE_KEY_BROKEN, STORE_KEY_BEFORE_IMPORT, STORE_KEY_LOCK, STORE_LOCK_TTL_MS, STORE_SESSIONS_MAX, STORE_UNDO_HOURS, STORE_PREFIX_KEY_RE, STORE_LOG_MAX, STORE_LOG_KINDS, STORE_BEST_MAX, STORE_DEFAULT_NAMES, STORE_RS_COST_DEFAULT, storeUpgrade, storeClone, storeInitial, storeValidate, storeLoad, storeLockAcquire, storeLockRelease, storeSave, storeProfile, storeSetItem, storeSetPrefix, storeApplyTime, storeApplyMemtest, storeApplyBonus, storeAddLog, storeSetRank, storeSetUnlocked, storeSetClock, storeSetWord, storeSetMeaning, storeAddDrill, storeApplySession, storeClearPending, storeExchange, storeRsCost, storeSetRsCost, storeRewardSlot, storeSetRewardSlot, storeSpinReward, storeSetRewards, storeRename, storeSetTheme, storeResetProfile, storeResetAll, storeMarkExported, storeExportText, storeParseImport, storeImportSummary, storeBackupBeforeImport, storeReadBeforeImport, storeClearBeforeImport, storeAdoptImported, CHARA_LIST, CHARA_MOODS, CHARA_LINES, charaLine, charaForLevel, charaSvg, charaLiterSvg, AV_MOODS, AV_IDS, avatarSvg, avMoodFromResult, avMood, avIsFirst, PREFIXES, PREFIX_KINDS, PREFIX_BOX_MAX, prefixById, prefixKeys, prefixFactorLabel, prefixMakeQuestion, prefixRecord, prefixLearned, prefixPick, prefixTableHtml, MN_DONE_BOX, MEANING, mnById, mnForLevel, mnMakeQuestion, mnRecord, mnDone, mnNextFor, mnLevelDone, WD_DONE_BOX, WORD, wdById, wdMakeQuestion, wdRecord, wdDone, wdKeysFor, wdPick, REAL, realById, realPick, realMakeQuestion, whyChain, whyFactor, whyMoney, CK_FACTORS, CK_SESSION_SIZE, CK_MAX_CHECKS, CK_ITEMS, ckById, ckOpLabel, ckOptions, ckMakeQuestion, ckFlowStart, ckFlowHint, ckFlowChoose, ckFlowInput, ckFlowRecord, ckFirstRecord, ckPick, ckHasWork, ckPickLabel, MT_POINTS, MT_MIN_MASTERED, MT_LOGIN_BONUS, MT_WEEK_STAMPS, MT_WEEK_BONUS, mtPoints, mtCandidates, mtAvailable, mtDoneToday, mtPick, mtWeekStart, mtWeekStamps, mtDueBonuses, TC_SECONDS, TC_DAILY_MAX, TC_UNLOCK_MASTERED, TC_WRONG_SHOW_MS, tcMakeQuestion, tcPoints, tcScore, tcCountToday, tcPointsFromScore, tcPointsFor, tcReady, coClockCleared, coClockMastered, coWordLevels, coLevelCleared, CO_RECENT_DAYS, CO_ERR_MIN, coRecentErrors, coLevelHasWork, coL4Available, coTimeAvailable, coRecommend, coSessionEvents, CO_RANKS, coRankStats, coRankIndex, coCheckWaiting, coLevelStages, CO_WEEK_KINDS, coWeekDone, CO_OTHER_MODES, CO_OTHER_DAILY_MAX, coOtherLeft, coRealLevels };
 if (typeof document !== 'undefined') {
 // ---- src/ui/app.js ----
 // ui/app.js — 画面の描画とイベント。logic の関数は同じスコープに連結されている（build.mjs）。設計 §9
@@ -4462,6 +4490,7 @@ function uiRewards() {
   const p = uiProfile();
   let h = '<h1>ごほうび</h1><p class="stat">使えるポイント <b>' + p.available + '</b></p>';
   const rs = storeRewardSlot(uiS.data);
+  const rsCost = storeRsCost(uiS.data, uiS.pid); // メンバーごと（D-043）
   if (uiS.rspin) {
     // くじの結果（設計 §13.22）
     const sp = uiS.rspin;
@@ -4475,12 +4504,12 @@ function uiRewards() {
     return h + '</div>';
   }
   if (uiS.rsAsk) {
-    h += '<div class="card"><h2>ごほうびくじを引く？（' + rs.cost + ' ポイント）</h2><p>おとなの人に見せてね。</p>';
+    h += '<div class="card"><h2>ごほうびくじを引く？（' + rsCost + ' ポイント）</h2><p>おとなの人に見せてね。</p>';
     h += '<div class="row"><button class="primary big" data-act="rsok">おとなの人: OK</button><button data-act="rscancel">やめる</button></div></div>';
     return h;
   }
-  h += '<div class="card rs"><h3>ごほうびくじ（1回 ' + rs.cost + ' ポイント）</h3>' + uiBoxHtml(rs, rsCurrentBox(rs, p.rbox));
-  h += '<button class="primary" data-act="rsask"' + (p.available < rs.cost || uiS.mode === 'readonly' ? ' disabled' : '') + '>引く</button></div>';
+  h += '<div class="card rs"><h3>ごほうびくじ（1回 ' + rsCost + ' ポイント）</h3>' + uiBoxHtml(rs, rsCurrentBox(rs, p.rbox));
+  h += '<button class="primary" data-act="rsask"' + (p.available < rsCost || uiS.mode === 'readonly' ? ' disabled' : '') + '>引く</button></div>';
   if (uiS.exchange) {
     const r = uiS.data.rewards.find((x) => x.id === uiS.exchange);
     h += '<div class="card"><h2>「' + uiEsc(r.name) + '」（' + r.cost + ' ポイント）と こうかんする？</h2><p>おとなの人に見せてね。</p>';
@@ -4602,6 +4631,9 @@ function uiAdult() {
     h += '<div class="row">当たり' + (i + 1) + ': <input type="number" id="rs-yen-' + i + '" value="' + x.yen + '" min="0" step="1"> 円 × <input type="number" id="rs-w-' + i + '" value="' + x.w + '" min="1" step="1"> 枚</div>';
   }
   h += '<div class="row">ラストワン（最後の 1枚）: <input type="number" id="rs-last" value="' + (rs.last || 0) + '" min="0" step="1"> 円（0 なら なし）</div>';
+  // メンバーごとの 1回のポイント（D-043）。空なら上の「1回」の値
+  h += '<p><b>メンバーごとの 1回のポイント</b>（空なら上の値）</p>';
+  for (const pr of d.profiles) h += '<div class="row">' + uiEsc(pr.name) + ': <input type="number" id="rs-pcost-' + pr.id + '" value="' + (Number.isInteger(pr.rsCost) ? pr.rsCost : '') + '" min="1" step="1" placeholder="' + rs.cost + '"> ポイント</div>';
   h += '<p class="muted">1箱: <b>' + ev.den + ' 枚・' + ev.num + ' 円</b>。1枚の期待値: <b>' + ev.label + ' 円</b>。空の行は使いません。中身を変えると、次に引くときから新しい箱になります。</p>';
   for (const pr of d.profiles) {
     const bx = rsCurrentBox(rs, pr.rbox);
@@ -4841,7 +4873,14 @@ function uiOnClick(e) {
     case 'rssave': {
       const cfg = uiReadRewardSlotForm();
       try {
-        if (uiSave(storeSetRewardSlot(uiS.data, cfg), { atomic: true })) a.msg = 'ごほうびくじを保存しました。';
+        let nd = storeSetRewardSlot(uiS.data, cfg);
+        for (const pr of nd.profiles) {
+          const el = document.getElementById('rs-pcost-' + pr.id);
+          if (!el) continue;
+          const v = el.value.trim();
+          nd = storeSetRsCost(nd, pr.id, v === '' ? null : Number(v));
+        }
+        if (uiSave(nd, { atomic: true })) a.msg = 'ごほうびくじを保存しました。';
         else a.msg = '保存できませんでした。';
       } catch (err) {
         a.msg = 'ごほうびくじの入力を確かめてください（' + uiEsc(err.message) + '）';
