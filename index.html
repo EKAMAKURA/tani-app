@@ -134,6 +134,17 @@ input.ck-in { width: 5em; }
 .box-left .chip.gone { opacity: 0.35; text-decoration: line-through; }
 .box-left .chip.last { border-color: #e24b4a; color: #e24b4a; font-weight: bold; }
 .danger-btn { background: #b3261e; color: #fff; border-color: #b3261e; }
+.stage-bar { display: flex; width: 100%; height: 10px; margin-top: 6px; border-radius: 5px; overflow: hidden; background: #eee; }
+.stage-bar i { display: block; height: 100%; }
+.stage-bar .s-done { background: var(--ok); }
+.stage-bar .s-direct { background: var(--accent); }
+.stage-bar .s-nofig { background: var(--accent-weak); }
+.stage-bar .s-fig { background: #f0d79a; }
+.stage-bar .s-fresh { background: #eee; }
+.stage-txt { display: block; font-size: 14px; }
+.waiting { margin: 6px 0; }
+.card.week { margin: 8px 0; }
+.level-btn > span { flex: 1; min-width: 0; }
 
 </style>
 <link rel="manifest" href="manifest.webmanifest">
@@ -2599,7 +2610,43 @@ function coRankIndex(p) {
   return i;
 }
 
-globalThis.KR = { decMake, decShift, decToString, decFromString, decParseInput, decEquals, decDigits, decFromFraction, decGcd, UNIT_LEVELS, UNIT_PAIRS, unitExp, unitItemsAll, unitItems, unitItemByKey, unitLadder, rngCrypto, qPick, qShuffle, qAllowedTypes, qMakeS, qOpLabel, qApplyOp, qOptions, qMakeQuestion, qMakeDrill, qCheck, qFlowStart, qFlowHint, qFlowChoose, qFlowInput, qFlowRecord, qFlowFirstRecord, qFlowRetried, PG_STREAK_TO_DOWN, PG_RECENT_MAX, PG_CHECK_INTERVAL_DAYS, PG_SESSION_SIZE, PG_MAX_CHECKS, PG_SLIP_DAYS, PG_PROBE_MAX, pgToday, pgDaysBetween, pgNewItem, pgMastered, pgRecord, pgRecordProbe, pgPlace, pgMarks, pgIsCheckDue, pgWeight, pgPickNormal, pgMarkProbes, pgLevelProgress, pgEvents, pgNextStep, pgMasteredKeys, pgPickL4, pgL4Ready, pgL4Need, pgWeakKeys, pgPickReview, pgJumpKeys, pgPickJump, pgRecordJump, SLOT_SYMBOLS, SLOT_REEL, SLOT_REEL_RIGHT, SLOT_REVIEW_MULT, slotReviewBonus, SLOT_DRILL_GIVES_SLOT, slotCompute, slotFormula, slotSpin, SLOT_THEMES, slotThemesFor, RS_DEFAULT, RS_MAX_TICKETS, rsValidate, rsExpected, rsSig, rsNewBox, rsBoxEmpty, rsCurrentBox, rsDraw, STORE_SCHEMA, STORE_KEY, STORE_KEY_BROKEN, STORE_KEY_BEFORE_IMPORT, STORE_KEY_LOCK, STORE_LOCK_TTL_MS, STORE_SESSIONS_MAX, STORE_UNDO_HOURS, STORE_PREFIX_KEY_RE, STORE_LOG_MAX, STORE_LOG_KINDS, STORE_BEST_MAX, STORE_DEFAULT_NAMES, storeUpgrade, storeClone, storeInitial, storeValidate, storeLoad, storeLockAcquire, storeLockRelease, storeSave, storeProfile, storeSetItem, storeSetPrefix, storeApplyTime, storeApplyMemtest, storeApplyBonus, storeAddLog, storeSetRank, storeSetUnlocked, storeSetClock, storeSetWord, storeSetMeaning, storeAddDrill, storeApplySession, storeClearPending, storeExchange, storeRewardSlot, storeSetRewardSlot, storeSpinReward, storeSetRewards, storeRename, storeSetTheme, storeResetProfile, storeResetAll, storeMarkExported, storeExportText, storeParseImport, storeImportSummary, storeBackupBeforeImport, storeReadBeforeImport, storeClearBeforeImport, storeAdoptImported, CHARA_LIST, CHARA_MOODS, charaForLevel, charaSvg, charaLiterSvg, PREFIXES, PREFIX_KINDS, PREFIX_BOX_MAX, prefixById, prefixKeys, prefixFactorLabel, prefixMakeQuestion, prefixRecord, prefixLearned, prefixPick, prefixTableHtml, MN_DONE_BOX, MEANING, mnById, mnForLevel, mnMakeQuestion, mnRecord, mnDone, mnNextFor, mnLevelDone, WD_DONE_BOX, WORD, wdById, wdMakeQuestion, wdRecord, wdDone, wdKeysFor, wdPick, CK_FACTORS, CK_SESSION_SIZE, CK_MAX_CHECKS, CK_ITEMS, ckById, ckOpLabel, ckOptions, ckMakeQuestion, ckFlowStart, ckFlowHint, ckFlowChoose, ckFlowInput, ckFlowRecord, ckFirstRecord, ckPick, ckHasWork, ckPickLabel, MT_POINTS, MT_MIN_MASTERED, MT_LOGIN_BONUS, MT_WEEK_STAMPS, MT_WEEK_BONUS, mtPoints, mtCandidates, mtAvailable, mtDoneToday, mtPick, mtWeekStart, mtWeekStamps, mtDueBonuses, TC_SECONDS, TC_DAILY_MAX, TC_UNLOCK_MASTERED, TC_WRONG_SHOW_MS, tcMakeQuestion, tcPoints, tcScore, tcCountToday, tcPointsFromScore, tcPointsFor, tcReady, coClockCleared, coClockMastered, coWordLevels, coLevelCleared, CO_RECENT_DAYS, CO_ERR_MIN, coRecentErrors, coLevelHasWork, coL4Available, coTimeAvailable, coRecommend, coSessionEvents, CO_RANKS, coRankStats, coRankIndex };
+// ---------- 途中の伸びを見せる（設計 §13.28、D-026） ----------
+// たしかめ まち: 段階0・苦手でない・できた でない項目（レベル1〜3と じかん）。今日たしかめられるものと、それ以外
+function coCheckWaiting(p, today) {
+  const out = { today: 0, later: 0 };
+  const add = (st) => {
+    if (!st || st.support !== 0 || st.weak || pgMastered(st)) return;
+    if (pgIsCheckDue(st, today)) out.today += 1;
+    else out.later += 1;
+  };
+  for (const it of unitItemsAll()) add((p.items || {})[it.key]);
+  for (const it of CK_ITEMS) add((p.clock || {})[it.id]);
+  return out;
+}
+
+// レベルの段階: できた・いきなり（段階0）・ずなし（段階1）・ずあり（段階2で取り組んだ）・まだ
+function coLevelStages(items, level) {
+  const out = { total: 0, done: 0, direct: 0, nofig: 0, fig: 0, fresh: 0 };
+  for (const it of unitItems(level)) {
+    const st = (items || {})[it.key];
+    out.total += 1;
+    if (pgMastered(st)) out.done += 1;
+    else if (!st || st.attempts === 0) out.fresh += 1;
+    else if (st.support === 0) out.direct += 1;
+    else if (st.support === 1) out.nofig += 1;
+    else out.fig += 1;
+  }
+  return out;
+}
+
+// こんしゅう できるように なったこと（月曜はじまり）。log は新しい順
+const CO_WEEK_KINDS = ['mastered', 'overcome', 'clear', 'clockclear', 'rank', 'word', 'meaning', 'prefix', 'jump'];
+function coWeekDone(p, today) {
+  const w = mtWeekStart(today);
+  return (p.log || []).filter((e) => CO_WEEK_KINDS.includes(e.kind) && e.date && e.date >= w && e.date <= today);
+}
+
+globalThis.KR = { decMake, decShift, decToString, decFromString, decParseInput, decEquals, decDigits, decFromFraction, decGcd, UNIT_LEVELS, UNIT_PAIRS, unitExp, unitItemsAll, unitItems, unitItemByKey, unitLadder, rngCrypto, qPick, qShuffle, qAllowedTypes, qMakeS, qOpLabel, qApplyOp, qOptions, qMakeQuestion, qMakeDrill, qCheck, qFlowStart, qFlowHint, qFlowChoose, qFlowInput, qFlowRecord, qFlowFirstRecord, qFlowRetried, PG_STREAK_TO_DOWN, PG_RECENT_MAX, PG_CHECK_INTERVAL_DAYS, PG_SESSION_SIZE, PG_MAX_CHECKS, PG_SLIP_DAYS, PG_PROBE_MAX, pgToday, pgDaysBetween, pgNewItem, pgMastered, pgRecord, pgRecordProbe, pgPlace, pgMarks, pgIsCheckDue, pgWeight, pgPickNormal, pgMarkProbes, pgLevelProgress, pgEvents, pgNextStep, pgMasteredKeys, pgPickL4, pgL4Ready, pgL4Need, pgWeakKeys, pgPickReview, pgJumpKeys, pgPickJump, pgRecordJump, SLOT_SYMBOLS, SLOT_REEL, SLOT_REEL_RIGHT, SLOT_REVIEW_MULT, slotReviewBonus, SLOT_DRILL_GIVES_SLOT, slotCompute, slotFormula, slotSpin, SLOT_THEMES, slotThemesFor, RS_DEFAULT, RS_MAX_TICKETS, rsValidate, rsExpected, rsSig, rsNewBox, rsBoxEmpty, rsCurrentBox, rsDraw, STORE_SCHEMA, STORE_KEY, STORE_KEY_BROKEN, STORE_KEY_BEFORE_IMPORT, STORE_KEY_LOCK, STORE_LOCK_TTL_MS, STORE_SESSIONS_MAX, STORE_UNDO_HOURS, STORE_PREFIX_KEY_RE, STORE_LOG_MAX, STORE_LOG_KINDS, STORE_BEST_MAX, STORE_DEFAULT_NAMES, storeUpgrade, storeClone, storeInitial, storeValidate, storeLoad, storeLockAcquire, storeLockRelease, storeSave, storeProfile, storeSetItem, storeSetPrefix, storeApplyTime, storeApplyMemtest, storeApplyBonus, storeAddLog, storeSetRank, storeSetUnlocked, storeSetClock, storeSetWord, storeSetMeaning, storeAddDrill, storeApplySession, storeClearPending, storeExchange, storeRewardSlot, storeSetRewardSlot, storeSpinReward, storeSetRewards, storeRename, storeSetTheme, storeResetProfile, storeResetAll, storeMarkExported, storeExportText, storeParseImport, storeImportSummary, storeBackupBeforeImport, storeReadBeforeImport, storeClearBeforeImport, storeAdoptImported, CHARA_LIST, CHARA_MOODS, charaForLevel, charaSvg, charaLiterSvg, PREFIXES, PREFIX_KINDS, PREFIX_BOX_MAX, prefixById, prefixKeys, prefixFactorLabel, prefixMakeQuestion, prefixRecord, prefixLearned, prefixPick, prefixTableHtml, MN_DONE_BOX, MEANING, mnById, mnForLevel, mnMakeQuestion, mnRecord, mnDone, mnNextFor, mnLevelDone, WD_DONE_BOX, WORD, wdById, wdMakeQuestion, wdRecord, wdDone, wdKeysFor, wdPick, CK_FACTORS, CK_SESSION_SIZE, CK_MAX_CHECKS, CK_ITEMS, ckById, ckOpLabel, ckOptions, ckMakeQuestion, ckFlowStart, ckFlowHint, ckFlowChoose, ckFlowInput, ckFlowRecord, ckFirstRecord, ckPick, ckHasWork, ckPickLabel, MT_POINTS, MT_MIN_MASTERED, MT_LOGIN_BONUS, MT_WEEK_STAMPS, MT_WEEK_BONUS, mtPoints, mtCandidates, mtAvailable, mtDoneToday, mtPick, mtWeekStart, mtWeekStamps, mtDueBonuses, TC_SECONDS, TC_DAILY_MAX, TC_UNLOCK_MASTERED, TC_WRONG_SHOW_MS, tcMakeQuestion, tcPoints, tcScore, tcCountToday, tcPointsFromScore, tcPointsFor, tcReady, coClockCleared, coClockMastered, coWordLevels, coLevelCleared, CO_RECENT_DAYS, CO_ERR_MIN, coRecentErrors, coLevelHasWork, coL4Available, coTimeAvailable, coRecommend, coSessionEvents, CO_RANKS, coRankStats, coRankIndex, coCheckWaiting, coLevelStages, CO_WEEK_KINDS, coWeekDone };
 if (typeof document !== 'undefined') {
 // ---- src/ui/app.js ----
 // ui/app.js — 画面の描画とイベント。logic の関数は同じスコープに連結されている（build.mjs）。設計 §9
@@ -2869,6 +2916,17 @@ function uiEventText(e) {
   return l;
 }
 
+// レベルの段階の帯（D-026）: できた・いきなり・ずなし・ずあり・まだ
+function uiStageBar(g) {
+  const seg = (n, cls) => (n ? '<i class="' + cls + '" style="flex:' + n + '"></i>' : '');
+  let h = '<span class="stage-bar">' + seg(g.done, 's-done') + seg(g.direct, 's-direct') + seg(g.nofig, 's-nofig') + seg(g.fig, 's-fig') + seg(g.fresh, 's-fresh') + '</span>';
+  const parts = [];
+  if (g.direct) parts.push('いきなり ' + g.direct);
+  if (g.nofig) parts.push('ずなし ' + g.nofig);
+  if (parts.length) h += '<span class="muted stage-txt">' + parts.join('・') + '</span>';
+  return h;
+}
+
 function uiNextStepText(ns) {
   const l = uiItemLabel(ns.key);
   if (ns.kind === 'nofig') return l + ' は あと ' + ns.rest + 'かい せいかい すると、ずなしに なるよ。';
@@ -2933,8 +2991,25 @@ function uiHome() {
   }
   const weakKeys = pgWeakKeys(p.items).concat(CK_ITEMS.filter((it) => (p.clock || {})[it.id] && p.clock[it.id].weak).map((it) => 'ck:' + it.id));
   if (weakKeys.length) h += '<p>いま がんばっていること: ' + weakKeys.map((k) => '<span class="chip weak">' + uiEsc(uiItemLabel(k)) + '</span>').join('') + '</p>';
+  // 途中の伸び（D-026）: たしかめ まち と、こんしゅう できるように なったこと
+  {
+    const cw = coCheckWaiting(p, today);
+    if (cw.today || cw.later) {
+      h += '<p class="waiting">' + (cw.today ? '<span class="chip learn">きょう たしかめ できる <b>' + cw.today + '</b> こ</span>' : '')
+        + (cw.later ? '<span class="chip learn">あした たしかめ まち <b>' + cw.later + '</b> こ</span>' : '')
+        + '<span class="muted">（せいかい すると「できた」に なるよ）</span></p>';
+    }
+    const wk = coWeekDone(p, today);
+    h += '<div class="card week"><b>こんしゅう できるように なったこと</b>';
+    if (!wk.length) h += '<p class="muted">こんしゅうは まだ これから。1かい やってみよう！</p>';
+    else {
+      h += '<ul class="list">' + wk.slice(0, 6).map((e) => '<li>' + uiEsc(uiEventText(e)) + '</li>').join('') + '</ul>';
+      if (wk.length > 6) h += '<p class="muted">ほか ' + (wk.length - 6) + ' こ</p>';
+    }
+    h += '</div>';
+  }
   h += '<h2>れんしゅう</h2><div class="grid2">';
-  for (const lv of [1, 2, 3]) h += '<button class="big level-btn" data-act="start" data-mode="normal" data-level="' + lv + '"' + dis + '>' + charaSvg(charaForLevel(lv).id, 'normal', 64) + '<span>レベル' + lv + '<br>' + UNIT_LEVELS[lv].name + '<br><span class="muted">' + charaForLevel(lv).name + '・できた ' + pgLevelProgress(p.items, lv).mastered + '/' + unitItems(lv).length + (coLevelCleared(p, lv) ? ' <b class="clear">クリア</b>' : '') + '</span></span></button>';
+  for (const lv of [1, 2, 3]) h += '<button class="big level-btn" data-act="start" data-mode="normal" data-level="' + lv + '"' + dis + '>' + charaSvg(charaForLevel(lv).id, 'normal', 64) + '<span>レベル' + lv + '<br>' + UNIT_LEVELS[lv].name + '<br><span class="muted">' + charaForLevel(lv).name + '・できた ' + pgLevelProgress(p.items, lv).mastered + '/' + unitItems(lv).length + (coLevelCleared(p, lv) ? ' <b class="clear">クリア</b>' : '') + '</span>' + uiStageBar(coLevelStages(p.items, lv)) + '</span></button>';
   {
     const cm = coClockMastered(p);
     h += '<button class="big level-btn" data-act="start" data-mode="clock"' + dis + '>' + charaSvg('timmy', 'normal', 64) + '<span>じかん<br>びょう・ふん・じかん・にち<br><span class="muted">タイミー・できた ' + cm + '/' + CK_ITEMS.length + (coClockCleared(p) ? ' <b class="clear">クリア</b>' : '') + '</span></span></button>';
