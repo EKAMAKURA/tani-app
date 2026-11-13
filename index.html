@@ -112,6 +112,8 @@ table.place td.lab { border: none; font-size: 18px; text-align: right; width: au
 .why h3 { margin: 4px 0 8px; }
 .why-step { margin: 12px 0 4px; }
 .why-money svg { max-width: 100%; height: auto; }
+/* 何と何が同じか（D-044） */
+.eq-line { display: inline-block; margin: 6px 0; padding: 2px 12px; border: 2px solid var(--accent); border-radius: 10px; font-size: 1.15em; font-weight: bold; background: var(--bg); }
 .chara-row { display: flex; justify-content: center; gap: 18px; margin: 4px 0 8px; }
 .chara-cheer { animation: chara-hop .6s ease-in-out infinite alternate; }
 @media (prefers-reduced-motion: reduce) { .chara-cheer { animation: none; } }
@@ -1113,8 +1115,9 @@ const STORE_DEFAULT_NAMES = [
 ];
 const STORE_IDS = STORE_DEFAULT_NAMES.map((p) => p.id).join(',');
 
-// メンバーごとの くじ 1回のポイント（D-043）。ちょーじょは学年が上で解くのが速いので 200。書いていないメンバーは くじの設定の値
-const STORE_RS_COST_DEFAULT = { p1: 200 };
+// メンバーごとの くじ 1回のポイント（D-043）。書いていないメンバーは くじの設定の値。
+// D-045 で ちょーじょの 200 をやめ、既定は全員 くじの設定の値（100）に戻した（保護者画面で変えることはできる）
+const STORE_RS_COST_DEFAULT = {};
 
 function storeNewProfile(p) {
   return {
@@ -1125,13 +1128,19 @@ function storeNewProfile(p) {
 }
 
 // 3人分（p1〜p3）の記録に、足したメンバー（p4・p5）を初期の状態で足す。それ以外はそのまま返す（D-022）
-// あわせて、メンバーごとの くじのポイント（D-043）が無い記録には既定の値を足す（保護者が変えた値はそのまま）
+// あわせて、D-043 の版が自動で入れた ちょーじょの くじ 200（保護者が画面で決めた値ではないもの）を外す（D-045）
+const storeAutoRsCost = (p) => isObj(p) && p.id === 'p1' && p.rsCost === 200 && p.rsCostSet !== true;
 function storeUpgrade(d) {
   if (!isObj(d) || !Array.isArray(d.profiles)) return d;
   const ids = d.profiles.map((p) => p && p.id).join(',');
   let out = ids === 'p1,p2,p3' ? { ...d, profiles: [...d.profiles, ...STORE_DEFAULT_NAMES.slice(3).map(storeNewProfile)] } : d;
-  if (out.profiles.some((p) => isObj(p) && STORE_RS_COST_DEFAULT[p.id] && p.rsCost === undefined)) {
-    out = { ...out, profiles: out.profiles.map((p) => (isObj(p) && STORE_RS_COST_DEFAULT[p.id] && p.rsCost === undefined ? { ...p, rsCost: STORE_RS_COST_DEFAULT[p.id] } : p)) };
+  if (out.profiles.some(storeAutoRsCost)) {
+    out = { ...out, profiles: out.profiles.map((p) => {
+      if (!storeAutoRsCost(p)) return p;
+      const q = { ...p };
+      delete q.rsCost;
+      return q;
+    }) };
   }
   return out;
 }
@@ -1221,6 +1230,7 @@ function storeValidate(d) {
         || (v.day !== undefined && (typeof v.day !== 'string' || !isDate(v.day))) || (v.seen !== undefined && (typeof v.seen !== 'string' || !isDate(v.seen)))))) w('word が不正');
       // rsCost は任意（D-043。メンバーごとの くじ 1回のポイント）
       if (p.rsCost !== undefined && !isIntIn(p.rsCost, 1, 100000)) w('rsCost が不正');
+      if (p.rsCostSet !== undefined && typeof p.rsCostSet !== 'boolean') w('rsCostSet が不正');
       // rbox は任意（D-018。くじの箱）
       if (p.rbox !== undefined && (!isObj(p.rbox) || !Number.isInteger(p.rbox.no) || p.rbox.no < 1 || !Array.isArray(p.rbox.left)
         || p.rbox.left.some((n) => !isInt0(n)) || typeof p.rbox.last !== 'boolean' || typeof p.rbox.sig !== 'string')) w('rbox が不正');
@@ -1487,8 +1497,13 @@ function storeRsCost(data, pid) {
 function storeSetRsCost(data, pid, cost) {
   if (cost !== null && !(Number.isInteger(cost) && cost >= 1 && cost <= 100000)) throw new Error('storeSetRsCost: ポイントが不正 ' + cost);
   return storeWithProfile(data, pid, (p) => {
-    if (cost === null) delete p.rsCost;
-    else p.rsCost = cost;
+    if (cost === null) {
+      delete p.rsCost;
+      delete p.rsCostSet;
+    } else {
+      p.rsCost = cost;
+      p.rsCostSet = true; // 保護者が画面で決めた値（D-045 の外す対象にしない）
+    }
   });
 }
 
@@ -1549,6 +1564,7 @@ function storeResetProfile(data, pid) {
   // くじのポイント（D-043）は保護者の設定なので、リセットしても残す
   if (data.profiles[i].rsCost !== undefined) d.profiles[i].rsCost = data.profiles[i].rsCost;
   else delete d.profiles[i].rsCost;
+  if (data.profiles[i].rsCostSet !== undefined) d.profiles[i].rsCostSet = data.profiles[i].rsCostSet;
   return d;
 }
 
@@ -3140,11 +3156,16 @@ function coWeekDone(p, today) {
 // ほかの練習（苦手復習・ドリル1・ドリル2・キロ・ミリ クイズ・文章題）は、それぞれ1日2回まで（D-037）。
 // 短い時間でできるので、ポイントの取りすぎを防ぐ。ドリルは 1 と 2 を別に数える。途中でやめた回は数えない（記録が残らないため）
 const CO_OTHER_MODES = ['review', 'drill', 'prefix', 'word', 'real'];
-const CO_OTHER_DAILY_MAX = 2;
-function coOtherLeft(sessions, today, mode, level) {
+// D-045: ちょーじょ以外は3倍（6回）。ちょーじょは学年が上で解くのが速いので 2回のまま
+const CO_OTHER_DAILY_MAX = 6;
+const CO_OTHER_DAILY_MAX_BY = { p1: 2 };
+function coOtherMax(pid) {
+  return CO_OTHER_DAILY_MAX_BY[pid] ?? CO_OTHER_DAILY_MAX;
+}
+function coOtherLeft(sessions, today, mode, level, pid) {
   if (!CO_OTHER_MODES.includes(mode)) return Infinity;
   const n = (sessions || []).filter((s) => s && s.date === today && s.mode === mode && (mode !== 'drill' || s.level === level)).length;
-  return Math.max(0, CO_OTHER_DAILY_MAX - n);
+  return Math.max(0, coOtherMax(pid) - n);
 }
 
 // 身近なもの クイズ（D-040）で出してよいレベル: レベル1と、1問でも練習したレベル
@@ -3153,7 +3174,7 @@ function coRealLevels(p) {
   return [1, 2, 3].filter((lv) => lv === 1 || unitItems(lv).some((it) => items[it.key]));
 }
 
-globalThis.KR = { decMake, decShift, decToString, decFromString, decParseInput, decEquals, decDigits, decFromFraction, decGcd, UNIT_LEVELS, UNIT_PAIRS, unitExp, unitItemsAll, unitItems, unitItemByKey, unitLadder, rngCrypto, qPick, qShuffle, qAllowedTypes, qMakeS, qOpLabel, qApplyOp, qOptions, qMakeQuestion, qMakeDrill, qCheck, qFlowStart, qFlowHint, qFlowChoose, qFlowInput, qFlowRecord, qFlowFirstRecord, qFlowRetried, PG_STREAK_TO_DOWN, PG_RECENT_MAX, PG_CHECK_INTERVAL_DAYS, PG_SESSION_SIZE, PG_MAX_CHECKS, PG_SLIP_DAYS, PG_PROBE_MAX, pgToday, pgDaysBetween, pgNewItem, pgMastered, pgRecord, pgRecordProbe, pgPlace, pgMarks, pgIsCheckDue, pgWeight, pgPickNormal, pgMarkProbes, pgLevelProgress, pgEvents, pgNextStep, pgMasteredKeys, pgPickL4, pgL4Ready, pgL4Need, pgWeakKeys, pgPickReview, pgJumpKeys, pgPickJump, pgRecordJump, SLOT_SYMBOLS, SLOT_REEL, SLOT_REEL_RIGHT, SLOT_REVIEW_MULT, slotReviewBonus, SLOT_JUMP_MULT, slotJumpBonus, SLOT_DRILL_GIVES_SLOT, slotCompute, slotFormula, slotSpin, SLOT_THEMES, slotThemesFor, RS_DEFAULT, RS_MAX_TICKETS, rsValidate, rsExpected, rsSig, rsNewBox, rsBoxEmpty, rsCurrentBox, rsDraw, STORE_SCHEMA, STORE_KEY, STORE_KEY_BROKEN, STORE_KEY_BEFORE_IMPORT, STORE_KEY_LOCK, STORE_LOCK_TTL_MS, STORE_SESSIONS_MAX, STORE_UNDO_HOURS, STORE_PREFIX_KEY_RE, STORE_LOG_MAX, STORE_LOG_KINDS, STORE_BEST_MAX, STORE_DEFAULT_NAMES, STORE_RS_COST_DEFAULT, storeUpgrade, storeClone, storeInitial, storeValidate, storeLoad, storeLockAcquire, storeLockRelease, storeSave, storeProfile, storeSetItem, storeSetPrefix, storeApplyTime, storeApplyMemtest, storeApplyBonus, storeAddLog, storeSetRank, storeSetUnlocked, storeSetClock, storeSetWord, storeSetMeaning, storeAddDrill, storeApplySession, storeClearPending, storeExchange, storeRsCost, storeSetRsCost, storeRewardSlot, storeSetRewardSlot, storeSpinReward, storeSetRewards, storeRename, storeSetTheme, storeResetProfile, storeResetAll, storeMarkExported, storeExportText, storeParseImport, storeImportSummary, storeBackupBeforeImport, storeReadBeforeImport, storeClearBeforeImport, storeAdoptImported, CHARA_LIST, CHARA_MOODS, CHARA_LINES, charaLine, charaForLevel, charaSvg, charaLiterSvg, AV_MOODS, AV_IDS, avatarSvg, avMoodFromResult, avMood, avIsFirst, PREFIXES, PREFIX_KINDS, PREFIX_BOX_MAX, prefixById, prefixKeys, prefixFactorLabel, prefixMakeQuestion, prefixRecord, prefixLearned, prefixPick, prefixTableHtml, MN_DONE_BOX, MEANING, mnById, mnForLevel, mnMakeQuestion, mnRecord, mnDone, mnNextFor, mnLevelDone, WD_DONE_BOX, WORD, wdById, wdMakeQuestion, wdRecord, wdDone, wdKeysFor, wdPick, REAL, realById, realPick, realMakeQuestion, whyChain, whyFactor, whyMoney, CK_FACTORS, CK_SESSION_SIZE, CK_MAX_CHECKS, CK_ITEMS, ckById, ckOpLabel, ckOptions, ckMakeQuestion, ckFlowStart, ckFlowHint, ckFlowChoose, ckFlowInput, ckFlowRecord, ckFirstRecord, ckPick, ckHasWork, ckPickLabel, MT_POINTS, MT_MIN_MASTERED, MT_LOGIN_BONUS, MT_WEEK_STAMPS, MT_WEEK_BONUS, mtPoints, mtCandidates, mtAvailable, mtDoneToday, mtPick, mtWeekStart, mtWeekStamps, mtDueBonuses, TC_SECONDS, TC_DAILY_MAX, TC_UNLOCK_MASTERED, TC_WRONG_SHOW_MS, tcMakeQuestion, tcPoints, tcScore, tcCountToday, tcPointsFromScore, tcPointsFor, tcReady, coClockCleared, coClockMastered, coWordLevels, coLevelCleared, CO_RECENT_DAYS, CO_ERR_MIN, coRecentErrors, coLevelHasWork, coL4Available, coTimeAvailable, coRecommend, coSessionEvents, CO_RANKS, coRankStats, coRankIndex, coCheckWaiting, coLevelStages, CO_WEEK_KINDS, coWeekDone, CO_OTHER_MODES, CO_OTHER_DAILY_MAX, coOtherLeft, coRealLevels };
+globalThis.KR = { decMake, decShift, decToString, decFromString, decParseInput, decEquals, decDigits, decFromFraction, decGcd, UNIT_LEVELS, UNIT_PAIRS, unitExp, unitItemsAll, unitItems, unitItemByKey, unitLadder, rngCrypto, qPick, qShuffle, qAllowedTypes, qMakeS, qOpLabel, qApplyOp, qOptions, qMakeQuestion, qMakeDrill, qCheck, qFlowStart, qFlowHint, qFlowChoose, qFlowInput, qFlowRecord, qFlowFirstRecord, qFlowRetried, PG_STREAK_TO_DOWN, PG_RECENT_MAX, PG_CHECK_INTERVAL_DAYS, PG_SESSION_SIZE, PG_MAX_CHECKS, PG_SLIP_DAYS, PG_PROBE_MAX, pgToday, pgDaysBetween, pgNewItem, pgMastered, pgRecord, pgRecordProbe, pgPlace, pgMarks, pgIsCheckDue, pgWeight, pgPickNormal, pgMarkProbes, pgLevelProgress, pgEvents, pgNextStep, pgMasteredKeys, pgPickL4, pgL4Ready, pgL4Need, pgWeakKeys, pgPickReview, pgJumpKeys, pgPickJump, pgRecordJump, SLOT_SYMBOLS, SLOT_REEL, SLOT_REEL_RIGHT, SLOT_REVIEW_MULT, slotReviewBonus, SLOT_JUMP_MULT, slotJumpBonus, SLOT_DRILL_GIVES_SLOT, slotCompute, slotFormula, slotSpin, SLOT_THEMES, slotThemesFor, RS_DEFAULT, RS_MAX_TICKETS, rsValidate, rsExpected, rsSig, rsNewBox, rsBoxEmpty, rsCurrentBox, rsDraw, STORE_SCHEMA, STORE_KEY, STORE_KEY_BROKEN, STORE_KEY_BEFORE_IMPORT, STORE_KEY_LOCK, STORE_LOCK_TTL_MS, STORE_SESSIONS_MAX, STORE_UNDO_HOURS, STORE_PREFIX_KEY_RE, STORE_LOG_MAX, STORE_LOG_KINDS, STORE_BEST_MAX, STORE_DEFAULT_NAMES, STORE_RS_COST_DEFAULT, storeUpgrade, storeClone, storeInitial, storeValidate, storeLoad, storeLockAcquire, storeLockRelease, storeSave, storeProfile, storeSetItem, storeSetPrefix, storeApplyTime, storeApplyMemtest, storeApplyBonus, storeAddLog, storeSetRank, storeSetUnlocked, storeSetClock, storeSetWord, storeSetMeaning, storeAddDrill, storeApplySession, storeClearPending, storeExchange, storeRsCost, storeSetRsCost, storeRewardSlot, storeSetRewardSlot, storeSpinReward, storeSetRewards, storeRename, storeSetTheme, storeResetProfile, storeResetAll, storeMarkExported, storeExportText, storeParseImport, storeImportSummary, storeBackupBeforeImport, storeReadBeforeImport, storeClearBeforeImport, storeAdoptImported, CHARA_LIST, CHARA_MOODS, CHARA_LINES, charaLine, charaForLevel, charaSvg, charaLiterSvg, AV_MOODS, AV_IDS, avatarSvg, avMoodFromResult, avMood, avIsFirst, PREFIXES, PREFIX_KINDS, PREFIX_BOX_MAX, prefixById, prefixKeys, prefixFactorLabel, prefixMakeQuestion, prefixRecord, prefixLearned, prefixPick, prefixTableHtml, MN_DONE_BOX, MEANING, mnById, mnForLevel, mnMakeQuestion, mnRecord, mnDone, mnNextFor, mnLevelDone, WD_DONE_BOX, WORD, wdById, wdMakeQuestion, wdRecord, wdDone, wdKeysFor, wdPick, REAL, realById, realPick, realMakeQuestion, whyChain, whyFactor, whyMoney, CK_FACTORS, CK_SESSION_SIZE, CK_MAX_CHECKS, CK_ITEMS, ckById, ckOpLabel, ckOptions, ckMakeQuestion, ckFlowStart, ckFlowHint, ckFlowChoose, ckFlowInput, ckFlowRecord, ckFirstRecord, ckPick, ckHasWork, ckPickLabel, MT_POINTS, MT_MIN_MASTERED, MT_LOGIN_BONUS, MT_WEEK_STAMPS, MT_WEEK_BONUS, mtPoints, mtCandidates, mtAvailable, mtDoneToday, mtPick, mtWeekStart, mtWeekStamps, mtDueBonuses, TC_SECONDS, TC_DAILY_MAX, TC_UNLOCK_MASTERED, TC_WRONG_SHOW_MS, tcMakeQuestion, tcPoints, tcScore, tcCountToday, tcPointsFromScore, tcPointsFor, tcReady, coClockCleared, coClockMastered, coWordLevels, coLevelCleared, CO_RECENT_DAYS, CO_ERR_MIN, coRecentErrors, coLevelHasWork, coL4Available, coTimeAvailable, coRecommend, coSessionEvents, CO_RANKS, coRankStats, coRankIndex, coCheckWaiting, coLevelStages, CO_WEEK_KINDS, coWeekDone, CO_OTHER_MODES, CO_OTHER_DAILY_MAX, CO_OTHER_DAILY_MAX_BY, coOtherMax, coOtherLeft, coRealLevels };
 if (typeof document !== 'undefined') {
 // ---- src/ui/app.js ----
 // ui/app.js — 画面の描画とイベント。logic の関数は同じスコープに連結されている（build.mjs）。設計 §9
@@ -3548,10 +3569,10 @@ function uiHome() {
   const tcLeft = Math.max(0, TC_DAILY_MAX - tcCountToday(p.sessions, today));
   const best = (p.best && p.best.time) || 0;
   h += '<button class="big" data-act="start" data-mode="time"' + (tcok ? dis : ' disabled') + '>タイムチャレンジ<br><span class="muted">' + (tcok ? '自己ベスト ' + best + '・ポイント あと ' + tcLeft + '回' : 'できた が ' + TC_UNLOCK_MASTERED + '個になったら（今 ' + pgMasteredKeys(p.items).length + '個）') + '</span></button>';
-  h += '</div><h2>ほかの練習</h2><p class="muted">それぞれ 1日' + CO_OTHER_DAILY_MAX + '回まで</p><div class="grid2">';
+  h += '</div><h2>ほかの練習</h2><p class="muted">それぞれ 1日' + coOtherMax(p.id) + '回まで</p><div class="grid2">';
   // 今日の残りの回数（D-037）。0 なら押せない
   const today0 = pgToday();
-  const oLeft = (mode, level) => coOtherLeft(p.sessions, today0, mode, level);
+  const oLeft = (mode, level) => coOtherLeft(p.sessions, today0, mode, level, p.id);
   const oDis = (mode, level) => (oLeft(mode, level) === 0 ? ' disabled' : dis);
   const oNote = (mode, level) => '<br><span class="muted other-left">' + (oLeft(mode, level) === 0 ? '今日はおしまい。明日またできるよ' : '今日はあと ' + oLeft(mode, level) + '回') + '</span>';
   h += '<button data-act="start" data-mode="review"' + (weakN === 0 ? ' disabled' : oDis('review')) + '>苦手復習（' + weakN + '個）<br><span class="muted">ポイント ' + SLOT_REVIEW_MULT + '倍</span>' + (weakN === 0 ? '' : oNote('review')) + '</button>';
@@ -3591,7 +3612,7 @@ function uiStart(mode, level, fromRec) {
     uiStart(rec.mode, rec.level, true);
     return;
   }
-  if (coOtherLeft(p.sessions, today, mode, level) === 0) return; // ほかの練習は1日2回まで（D-037）
+  if (coOtherLeft(p.sessions, today, mode, level, p.id) === 0) return; // ほかの練習の1日の上限（D-037・D-045）
   if (mode === 'time') {
     uiTimeStart();
     return;
@@ -3751,10 +3772,20 @@ function uiWithChara(h, id) {
     .replaceAll('<div class="fb hint">', '<div class="fb hint say">' + charaSvg(id, 'think', 72) + '<b class="line">' + uiEsc(charaLine(id, 'hint', n)) + '</b><br>');
 }
 
+// 何と何が同じか（D-044）: 「1 m ＝ 1000 mm」。大きい単位 1 つが、小さい単位いくつ分か
+function uiEqText(q) {
+  const big = q.dir === 'x' ? q.from : q.to;
+  const small = q.dir === 'x' ? q.to : q.from;
+  return '1 ' + big + ' ＝ ' + whyFactor(q.level, q.from, q.to) + ' ' + small;
+}
+function uiEqHtml(q) {
+  return '<div class="eq-line">' + uiEsc(uiEqText(q)) + '</div>';
+}
+
 function uiExplain(q, t) {
-  if (t === 'dim' && q.dim) return '<div class="fb hint">おしい！ 長さとちがって、' + (q.level === 3 ? '体積' : '面積') + 'はかけ算を重ねるよ。' + uiDimFigure(q) + '</div>';
-  if (t === 'dir') return '<div class="fb hint">おしい！ 向きを見てみよう。大きい単位 → 小さい単位は数が大きくなる（×）。小さい単位 → 大きい単位は数が小さくなる（÷）。<div class="figure">' + uiLadderSvg(q.level, q.from, q.to) + '</div>' + uiLiterFig(q) + '</div>';
-  return '<div class="fb hint">おしい！ となりどうしの倍率をたどってみよう。<div class="figure">' + uiLadderSvg(q.level, q.from, q.to) + '</div>' + uiLiterFig(q) + '</div>';
+  if (t === 'dim' && q.dim) return '<div class="fb hint">おしい！ 長さとちがって、' + (q.level === 3 ? '体積' : '面積') + 'はかけ算を重ねるよ。' + uiEqHtml(q) + uiDimFigure(q) + '</div>';
+  if (t === 'dir') return '<div class="fb hint">おしい！ 向きを見てみよう。大きい単位 → 小さい単位は数が大きくなる（×）。小さい単位 → 大きい単位は数が小さくなる（÷）。' + uiEqHtml(q) + '<div class="figure">' + uiLadderSvg(q.level, q.from, q.to) + '</div>' + uiLiterFig(q) + '</div>';
+  return '<div class="fb hint">おしい！ となりどうしの倍率をたどってみよう。' + uiEqHtml(q) + '<div class="figure">' + uiLadderSvg(q.level, q.from, q.to) + '</div>' + uiLiterFig(q) + '</div>';
 }
 
 // 問題の画面の上に、自分のキャラクター（正解で喜ぶ、まちがえたら「がんばるぞー」。D-036）
@@ -3860,11 +3891,11 @@ function uiPlayInner() {
     h += '</div>';
     if (f.feedback && f.feedback.kind === 'ng1') h += uiExplain(q, f.feedback.t);
     else if (f.feedback && f.feedback.kind === 'ng0') h += '<div class="fb hint">おしい！ ①から いっしょに やってみよう。</div>';
-    else if (showFig) h += '<div class="figure">' + uiLadderSvg(q.level, q.from, q.to) + '</div>' + uiLiterFig(q);
+    else if (showFig) h += uiEqHtml(q) + '<div class="figure">' + uiLadderSvg(q.level, q.from, q.to) + '</div>' + uiLiterFig(q);
     if (q.k > 0 && f.feedback) h += uiWhyBlock(pl, q); // D-042: ①で まちがえたあとに出す
   } else if (f.stage === 's2' || f.stage === 'direct') {
     if (f.stage === 's2') {
-      h += '<div class="fb ok">① ' + qOpLabel(q.op) + ' で正解！</div>';
+      h += '<div class="fb ok">① ' + qOpLabel(q.op) + ' で正解！ ' + uiEsc(uiEqText(q)) + ' だからね。</div>';
       h += '<p>② 計算しよう</p><div class="answer-row">' + decToString(q.value) + ' ' + qOpLabel(q.op).replace('（そのまま）', '') + ' ＝ ';
     } else {
       h += '<div class="answer-row">' + decToString(q.value) + ' ' + uiEsc(q.from) + ' ＝ ';
@@ -3874,12 +3905,12 @@ function uiPlayInner() {
     if (f.feedback && f.feedback.kind === 'invalid') h += '<div class="fb info">数字で入れてね。</div>';
     if (f.feedback && f.feedback.kind === 'ng2') h += '<div class="fb hint">おしい！ 位取りの表を見てみよう。' + uiPlaceTable(q.value, q.answer, q.op).replace(/<tr class="after"[\s\S]*?<\/tr>/, '') + '</div>';
     else if (f.stage === 's2' && (pl.support === 2 || pl.placeAid || f.hint)) h += '<div class="fb info">位取りの表' + uiPlaceTable(q.value, q.answer, q.op).replace(/<tr class="after"[\s\S]*?<\/tr>/, '') + '</div>';
-    if (f.stage === 'direct' && f.hint) h += '<div class="figure">' + uiLadderSvg(q.level, q.from, q.to) + '</div>';
+    if (f.stage === 'direct' && f.hint) h += uiEqHtml(q) + '<div class="figure">' + uiLadderSvg(q.level, q.from, q.to) + '</div>';
   } else {
     const fb = f.feedback || {};
-    if (f.showAnswer) h += '<div class="fb hint">答えは <b>' + decToString(q.answer) + ' ' + uiEsc(q.to) + '</b> だよ。表で確かめよう。' + uiPlaceTable(q.value, q.answer, q.op) + '</div>';
-    if (q.k > 0) h += uiWhyBlock(pl, q); // D-042
-    else h += '<div class="fb ok">正解！ ' + decToString(q.value) + ' ' + uiEsc(q.from) + ' ＝ <b>' + decToString(q.answer) + ' ' + uiEsc(q.to) + '</b>' + (f.first ? '（やりなおして できたね）' : '') + uiPlaceTable(q.value, q.answer, q.op) + '</div>';
+    if (f.showAnswer) h += '<div class="fb hint">答えは <b>' + decToString(q.answer) + ' ' + uiEsc(q.to) + '</b> だよ。' + uiEqHtml(q) + '表で確かめよう。' + uiPlaceTable(q.value, q.answer, q.op) + '</div>';
+    else h += '<div class="fb ok">正解！ ' + decToString(q.value) + ' ' + uiEsc(q.from) + ' ＝ <b>' + decToString(q.answer) + ' ' + uiEsc(q.to) + '</b>' + (f.first ? '（やりなおして できたね）' : '') + uiEqHtml(q) + uiPlaceTable(q.value, q.answer, q.op) + '</div>';
+    if (q.k > 0) h += uiWhyBlock(pl, q); // D-042（D-044 で、正解の箱が出なくなっていたのを直した）
     void fb;
     h += '<p><button class="primary big" data-act="next">次へ（Enter）</button></p>';
   }
