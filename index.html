@@ -2313,10 +2313,10 @@ function mtWeekStart(day) {
   return mon.getUTCFullYear() + '-' + p(mon.getUTCMonth() + 1) + '-' + p(mon.getUTCDate());
 }
 
-// 今週のスタンプの数（きおくテストを受けた日の数）
+// 今週のスタンプの数（学習を1回でも終えた日の数。ボーナスは数えない。D-021）
 function mtWeekStamps(sessions, today) {
   const w = mtWeekStart(today);
-  const days = new Set((sessions || []).filter((s) => s.mode === 'memtest' && s.date && mtWeekStart(s.date) === w).map((s) => s.date));
+  const days = new Set((sessions || []).filter((s) => s.mode && s.mode !== 'bonus' && s.date && mtWeekStart(s.date) === w).map((s) => s.date));
   return days.size;
 }
 
