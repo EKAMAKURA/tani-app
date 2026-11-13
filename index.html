@@ -1036,7 +1036,25 @@ const STORE_DEFAULT_NAMES = [
   { id: 'p1', name: 'ちょーじょ' },
   { id: 'p2', name: 'じーじょ' },
   { id: 'p3', name: 'ちょーなん' },
+  { id: 'p4', name: 'おかんぴん' },
+  { id: 'p5', name: 'おとんぴん' },
 ];
+const STORE_IDS = STORE_DEFAULT_NAMES.map((p) => p.id).join(',');
+
+function storeNewProfile(p) {
+  return {
+    id: p.id, name: p.name, theme: 'basic', available: 0, total: 0,
+    items: {}, drill: {}, sessions: [], pending: null, exchanges: [],
+  };
+}
+
+// 3人分（p1〜p3）の記録に、足したメンバー（p4・p5）を初期の状態で足す。それ以外はそのまま返す（D-022）
+function storeUpgrade(d) {
+  if (!isObj(d) || !Array.isArray(d.profiles)) return d;
+  const ids = d.profiles.map((p) => p && p.id).join(',');
+  if (ids !== 'p1,p2,p3') return d;
+  return { ...d, profiles: [...d.profiles, ...STORE_DEFAULT_NAMES.slice(3).map(storeNewProfile)] };
+}
 
 function storeClone(x) {
   return JSON.parse(JSON.stringify(x));
@@ -1048,10 +1066,7 @@ function storeInitial(nowIso) {
     rev: 0,
     updatedAt: nowIso || null,
     lastExportAt: null,
-    profiles: STORE_DEFAULT_NAMES.map((p) => ({
-      id: p.id, name: p.name, theme: 'basic', available: 0, total: 0,
-      items: {}, drill: {}, sessions: [], pending: null, exchanges: [],
-    })),
+    profiles: STORE_DEFAULT_NAMES.map(storeNewProfile),
     rewards: [],
   };
 }
@@ -1083,11 +1098,11 @@ function storeValidate(d) {
   if (d.schemaVersion !== STORE_SCHEMA) e.push('schemaVersion が ' + STORE_SCHEMA + ' ではない');
   if (!isInt0(d.rev)) e.push('rev が不正');
   if (!(d.lastExportAt === null || typeof d.lastExportAt === 'string')) e.push('lastExportAt が不正');
-  if (!Array.isArray(d.profiles) || d.profiles.length !== 3) {
-    e.push('profiles が3人分でない');
+  if (!Array.isArray(d.profiles) || d.profiles.length !== STORE_DEFAULT_NAMES.length) {
+    e.push('profiles が' + STORE_DEFAULT_NAMES.length + '人分でない');
   } else {
     const ids = d.profiles.map((p) => p && p.id);
-    if (ids.join(',') !== 'p1,p2,p3') e.push('profiles の id が p1,p2,p3 でない');
+    if (ids.join(',') !== STORE_IDS) e.push('profiles の id が ' + STORE_IDS + ' でない');
     for (const p of d.profiles) {
       const w = (m) => e.push((p && p.id) + ': ' + m);
       if (!isObj(p)) { e.push('profile が不正'); continue; }
@@ -1152,7 +1167,7 @@ function storeLoad(ls, nowIso, opts = {}) {
   if (raw === null || raw === undefined) return { data: storeInitial(nowIso), mode: 'normal', warning: null, rawBroken: null };
   let parsed = null;
   try {
-    parsed = JSON.parse(raw);
+    parsed = storeUpgrade(JSON.parse(raw));
   } catch (err) {
     parsed = null;
   }
@@ -1439,7 +1454,7 @@ function storeExportText(data) {
 function storeParseImport(text) {
   let d;
   try {
-    d = JSON.parse(text);
+    d = storeUpgrade(JSON.parse(text));
   } catch (err) {
     return { ok: false, errors: ['JSON として読めない'] };
   }
@@ -2559,7 +2574,7 @@ function coRankIndex(p) {
   return i;
 }
 
-globalThis.KR = { decMake, decShift, decToString, decFromString, decParseInput, decEquals, decDigits, decFromFraction, decGcd, UNIT_LEVELS, UNIT_PAIRS, unitExp, unitItemsAll, unitItems, unitItemByKey, unitLadder, rngCrypto, qPick, qShuffle, qAllowedTypes, qMakeS, qOpLabel, qApplyOp, qOptions, qMakeQuestion, qMakeDrill, qCheck, qFlowStart, qFlowHint, qFlowChoose, qFlowInput, qFlowRecord, qFlowFirstRecord, qFlowRetried, PG_STREAK_TO_DOWN, PG_RECENT_MAX, PG_CHECK_INTERVAL_DAYS, PG_SESSION_SIZE, PG_MAX_CHECKS, PG_SLIP_DAYS, PG_PROBE_MAX, pgToday, pgDaysBetween, pgNewItem, pgMastered, pgRecord, pgRecordProbe, pgPlace, pgMarks, pgIsCheckDue, pgWeight, pgPickNormal, pgMarkProbes, pgLevelProgress, pgEvents, pgNextStep, pgMasteredKeys, pgPickL4, pgL4Ready, pgL4Need, pgWeakKeys, pgPickReview, pgJumpKeys, pgPickJump, pgRecordJump, SLOT_SYMBOLS, SLOT_REEL, SLOT_REEL_RIGHT, SLOT_DRILL_GIVES_SLOT, slotCompute, slotFormula, slotSpin, SLOT_THEMES, slotThemesFor, RS_DEFAULT, RS_MAX_TICKETS, rsValidate, rsExpected, rsSig, rsNewBox, rsBoxEmpty, rsCurrentBox, rsDraw, STORE_SCHEMA, STORE_KEY, STORE_KEY_BROKEN, STORE_KEY_BEFORE_IMPORT, STORE_KEY_LOCK, STORE_LOCK_TTL_MS, STORE_SESSIONS_MAX, STORE_UNDO_HOURS, STORE_PREFIX_KEY_RE, STORE_LOG_MAX, STORE_LOG_KINDS, STORE_BEST_MAX, STORE_DEFAULT_NAMES, storeClone, storeInitial, storeValidate, storeLoad, storeLockAcquire, storeLockRelease, storeSave, storeProfile, storeSetItem, storeSetPrefix, storeApplyTime, storeApplyMemtest, storeApplyBonus, storeAddLog, storeSetRank, storeSetUnlocked, storeSetClock, storeSetWord, storeSetMeaning, storeAddDrill, storeApplySession, storeClearPending, storeExchange, storeRewardSlot, storeSetRewardSlot, storeSpinReward, storeSetRewards, storeRename, storeSetTheme, storeMarkExported, storeExportText, storeParseImport, storeImportSummary, storeBackupBeforeImport, storeReadBeforeImport, storeClearBeforeImport, storeAdoptImported, CHARA_LIST, CHARA_MOODS, charaForLevel, charaSvg, charaLiterSvg, PREFIXES, PREFIX_KINDS, PREFIX_BOX_MAX, prefixById, prefixKeys, prefixFactorLabel, prefixMakeQuestion, prefixRecord, prefixLearned, prefixPick, prefixTableHtml, MN_DONE_BOX, MEANING, mnById, mnForLevel, mnMakeQuestion, mnRecord, mnDone, mnNextFor, mnLevelDone, WD_DONE_BOX, WORD, wdById, wdMakeQuestion, wdRecord, wdDone, wdKeysFor, wdPick, CK_FACTORS, CK_SESSION_SIZE, CK_MAX_CHECKS, CK_ITEMS, ckById, ckOpLabel, ckOptions, ckMakeQuestion, ckFlowStart, ckFlowHint, ckFlowChoose, ckFlowInput, ckFlowRecord, ckFirstRecord, ckPick, ckHasWork, ckPickLabel, MT_POINTS, MT_MIN_MASTERED, MT_LOGIN_BONUS, MT_WEEK_STAMPS, MT_WEEK_BONUS, mtPoints, mtCandidates, mtAvailable, mtDoneToday, mtPick, mtWeekStart, mtWeekStamps, mtDueBonuses, TC_SECONDS, TC_DAILY_MAX, TC_UNLOCK_MASTERED, TC_WRONG_SHOW_MS, tcMakeQuestion, tcPoints, tcScore, tcCountToday, tcPointsFromScore, tcPointsFor, tcReady, coClockCleared, coClockMastered, coWordLevels, coLevelCleared, CO_RECENT_DAYS, CO_ERR_MIN, coRecentErrors, coLevelHasWork, coL4Available, coTimeAvailable, coRecommend, coSessionEvents, CO_RANKS, coRankStats, coRankIndex };
+globalThis.KR = { decMake, decShift, decToString, decFromString, decParseInput, decEquals, decDigits, decFromFraction, decGcd, UNIT_LEVELS, UNIT_PAIRS, unitExp, unitItemsAll, unitItems, unitItemByKey, unitLadder, rngCrypto, qPick, qShuffle, qAllowedTypes, qMakeS, qOpLabel, qApplyOp, qOptions, qMakeQuestion, qMakeDrill, qCheck, qFlowStart, qFlowHint, qFlowChoose, qFlowInput, qFlowRecord, qFlowFirstRecord, qFlowRetried, PG_STREAK_TO_DOWN, PG_RECENT_MAX, PG_CHECK_INTERVAL_DAYS, PG_SESSION_SIZE, PG_MAX_CHECKS, PG_SLIP_DAYS, PG_PROBE_MAX, pgToday, pgDaysBetween, pgNewItem, pgMastered, pgRecord, pgRecordProbe, pgPlace, pgMarks, pgIsCheckDue, pgWeight, pgPickNormal, pgMarkProbes, pgLevelProgress, pgEvents, pgNextStep, pgMasteredKeys, pgPickL4, pgL4Ready, pgL4Need, pgWeakKeys, pgPickReview, pgJumpKeys, pgPickJump, pgRecordJump, SLOT_SYMBOLS, SLOT_REEL, SLOT_REEL_RIGHT, SLOT_DRILL_GIVES_SLOT, slotCompute, slotFormula, slotSpin, SLOT_THEMES, slotThemesFor, RS_DEFAULT, RS_MAX_TICKETS, rsValidate, rsExpected, rsSig, rsNewBox, rsBoxEmpty, rsCurrentBox, rsDraw, STORE_SCHEMA, STORE_KEY, STORE_KEY_BROKEN, STORE_KEY_BEFORE_IMPORT, STORE_KEY_LOCK, STORE_LOCK_TTL_MS, STORE_SESSIONS_MAX, STORE_UNDO_HOURS, STORE_PREFIX_KEY_RE, STORE_LOG_MAX, STORE_LOG_KINDS, STORE_BEST_MAX, STORE_DEFAULT_NAMES, storeUpgrade, storeClone, storeInitial, storeValidate, storeLoad, storeLockAcquire, storeLockRelease, storeSave, storeProfile, storeSetItem, storeSetPrefix, storeApplyTime, storeApplyMemtest, storeApplyBonus, storeAddLog, storeSetRank, storeSetUnlocked, storeSetClock, storeSetWord, storeSetMeaning, storeAddDrill, storeApplySession, storeClearPending, storeExchange, storeRewardSlot, storeSetRewardSlot, storeSpinReward, storeSetRewards, storeRename, storeSetTheme, storeMarkExported, storeExportText, storeParseImport, storeImportSummary, storeBackupBeforeImport, storeReadBeforeImport, storeClearBeforeImport, storeAdoptImported, CHARA_LIST, CHARA_MOODS, charaForLevel, charaSvg, charaLiterSvg, PREFIXES, PREFIX_KINDS, PREFIX_BOX_MAX, prefixById, prefixKeys, prefixFactorLabel, prefixMakeQuestion, prefixRecord, prefixLearned, prefixPick, prefixTableHtml, MN_DONE_BOX, MEANING, mnById, mnForLevel, mnMakeQuestion, mnRecord, mnDone, mnNextFor, mnLevelDone, WD_DONE_BOX, WORD, wdById, wdMakeQuestion, wdRecord, wdDone, wdKeysFor, wdPick, CK_FACTORS, CK_SESSION_SIZE, CK_MAX_CHECKS, CK_ITEMS, ckById, ckOpLabel, ckOptions, ckMakeQuestion, ckFlowStart, ckFlowHint, ckFlowChoose, ckFlowInput, ckFlowRecord, ckFirstRecord, ckPick, ckHasWork, ckPickLabel, MT_POINTS, MT_MIN_MASTERED, MT_LOGIN_BONUS, MT_WEEK_STAMPS, MT_WEEK_BONUS, mtPoints, mtCandidates, mtAvailable, mtDoneToday, mtPick, mtWeekStart, mtWeekStamps, mtDueBonuses, TC_SECONDS, TC_DAILY_MAX, TC_UNLOCK_MASTERED, TC_WRONG_SHOW_MS, tcMakeQuestion, tcPoints, tcScore, tcCountToday, tcPointsFromScore, tcPointsFor, tcReady, coClockCleared, coClockMastered, coWordLevels, coLevelCleared, CO_RECENT_DAYS, CO_ERR_MIN, coRecentErrors, coLevelHasWork, coL4Available, coTimeAvailable, coRecommend, coSessionEvents, CO_RANKS, coRankStats, coRankIndex };
 if (typeof document !== 'undefined') {
 // ---- src/ui/app.js ----
 // ui/app.js — 画面の描画とイベント。logic の関数は同じスコープに連結されている（build.mjs）。設計 §9
@@ -3824,8 +3839,8 @@ function uiAdult() {
   }
   if (uiS.rawBroken) h += '<p class="danger">こわれていた もとの データ: <button class="small" data-act="exportbroken">かきだす</button></p>';
   h += '</div>';
-  // 3人の きろく
-  h += '<h2>3人の きろく</h2><div class="grid2">';
+  // みんなの きろく（D-022 で5人）
+  h += '<h2>みんなの きろく</h2><div class="grid2">';
   for (const p of d.profiles) {
     const weak = pgWeakKeys(p.items);
     h += '<div class="card"><h3>' + uiEsc(p.name) + '</h3>';
