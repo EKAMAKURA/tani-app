@@ -61,6 +61,12 @@ button.small { min-height: 40px; font-size: 18px; padding: 4px 12px; }
 .options { display: grid; grid-template-columns: repeat(2, minmax(180px, 1fr)); gap: 14px; margin: 14px 0; }
 .options button { font-size: 34px; min-height: 90px; }
 .options button .key { font-size: 16px; color: var(--muted); display: block; }
+/* 意味の問題の図つき選択肢（D-039）: 図の横に「1辺 1 cm の」「立方体」を2行で */
+.opt-fig { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.opt-fig svg { flex: none; }
+.opt-txt { display: flex; flex-direction: column; align-items: flex-start; font-size: 22px; line-height: 1.25; text-align: left; }
+.opt-txt span { white-space: nowrap; }
+.opt-txt span + span { font-size: 28px; font-weight: bold; }
 .answer-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; font-size: 36px; font-weight: bold; }
 .answer-row input { font: inherit; width: 7.5em; padding: 6px 12px; border: 3px solid var(--accent); border-radius: 12px; text-align: right; }
 .tenkey { display: grid; grid-template-columns: repeat(3, 72px); gap: 8px; margin: 12px 0; }
@@ -155,6 +161,12 @@ input[id^="ans"]:focus { outline: 3px solid var(--accent); outline-offset: 1px; 
 /* スマホでは答えの欄とテンキーを画面の下に固定し、1画面に収める（D-030） */
 @media (max-width: 700px) {
   .qtext { font-size: 30px; margin: 6px 0; }
+  /* 選択肢が横にはみ出さないように（D-039）。図つきの選択肢は図を上、文字を下に */
+  .options { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .options button { font-size: 26px; padding-left: 6px; padding-right: 6px; }
+  .opt-fig { flex-direction: column; gap: 2px; }
+  .opt-txt { align-items: center; text-align: center; font-size: 17px; }
+  .opt-txt span + span { font-size: 22px; }
   .dock { position: sticky; bottom: 0; z-index: 5; background: var(--bg); padding: 6px 0 calc(6px + env(safe-area-inset-bottom)); border-top: 2px solid var(--line); }
   .dock .answer-row { font-size: 26px; gap: 8px; }
   .dock .answer-row input { width: 5em; padding: 4px 8px; }
@@ -911,12 +923,15 @@ const SLOT_SYMBOLS = [
   { n: 2, d: 1, label: '2' },
   { n: 5, d: 1, label: '5' },
   { n: 10, d: 1, label: '10' },
+  { n: 3, d: 2, label: '1.5' }, // D-038 で追加（番号は後ろに足す。前の記録の番号を変えないため）
+  { n: 3, d: 1, label: '3' },
 ];
 
-// 中央のリール: 20コマの並び（SLOT_SYMBOLS の番号）。1/2×3, 1×7, 2×5, 5×3, 10×2（1/10・1/5 を無くす。D-029）。隣どうしが同じ目にならない
-const SLOT_REEL = [3, 4, 3, 2, 4, 3, 5, 4, 3, 6, 2, 3, 4, 5, 3, 2, 4, 3, 6, 5];
-// 右のリール: 13コマ。1×9, 2×4（÷5・÷10 を無くす。D-029。÷1/10 などの大当たりは D-011 で無くした）。1回の最大は 5 × 10 ÷ 1 ＝ 50
-const SLOT_REEL_RIGHT = [3, 4, 3, 3, 4, 3, 3, 4, 3, 3, 4, 3, 3];
+// 中央のリール: 20コマの並び（SLOT_SYMBOLS の番号）。1.5×10, 2×6, 3×3, 10×1（D-038。少ない点が出ないように）。隣どうしが同じ目にならない
+// （D-029 は 1/2×3, 1×7, 2×5, 5×3, 10×2）
+const SLOT_REEL = [7, 4, 7, 8, 7, 4, 7, 6, 7, 4, 7, 8, 7, 4, 7, 4, 7, 8, 7, 4];
+// 右のリール: ÷ を無くした（D-038）。÷1 だけを残し、式と画面には出さない。1回の最大は 5 × 10 ＝ 50
+const SLOT_REEL_RIGHT = [3];
 
 // 苦手ふくしゅうの回のポイントの倍率（D-025）
 const SLOT_REVIEW_MULT = 2;
@@ -960,7 +975,8 @@ function slotCompute(correct, mi, ri) {
 
 function slotFormula(correct, mi, ri) {
   const res = slotCompute(correct, mi, ri);
-  const base = correct + ' × ' + SLOT_SYMBOLS[mi].label + ' ÷ ' + SLOT_SYMBOLS[ri].label + ' ＝ ' + res.raw;
+  const r = SLOT_SYMBOLS[ri];
+  const base = correct + ' × ' + SLOT_SYMBOLS[mi].label + (r.n === 1 && r.d === 1 ? '' : ' ÷ ' + r.label) + ' ＝ ' + res.raw; // ÷1 は書かない（D-038）
   if (res.note === 'round') return base + ' → ' + res.points + '（四捨五入）';
   if (res.note === 'min') return base + ' → ' + res.points + '（最低 1点）';
   return base;
@@ -3761,6 +3777,32 @@ function uiWordSubmit(val) {
 }
 
 // ---------- 意味の問題（D-014） ----------
+// 意味の問題の選択肢「1辺 1 cm の立方体」などに小さい図を添え、「1辺 1 cm の」「立方体」で行を分ける（D-039）
+// 図の大きさは長さの目安（1 cm < 10 cm < 1 m < … < 1 km）。正確な縮尺ではない
+const UI_SHAPE_RE = /^(1辺|長さ) (\d+) (cm|m|km) の(正方形|立方体|線)$/;
+function uiShapeOption(label) {
+  const m = UI_SHAPE_RE.exec(label);
+  if (!m) return null;
+  const cm = Number(m[2]) * { cm: 1, m: 100, km: 100000 }[m[3]];
+  const s = cm <= 1 ? 14 : cm <= 10 ? 26 : cm <= 100 ? 36 : cm <= 5000 ? 42 : 48; // 図の一辺（px）
+  const kind = m[4];
+  let g;
+  if (kind === '正方形') {
+    g = '<rect x="' + (32 - s / 2) + '" y="' + (32 - s / 2) + '" width="' + s + '" height="' + s + '" fill="#cfe3ff" stroke="#185fa5" stroke-width="2"/>';
+  } else if (kind === '立方体') {
+    const d = s * 0.4;
+    const x = 30 - s / 2 - d / 2;
+    const y = 34 - s / 2 + d / 2;
+    g = '<path d="M' + x + ' ' + y + ' l' + d + ' ' + -d + ' h' + s + ' l' + -d + ' ' + d + ' z" fill="#e3efff" stroke="#185fa5" stroke-width="2" stroke-linejoin="round"/>' +
+      '<path d="M' + (x + s) + ' ' + y + ' l' + d + ' ' + -d + ' v' + s + ' l' + -d + ' ' + d + ' z" fill="#9cc3f0" stroke="#185fa5" stroke-width="2" stroke-linejoin="round"/>' +
+      '<rect x="' + x + '" y="' + y + '" width="' + s + '" height="' + s + '" fill="#cfe3ff" stroke="#185fa5" stroke-width="2"/>';
+  } else {
+    g = '<path d="M' + (32 - s / 2) + ' 32 h' + s + ' M' + (32 - s / 2) + ' 27 v10 M' + (32 + s / 2) + ' 27 v10" stroke="#185fa5" stroke-width="3" stroke-linecap="round"/>';
+  }
+  return '<span class="opt-fig"><svg viewBox="0 0 64 64" width="56" height="56" aria-hidden="true">' + g + '</svg>' +
+    '<span class="opt-txt"><span>' + uiEsc(m[1] + ' ' + m[2] + ' ' + m[3] + ' の') + '</span><span>' + uiEsc(kind) + '</span></span></span>';
+}
+
 function uiMeaning() {
   const pl = uiS.play;
   const q = pl.q;
@@ -3768,7 +3810,7 @@ function uiMeaning() {
   let h = '<p>単位の意味</p><div class="qtext">' + uiEsc(q.text) + '</div><div class="options">';
   q.options.forEach((o, i) => {
     const dis = pf.disabled.includes(i) || (pf.done && !o.correct);
-    h += '<button data-act="choose" data-i="' + i + '"' + (dis ? ' disabled' : '') + (pf.done && o.correct ? ' class="primary"' : '') + '><span class="key">' + (i + 1) + '</span>' + uiEsc(o.label) + '</button>';
+    h += '<button data-act="choose" data-i="' + i + '"' + (dis ? ' disabled' : '') + (pf.done && o.correct ? ' class="primary"' : '') + '><span class="key">' + (i + 1) + '</span>' + (uiShapeOption(o.label) || uiEsc(o.label)) + '</button>';
   });
   h += '</div>';
   const fig = q.level === 3 && /L|cm³|mL/.test(q.text) ? '<div class="figure">' + charaLiterSvg() + '</div>' : '';
@@ -4125,8 +4167,7 @@ function uiResult() {
   h += '<p class="stat">できた: <b>' + s.correct + '</b> 問 / ' + s.n + ' 問' + (s.retried ? '　やり直してできた: <b>' + s.retried + '</b> 問' : '') + '</p>';
   h += '<div class="chara-row">' + uiMyAvatar(avMoodFromResult(s.correct, s.n), 96) + CHARA_LIST.map((c) => charaSvg(c.id, ph >= 3 ? 'happy' : 'cheer', 80)).join('') + '</div>';
   h += '<div class="slot ' + uiEsc(p.theme) + '"><div class="reel">' + s.correct + '</div><span>×</span>';
-  h += '<div class="reel' + (ph < 1 ? ' spin' : '') + '" id="reel-m">' + (ph >= 1 ? sym(s.mid) : '?') + '</div><span>÷</span>';
-  h += '<div class="reel' + (ph < 2 ? ' spin' : '') + '" id="reel-r">' + (ph >= 2 ? sym(s.right) : '?') + '</div></div>';
+  h += '<div class="reel' + (ph < 1 ? ' spin' : '') + '" id="reel-m">' + (ph >= 1 ? sym(s.mid) : '?') + '</div></div>'; // 右（÷）のリールは無くした（D-038）
   if (ph >= 3) {
     h += '<div class="formula">' + uiEsc(s.formula) + '</div><div class="points">+' + s.points + ' ポイント</div>';
     h += '<p style="text-align:center"><button class="primary big" data-act="resultdone">ホームへ（Enter）</button></p>';
@@ -4139,19 +4180,16 @@ function uiRunSlot() {
   const res = uiS.result;
   if (!res || res.running) return;
   res.running = true;
-  const reels = [...new Set(SLOT_REEL)].sort((a, b) => a - b).map((i) => SLOT_SYMBOLS[i].label); // リールにある目だけ（D-029）
-  const reelsR = [...new Set(SLOT_REEL_RIGHT)].sort((a, b) => a - b).map((i) => SLOT_SYMBOLS[i].label);
+  const val = (i) => SLOT_SYMBOLS[i].n / SLOT_SYMBOLS[i].d; // 並べる順だけに使う（点の計算には使わない）
+  const reels = [...new Set(SLOT_REEL)].sort((a, b) => val(a) - val(b)).map((i) => SLOT_SYMBOLS[i].label); // リールにある目だけ（D-029）
   let tick = 0;
   const iv = setInterval(() => {
     tick += 1;
     const m = document.getElementById('reel-m');
-    const r = document.getElementById('reel-r');
     if (m && res.phase < 1) m.textContent = reels[tick % reels.length];
-    if (r && res.phase < 2) r.textContent = reelsR[(tick * 3) % reelsR.length];
   }, 90);
-  setTimeout(() => { res.phase = 1; uiRender(); }, 1400);
-  setTimeout(() => { res.phase = 2; uiRender(); }, 2400);
-  setTimeout(() => { clearInterval(iv); res.phase = 3; uiRender(); }, 3000);
+  setTimeout(() => { clearInterval(iv); res.phase = 1; uiRender(); }, 1600);
+  setTimeout(() => { res.phase = 3; uiRender(); }, 2200);
 }
 
 // ---------- 画面: ごほうび ----------
