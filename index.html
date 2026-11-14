@@ -1022,12 +1022,13 @@ function slotThemesFor(total) {
 // w は箱に入れる枚数。last はラストワンの金額（0 なら なし）
 // D-050: あめ 1こ × 10枚、大当たり「おとんぴんの ハグ」× 1枚、ゲーム時間 5分 延長 × 5枚を足す（お金ではない当たり。item に名前、yen は 0）。
 // 36枚・500円 ＋ あめ 10こ ＋ ハグ 1回 ＋ ゲーム 5分延長 5回。お金の期待値は 1枚 約13.9円（前は 25円）
+// D-051: 「おとんぴんの かたもみ 100回で 50円」を 1枚足す（名前つきの お金の当たり。yen 50 で期待値に入れる）。37枚・550円、1枚 約14.9円
 const RS_DEFAULT = {
   cost: 100,
-  prizes: [{ yen: 10, w: 12 }, { yen: 20, w: 4 }, { yen: 50, w: 2 }, { yen: 100, w: 1 }, { yen: 0, item: 'あめ 1こ', w: 10 }, { yen: 0, item: 'おとんぴんの ハグ（大当たり！）', w: 1 }, { yen: 0, item: 'ゲーム時間 5分 延長', w: 5 }],
+  prizes: [{ yen: 10, w: 12 }, { yen: 20, w: 4 }, { yen: 50, w: 2 }, { yen: 100, w: 1 }, { yen: 0, item: 'あめ 1こ', w: 10 }, { yen: 0, item: 'おとんぴんの ハグ（大当たり！）', w: 1 }, { yen: 0, item: 'ゲーム時間 5分 延長', w: 5 }, { yen: 50, item: 'おとんぴんの かたもみ 100回で 50円', w: 1 }],
   last: 100,
 };
-const RS_ITEM_MAX = 20; // 品物の名前の長さ
+const RS_ITEM_MAX = 30; // 品物の名前の長さ（D-051 で 20 → 30）
 
 // 当たりの表示（品物なら その名前、お金なら ○円）
 function rsPrizeLabel(x) {
@@ -5206,7 +5207,7 @@ function uiAdult() {
   for (let i = 0; i < 10; i++) {
     const x = rs.prizes[i] || { yen: '', w: '' };
     // 品物（D-050）: 名前を入れると お金ではなく品物の当たり（円は 0 にする）
-    h += '<div class="row">当たり' + (i + 1) + ': <input type="number" id="rs-yen-' + i + '" value="' + x.yen + '" min="0" step="1"> 円 または 品物 <input type="text" id="rs-item-' + i + '" value="' + uiEsc(x.item || '') + '" maxlength="' + RS_ITEM_MAX + '" placeholder="例: あめ 1こ"> × <input type="number" id="rs-w-' + i + '" value="' + x.w + '" min="1" step="1"> 枚</div>';
+    h += '<div class="row">当たり' + (i + 1) + ': <input type="number" id="rs-yen-' + i + '" value="' + x.yen + '" min="0" step="1"> 円・名前 <input type="text" id="rs-item-' + i + '" value="' + uiEsc(x.item || '') + '" maxlength="' + RS_ITEM_MAX + '" placeholder="例: あめ 1こ"> × <input type="number" id="rs-w-' + i + '" value="' + x.w + '" min="1" step="1"> 枚</div>';
   }
   h += '<div class="row">ラストワン（最後の 1枚）: <input type="number" id="rs-last" value="' + (rs.last || 0) + '" min="0" step="1"> 円（0 なら なし）</div>';
   // メンバーごとの 1回のポイント（D-043）。空なら上の「1回」の値
@@ -5236,7 +5237,7 @@ function uiReadRewardSlotForm() {
     const ie = document.getElementById('rs-item-' + i);
     const item = ie ? ie.value.trim() : '';
     if (yen === null && w === null && !item) continue;
-    prizes.push(item ? { yen: 0, item, w } : { yen, w });
+    prizes.push(item ? { yen: yen === null ? 0 : yen, item, w } : { yen, w }); // 名前つきでも 円を入れれば お金の当たり（D-051）
   }
   return { cost: num('rs-cost'), prizes, last: num('rs-last') || 0 };
 }
