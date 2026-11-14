@@ -1027,6 +1027,7 @@ const RS_DEFAULT = {
   cost: 100,
   prizes: [{ yen: 10, w: 12 }, { yen: 20, w: 4 }, { yen: 50, w: 2 }, { yen: 100, w: 1 }, { yen: 0, item: 'あめ 1こ', w: 10 }, { yen: 0, item: 'おとんぴんの ハグ（大当たり！）', w: 1 }, { yen: 0, item: 'ゲーム時間 5分 延長', w: 5 }, { yen: 50, item: 'おとんぴんの かたもみ 100回で 50円', w: 1 }],
   last: 100,
+  monthCap: 1500, // D-052: 1人 1か月の お金の当たりの上限（円）。0 なら上限なし
 };
 const RS_ITEM_MAX = 30; // 品物の名前の長さ（D-051 で 20 → 30）
 
@@ -1045,6 +1046,7 @@ function rsValidate(cfg) {
   if (!Array.isArray(cfg.prizes) || cfg.prizes.length < 1 || cfg.prizes.length > 10) e.push('prizes は1〜10個');
   else if (cfg.prizes.some((x) => !x || !isInt(x.yen, 0, 100000) || !isInt(x.w, 1, RS_MAX_TICKETS))) e.push('prizes の値が不正');
   else if (cfg.prizes.some((x) => x.item !== undefined && (typeof x.item !== 'string' || x.item.length < 1 || x.item.length > RS_ITEM_MAX))) e.push('品物の名前が不正');
+  if (cfg.monthCap !== undefined && !isInt(cfg.monthCap, 0, 1000000)) e.push('1か月の上限が不正');
   else if (cfg.prizes.reduce((s, x) => s + x.w, 0) > RS_MAX_TICKETS) e.push('枚数の合計が多すぎる');
   return e;
 }
@@ -1086,17 +1088,38 @@ function rsCurrentBox(cfg, box) {
   return rsNewBox(cfg, box.no + 1);
 }
 
-// 1枚引く。返す: { prize: { yen, last }, box: 引いた後の箱 }。ふつうの札が0枚ならラストワン
-function rsDraw(rng, cfg, box) {
+// 1か月の お金の上限（D-052）。設定に無いとき（前に保存した設定）は既定の値
+function rsMonthCap(cfg) {
+  return Number.isInteger(cfg.monthCap) ? cfg.monthCap : RS_DEFAULT.monthCap;
+}
+
+// 引ける札（D-052）: maxYen より高い お金の札は 引かない（品物の札・maxYen 以下の札だけ）。maxYen が無ければ全部
+function rsOk(yen, maxYen) {
+  return maxYen === undefined || maxYen === null || yen <= maxYen;
+}
+function rsCanDraw(cfg, box, maxYen) {
+  const cur = rsCurrentBox(cfg, box);
+  const total = cur.left.reduce((s, n) => s + n, 0);
+  if (total === 0) return cur.last && rsOk(rsLast(cfg), maxYen);
+  return cur.left.some((n, i) => n > 0 && rsOk(cfg.prizes[i].yen, maxYen));
+}
+
+// 1枚引く。返す: { prize: { yen, last, item? }, box: 引いた後の箱 }。ふつうの札が0枚ならラストワン。
+// maxYen（D-052）があれば、それより高い お金の札は よけて引く。引ける札が無ければ null
+function rsDraw(rng, cfg, box, maxYen) {
   const cur = rsCurrentBox(cfg, box);
   const total = cur.left.reduce((s, n) => s + n, 0);
   if (total === 0) {
     if (!cur.last) throw new Error('rsDraw: からの箱');
+    if (!rsOk(rsLast(cfg), maxYen)) return null;
     return { prize: { yen: rsLast(cfg), last: true }, box: { ...cur, last: false } };
   }
-  let r = rng.int(total);
+  const can = cur.left.map((n, i) => (rsOk(cfg.prizes[i].yen, maxYen) ? n : 0));
+  const canTotal = can.reduce((s, n) => s + n, 0);
+  if (canTotal === 0) return null;
+  let r = rng.int(canTotal);
   for (let i = 0; i < cur.left.length; i++) {
-    r -= cur.left[i];
+    r -= can[i];
     if (r < 0) {
       const left = cur.left.slice();
       left[i] -= 1;
@@ -1560,20 +1583,47 @@ function storeSetRewardSlot(data, cfg) {
   const errs = rsValidate(cfg);
   if (errs.length) throw new Error('storeSetRewardSlot: ' + errs.join(' / '));
   const d = storeClone(data);
-  d.rewardSlot = { cost: cfg.cost, prizes: cfg.prizes.map((x) => ({ yen: x.yen, w: x.w, ...(x.item ? { item: x.item } : {}) })), last: cfg.last || 0 };
+  d.rewardSlot = { cost: cfg.cost, prizes: cfg.prizes.map((x) => ({ yen: x.yen, w: x.w, ...(x.item ? { item: x.item } : {}) })), last: cfg.last || 0, monthCap: rsMonthCap(cfg) };
   return d;
 }
 
 // くじを1枚引いた結果（rsDraw の { prize, box }）でポイントを引き、箱を保存し、交換の記録に残す。足りなければ拒否。累計は減らない（D-018）
+// 1か月の お金の当たり（D-052）。くじの記録（rewardName が「くじ」で始まる）の yen を足す。yen の無い前の記録は 名前の「○円」から読む
+const storeMonthOf = (iso) => {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? null : d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+};
+function storeMonthYen(data, pid, nowIso) {
+  const m = storeMonthOf(nowIso);
+  let sum = 0;
+  for (const e of storeProfile(data, pid).exchanges || []) {
+    if (!e || typeof e.rewardName !== 'string' || !e.rewardName.startsWith('くじ') || storeMonthOf(e.date) !== m) continue;
+    if (Number.isInteger(e.yen)) sum += e.yen;
+    else {
+      const k = /(\d+)円$/.exec(e.rewardName);
+      if (k) sum += Number(k[1]);
+    }
+  }
+  return sum;
+}
+// 今月あと何円まで お金の当たりが出せるか。上限なし（0）なら null
+function storeRsMaxYen(data, pid, nowIso) {
+  const cap = rsMonthCap(storeRewardSlot(data));
+  if (cap === 0) return null;
+  return Math.max(0, cap - storeMonthYen(data, pid, nowIso));
+}
+
 function storeSpinReward(data, pid, draw, nowIso) {
   const cost = storeRsCost(data, pid);
   if (!draw || !draw.prize || !draw.box) return { ok: false, reason: 'no_prize', data };
   if (storeProfile(data, pid).available < cost) return { ok: false, reason: 'not_enough', data };
+  const maxYen = storeRsMaxYen(data, pid, nowIso);
+  if (maxYen !== null && draw.prize.yen > maxYen) return { ok: false, reason: 'over_cap', data };
   const prize = draw.prize;
   const d = storeWithProfile(data, pid, (p) => {
     p.available -= cost;
     p.rbox = draw.box;
-    p.exchanges = [...p.exchanges, { date: nowIso, rewardName: (prize.last ? 'くじ ラストワン ' : 'くじ ') + rsPrizeLabel(prize), cost }];
+    p.exchanges = [...p.exchanges, { date: nowIso, rewardName: (prize.last ? 'くじ ラストワン ' : 'くじ ') + rsPrizeLabel(prize), cost, yen: prize.yen }];
   });
   return { ok: true, data: d, prize };
 }
@@ -3644,7 +3694,7 @@ function coRealLevels(p) {
   return [1, 2, 3].filter((lv) => lv === 1 || unitItems(lv).some((it) => items[it.key]));
 }
 
-globalThis.KR = { decMake, decShift, decToString, decFromString, decParseInput, decEquals, decDigits, decFromFraction, decGcd, UNIT_LEVELS, UNIT_PAIRS, unitExp, unitItemsAll, unitItems, unitItemByKey, unitLadder, rngCrypto, qPick, qShuffle, qAllowedTypes, qMakeS, qOpLabel, qApplyOp, qOptions, qMakeQuestion, qMakeDrill, qCheck, qFlowStart, qFlowHint, qFlowChoose, qFlowInput, qFlowRecord, qFlowFirstRecord, qFlowRetried, PG_STREAK_TO_DOWN, PG_RECENT_MAX, PG_CHECK_INTERVAL_DAYS, PG_SESSION_SIZE, PG_MAX_CHECKS, PG_SLIP_DAYS, PG_PROBE_MAX, pgToday, pgDaysBetween, pgNewItem, pgMastered, pgRecord, pgRecordProbe, pgPlace, pgMarks, pgIsCheckDue, pgWeight, pgPickNormal, pgMarkProbes, pgLevelProgress, pgEvents, pgNextStep, pgMasteredKeys, pgPickL4, pgL4Ready, pgL4Need, pgWeakKeys, pgPickReview, pgJumpKeys, pgPickJump, pgRecordJump, SLOT_SYMBOLS, SLOT_REEL, SLOT_REEL_RIGHT, SLOT_REVIEW_MULT, slotReviewBonus, SLOT_JUMP_MULT, slotJumpBonus, SLOT_DRILL_GIVES_SLOT, slotCompute, slotFormula, slotSpin, SLOT_THEMES, slotThemesFor, RS_DEFAULT, RS_ITEM_MAX, rsPrizeLabel, RS_MAX_TICKETS, rsValidate, rsExpected, rsSig, rsNewBox, rsBoxEmpty, rsCurrentBox, rsDraw, SLOT_AN_REEL, slotAnzanReel, slotSpinAnzan, STORE_SCHEMA, STORE_KEY, STORE_KEY_BROKEN, STORE_KEY_BEFORE_IMPORT, STORE_KEY_LOCK, STORE_LOCK_TTL_MS, STORE_SESSIONS_MAX, STORE_UNDO_HOURS, STORE_PREFIX_KEY_RE, STORE_LOG_MAX, STORE_LOG_KINDS, STORE_BEST_MAX, STORE_DEFAULT_NAMES, STORE_RS_COST_DEFAULT, storeUpgrade, storeClone, storeInitial, storeValidate, storeLoad, storeLockAcquire, storeLockRelease, storeSave, storeProfile, storeSetItem, storeSetPrefix, storeApplyTime, storeApplyMemtest, storeApplyBonus, storeAddLog, storeSetRank, storeSetUnlocked, storeSetClock, storeSetWord, storeSetMeaning, storeAddDrill, storeApplySession, storeClearPending, storeExchange, storeRsCost, storeSetRsCost, storeRewardSlot, storeSetRewardSlot, storeSpinReward, storeSetRewards, storeRename, storeSetTheme, storeResetProfile, storeResetAll, storeMarkExported, storeExportText, storeParseImport, storeImportSummary, storeBackupBeforeImport, storeReadBeforeImport, storeClearBeforeImport, storeAdoptImported, storeSetAnzanBest, CHARA_LIST, CHARA_MOODS, CHARA_LINES, charaLine, charaForLevel, charaSvg, charaLiterSvg, AV_MOODS, AV_IDS, avatarSvg, avMoodFromResult, avMood, avIsFirst, PREFIXES, PREFIX_KINDS, PREFIX_BOX_MAX, prefixById, prefixKeys, prefixFactorLabel, prefixMakeQuestion, prefixRecord, prefixLearned, prefixPick, prefixTableHtml, MN_DONE_BOX, MEANING, mnById, mnForLevel, mnMakeQuestion, mnRecord, mnDone, mnNextFor, mnLevelDone, WD_DONE_BOX, WORD, wdById, wdMakeQuestion, wdRecord, wdDone, wdKeysFor, wdPick, REAL, realById, realPick, realMakeQuestion, whyChain, whyFactor, whyMoney, AN_KINDS, AN_SESSION_SIZE, anMakeQuestion, anMakeSet, anCheck, CK_FACTORS, CK_SESSION_SIZE, CK_MAX_CHECKS, CK_ITEMS, ckById, ckOpLabel, ckOptions, ckMakeQuestion, ckFlowStart, ckFlowHint, ckFlowChoose, ckFlowInput, ckFlowRecord, ckFirstRecord, ckPick, ckHasWork, ckPickLabel, MT_POINTS, MT_MIN_MASTERED, MT_LOGIN_BONUS, MT_WEEK_STAMPS, MT_WEEK_BONUS, mtPoints, mtCandidates, mtAvailable, mtDoneToday, mtPick, mtWeekStart, mtWeekStamps, mtDueBonuses, TC_SECONDS, TC_DAILY_MAX, TC_UNLOCK_MASTERED, TC_WRONG_SHOW_MS, tcMakeQuestion, tcPoints, tcScore, tcCountToday, tcPointsFromScore, tcPointsFor, tcReady, coClockCleared, coClockMastered, coWordLevels, coLevelCleared, CO_RECENT_DAYS, CO_ERR_MIN, coRecentErrors, coLevelHasWork, coL4Available, coTimeAvailable, coRecommend, coSessionEvents, CO_RANKS, coRankStats, coRankIndex, coCheckWaiting, coLevelStages, CO_WEEK_KINDS, coWeekDone, CO_OTHER_MODES, CO_OTHER_DAILY_MAX, CO_OTHER_DAILY_MAX_BY, coOtherMax, coOtherLeft, coRealLevels };
+globalThis.KR = { decMake, decShift, decToString, decFromString, decParseInput, decEquals, decDigits, decFromFraction, decGcd, UNIT_LEVELS, UNIT_PAIRS, unitExp, unitItemsAll, unitItems, unitItemByKey, unitLadder, rngCrypto, qPick, qShuffle, qAllowedTypes, qMakeS, qOpLabel, qApplyOp, qOptions, qMakeQuestion, qMakeDrill, qCheck, qFlowStart, qFlowHint, qFlowChoose, qFlowInput, qFlowRecord, qFlowFirstRecord, qFlowRetried, PG_STREAK_TO_DOWN, PG_RECENT_MAX, PG_CHECK_INTERVAL_DAYS, PG_SESSION_SIZE, PG_MAX_CHECKS, PG_SLIP_DAYS, PG_PROBE_MAX, pgToday, pgDaysBetween, pgNewItem, pgMastered, pgRecord, pgRecordProbe, pgPlace, pgMarks, pgIsCheckDue, pgWeight, pgPickNormal, pgMarkProbes, pgLevelProgress, pgEvents, pgNextStep, pgMasteredKeys, pgPickL4, pgL4Ready, pgL4Need, pgWeakKeys, pgPickReview, pgJumpKeys, pgPickJump, pgRecordJump, SLOT_SYMBOLS, SLOT_REEL, SLOT_REEL_RIGHT, SLOT_REVIEW_MULT, slotReviewBonus, SLOT_JUMP_MULT, slotJumpBonus, SLOT_DRILL_GIVES_SLOT, slotCompute, slotFormula, slotSpin, SLOT_THEMES, slotThemesFor, RS_DEFAULT, RS_ITEM_MAX, rsPrizeLabel, RS_MAX_TICKETS, rsValidate, rsExpected, rsSig, rsNewBox, rsBoxEmpty, rsCurrentBox, rsMonthCap, rsCanDraw, rsDraw, SLOT_AN_REEL, slotAnzanReel, slotSpinAnzan, STORE_SCHEMA, STORE_KEY, STORE_KEY_BROKEN, STORE_KEY_BEFORE_IMPORT, STORE_KEY_LOCK, STORE_LOCK_TTL_MS, STORE_SESSIONS_MAX, STORE_UNDO_HOURS, STORE_PREFIX_KEY_RE, STORE_LOG_MAX, STORE_LOG_KINDS, STORE_BEST_MAX, STORE_DEFAULT_NAMES, STORE_RS_COST_DEFAULT, storeUpgrade, storeClone, storeInitial, storeValidate, storeLoad, storeLockAcquire, storeLockRelease, storeSave, storeProfile, storeSetItem, storeSetPrefix, storeApplyTime, storeApplyMemtest, storeApplyBonus, storeAddLog, storeSetRank, storeSetUnlocked, storeSetClock, storeSetWord, storeSetMeaning, storeAddDrill, storeApplySession, storeClearPending, storeExchange, storeRsCost, storeSetRsCost, storeRewardSlot, storeSetRewardSlot, storeMonthYen, storeRsMaxYen, storeSpinReward, storeSetRewards, storeRename, storeSetTheme, storeResetProfile, storeResetAll, storeMarkExported, storeExportText, storeParseImport, storeImportSummary, storeBackupBeforeImport, storeReadBeforeImport, storeClearBeforeImport, storeAdoptImported, storeSetAnzanBest, CHARA_LIST, CHARA_MOODS, CHARA_LINES, charaLine, charaForLevel, charaSvg, charaLiterSvg, AV_MOODS, AV_IDS, avatarSvg, avMoodFromResult, avMood, avIsFirst, PREFIXES, PREFIX_KINDS, PREFIX_BOX_MAX, prefixById, prefixKeys, prefixFactorLabel, prefixMakeQuestion, prefixRecord, prefixLearned, prefixPick, prefixTableHtml, MN_DONE_BOX, MEANING, mnById, mnForLevel, mnMakeQuestion, mnRecord, mnDone, mnNextFor, mnLevelDone, WD_DONE_BOX, WORD, wdById, wdMakeQuestion, wdRecord, wdDone, wdKeysFor, wdPick, REAL, realById, realPick, realMakeQuestion, whyChain, whyFactor, whyMoney, AN_KINDS, AN_SESSION_SIZE, anMakeQuestion, anMakeSet, anCheck, CK_FACTORS, CK_SESSION_SIZE, CK_MAX_CHECKS, CK_ITEMS, ckById, ckOpLabel, ckOptions, ckMakeQuestion, ckFlowStart, ckFlowHint, ckFlowChoose, ckFlowInput, ckFlowRecord, ckFirstRecord, ckPick, ckHasWork, ckPickLabel, MT_POINTS, MT_MIN_MASTERED, MT_LOGIN_BONUS, MT_WEEK_STAMPS, MT_WEEK_BONUS, mtPoints, mtCandidates, mtAvailable, mtDoneToday, mtPick, mtWeekStart, mtWeekStamps, mtDueBonuses, TC_SECONDS, TC_DAILY_MAX, TC_UNLOCK_MASTERED, TC_WRONG_SHOW_MS, tcMakeQuestion, tcPoints, tcScore, tcCountToday, tcPointsFromScore, tcPointsFor, tcReady, coClockCleared, coClockMastered, coWordLevels, coLevelCleared, CO_RECENT_DAYS, CO_ERR_MIN, coRecentErrors, coLevelHasWork, coL4Available, coTimeAvailable, coRecommend, coSessionEvents, CO_RANKS, coRankStats, coRankIndex, coCheckWaiting, coLevelStages, CO_WEEK_KINDS, coWeekDone, CO_OTHER_MODES, CO_OTHER_DAILY_MAX, CO_OTHER_DAILY_MAX_BY, coOtherMax, coOtherLeft, coRealLevels };
 if (typeof document !== 'undefined') {
 // ---- src/ui/app.js ----
 // ui/app.js — 画面の描画とイベント。logic の関数は同じスコープに連結されている（build.mjs）。設計 §9
@@ -5086,8 +5136,16 @@ function uiRewards() {
     h += '<div class="row"><button class="primary big" data-act="rsok">おとなの人: OK</button><button data-act="rscancel">やめる</button></div></div>';
     return h;
   }
+  // 今月の お金の当たりの上限（D-052）
+  const maxYen = storeRsMaxYen(uiS.data, uiS.pid, uiNowIso());
+  const canDraw = rsCanDraw(rs, p.rbox, maxYen);
   h += '<div class="card rs"><h3>ごほうびくじ（1回 ' + rsCost + ' ポイント）</h3>' + uiBoxHtml(rs, rsCurrentBox(rs, p.rbox));
-  h += '<button class="primary" data-act="rsask"' + (p.available < rsCost || uiS.mode === 'readonly' ? ' disabled' : '') + '>引く</button></div>';
+  if (maxYen !== null) {
+    h += '<p class="muted">今月の お金の当たり: あと <b>' + maxYen + '円</b>（1か月 ' + rsMonthCap(rs) + '円まで）</p>';
+    if (!canDraw) h += '<p class="fb info">今月の お金の当たりは いっぱい。品物の札も 残っていないので、来月まで まってね。ポイントは 貯めておけるよ。</p>';
+    else if (rs.prizes.some((x) => x.yen > maxYen)|| (rs.last || 0) > maxYen) h += '<p class="fb info">今月は、あと ' + maxYen + '円より 大きい お金の札は 出ないよ。</p>';
+  }
+  h += '<button class="primary" data-act="rsask"' + (p.available < rsCost || !canDraw || uiS.mode === 'readonly' ? ' disabled' : '') + '>引く</button></div>';
   if (uiS.exchange) {
     const r = uiS.data.rewards.find((x) => x.id === uiS.exchange);
     h += '<div class="card"><h2>「' + uiEsc(r.name) + '」（' + r.cost + ' ポイント）と こうかんする？</h2><p>おとなの人に見せてね。</p>';
@@ -5210,6 +5268,7 @@ function uiAdult() {
     h += '<div class="row">当たり' + (i + 1) + ': <input type="number" id="rs-yen-' + i + '" value="' + x.yen + '" min="0" step="1"> 円・名前 <input type="text" id="rs-item-' + i + '" value="' + uiEsc(x.item || '') + '" maxlength="' + RS_ITEM_MAX + '" placeholder="例: あめ 1こ"> × <input type="number" id="rs-w-' + i + '" value="' + x.w + '" min="1" step="1"> 枚</div>';
   }
   h += '<div class="row">ラストワン（最後の 1枚）: <input type="number" id="rs-last" value="' + (rs.last || 0) + '" min="0" step="1"> 円（0 なら なし）</div>';
+  h += '<div class="row">1人 1か月の お金の上限: <input type="number" id="rs-cap" value="' + rsMonthCap(rs) + '" min="0" step="1"> 円（0 なら 上限なし。届いたら、その月は品物の札だけ）</div>';
   // メンバーごとの 1回のポイント（D-043）。空なら上の「1回」の値
   h += '<p><b>メンバーごとの 1回のポイント</b>（空なら上の値）</p>';
   for (const pr of d.profiles) h += '<div class="row">' + uiEsc(pr.name) + ': <input type="number" id="rs-pcost-' + pr.id + '" value="' + (Number.isInteger(pr.rsCost) ? pr.rsCost : '') + '" min="1" step="1" placeholder="' + rs.cost + '"> ポイント</div>';
@@ -5239,7 +5298,8 @@ function uiReadRewardSlotForm() {
     if (yen === null && w === null && !item) continue;
     prizes.push(item ? { yen: yen === null ? 0 : yen, item, w } : { yen, w }); // 名前つきでも 円を入れれば お金の当たり（D-051）
   }
-  return { cost: num('rs-cost'), prizes, last: num('rs-last') || 0 };
+  const cap = num('rs-cap');
+  return { cost: num('rs-cost'), prizes, last: num('rs-last') || 0, monthCap: cap === null ? RS_DEFAULT.monthCap : cap };
 }
 
 function uiRunRewardSpin() {
@@ -5442,8 +5502,10 @@ function uiOnClick(e) {
     case 'rscancel': uiS.rsAsk = false; break;
     case 'rsok': {
       uiS.rsAsk = false;
-      const draw = rsDraw(uiRng, storeRewardSlot(uiS.data), uiProfile().rbox);
-      const r = storeSpinReward(uiS.data, uiS.pid, draw, uiNowIso());
+      const now = uiNowIso();
+      const draw = rsDraw(uiRng, storeRewardSlot(uiS.data), uiProfile().rbox, storeRsMaxYen(uiS.data, uiS.pid, now)); // 今月の上限（D-052）
+      if (!draw) { a.msg = '今月は もう引けません。'; break; }
+      const r = storeSpinReward(uiS.data, uiS.pid, draw, now);
       // 保存できたときだけ回す（atomic）
       if (r.ok && uiSave(r.data, { atomic: true })) {
         uiS.rspin = { prize: r.prize, shown: false };
