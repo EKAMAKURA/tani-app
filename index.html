@@ -1020,7 +1020,19 @@ function slotThemesFor(total) {
 // ---------- ごほうびの くじの箱（設計 §13.15・§13.22、D-012・D-018） ----------
 // 既定: 1回100ポイント。10円×12、20円×4、50円×2、100円×1 ＋ ラストワン100円 ＝ 20枚・500円。1枚の期待値 25円
 // w は箱に入れる枚数。last はラストワンの金額（0 なら なし）
-const RS_DEFAULT = { cost: 100, prizes: [{ yen: 10, w: 12 }, { yen: 20, w: 4 }, { yen: 50, w: 2 }, { yen: 100, w: 1 }], last: 100 };
+// D-050: あめ 1こ × 10枚、大当たり「おとんぴんの ハグ」× 1枚、ゲーム時間 5分 延長 × 5枚を足す（お金ではない当たり。item に名前、yen は 0）。
+// 36枚・500円 ＋ あめ 10こ ＋ ハグ 1回 ＋ ゲーム 5分延長 5回。お金の期待値は 1枚 約13.9円（前は 25円）
+const RS_DEFAULT = {
+  cost: 100,
+  prizes: [{ yen: 10, w: 12 }, { yen: 20, w: 4 }, { yen: 50, w: 2 }, { yen: 100, w: 1 }, { yen: 0, item: 'あめ 1こ', w: 10 }, { yen: 0, item: 'おとんぴんの ハグ（大当たり！）', w: 1 }, { yen: 0, item: 'ゲーム時間 5分 延長', w: 5 }],
+  last: 100,
+};
+const RS_ITEM_MAX = 20; // 品物の名前の長さ
+
+// 当たりの表示（品物なら その名前、お金なら ○円）
+function rsPrizeLabel(x) {
+  return x && typeof x.item === 'string' && x.item ? x.item : x.yen + '円';
+}
 const RS_MAX_TICKETS = 1000;
 
 function rsValidate(cfg) {
@@ -1031,6 +1043,7 @@ function rsValidate(cfg) {
   if (cfg.last !== undefined && !isInt(cfg.last, 0, 100000)) e.push('last が不正');
   if (!Array.isArray(cfg.prizes) || cfg.prizes.length < 1 || cfg.prizes.length > 10) e.push('prizes は1〜10個');
   else if (cfg.prizes.some((x) => !x || !isInt(x.yen, 0, 100000) || !isInt(x.w, 1, RS_MAX_TICKETS))) e.push('prizes の値が不正');
+  else if (cfg.prizes.some((x) => x.item !== undefined && (typeof x.item !== 'string' || x.item.length < 1 || x.item.length > RS_ITEM_MAX))) e.push('品物の名前が不正');
   else if (cfg.prizes.reduce((s, x) => s + x.w, 0) > RS_MAX_TICKETS) e.push('枚数の合計が多すぎる');
   return e;
 }
@@ -1047,7 +1060,7 @@ function rsExpected(cfg) {
 
 // 箱を作ったときの中身の設定（変わったら新しい箱にする）
 function rsSig(cfg) {
-  return cfg.prizes.map((x) => x.yen + 'x' + x.w).join(',') + '+' + rsLast(cfg);
+  return cfg.prizes.map((x) => x.yen + 'x' + x.w + (x.item ? ':' + x.item : '')).join(',') + '+' + rsLast(cfg);
 }
 
 function rsNewBox(cfg, no) {
@@ -1059,10 +1072,17 @@ function rsBoxEmpty(box) {
 }
 
 // 今の箱（無い・からっぽ・設定が変わった なら新しい箱）
+// D-050: 設定の後ろに当たりを足しただけ（前の当たり・ラストワンは同じ）なら、引きかけの箱に その札を足して続ける
 function rsCurrentBox(cfg, box) {
   if (!box) return rsNewBox(cfg, 1);
-  if (rsBoxEmpty(box) || box.sig !== rsSig(cfg) || box.left.length !== cfg.prizes.length) return rsNewBox(cfg, box.no + 1);
-  return box;
+  if (rsBoxEmpty(box)) return rsNewBox(cfg, box.no + 1);
+  if (box.sig === rsSig(cfg) && box.left.length === cfg.prizes.length) return box;
+  const n = box.left.length;
+  const head = { prizes: cfg.prizes.slice(0, n), last: cfg.last };
+  if (n < cfg.prizes.length && box.sig === rsSig(head)) {
+    return { ...box, left: box.left.concat(cfg.prizes.slice(n).map((x) => x.w)), sig: rsSig(cfg) };
+  }
+  return rsNewBox(cfg, box.no + 1);
 }
 
 // 1枚引く。返す: { prize: { yen, last }, box: 引いた後の箱 }。ふつうの札が0枚ならラストワン
@@ -1079,7 +1099,8 @@ function rsDraw(rng, cfg, box) {
     if (r < 0) {
       const left = cur.left.slice();
       left[i] -= 1;
-      return { prize: { yen: cfg.prizes[i].yen, last: false }, box: { ...cur, left } };
+      const x = cfg.prizes[i];
+      return { prize: { yen: x.yen, last: false, ...(x.item ? { item: x.item } : {}) }, box: { ...cur, left } };
     }
   }
   throw new Error('rsDraw: 到達しない');
@@ -1538,7 +1559,7 @@ function storeSetRewardSlot(data, cfg) {
   const errs = rsValidate(cfg);
   if (errs.length) throw new Error('storeSetRewardSlot: ' + errs.join(' / '));
   const d = storeClone(data);
-  d.rewardSlot = { cost: cfg.cost, prizes: cfg.prizes.map((x) => ({ yen: x.yen, w: x.w })), last: cfg.last || 0 };
+  d.rewardSlot = { cost: cfg.cost, prizes: cfg.prizes.map((x) => ({ yen: x.yen, w: x.w, ...(x.item ? { item: x.item } : {}) })), last: cfg.last || 0 };
   return d;
 }
 
@@ -1551,7 +1572,7 @@ function storeSpinReward(data, pid, draw, nowIso) {
   const d = storeWithProfile(data, pid, (p) => {
     p.available -= cost;
     p.rbox = draw.box;
-    p.exchanges = [...p.exchanges, { date: nowIso, rewardName: (prize.last ? 'くじ ラストワン ' : 'くじ ') + prize.yen + '円', cost }];
+    p.exchanges = [...p.exchanges, { date: nowIso, rewardName: (prize.last ? 'くじ ラストワン ' : 'くじ ') + rsPrizeLabel(prize), cost }];
   });
   return { ok: true, data: d, prize };
 }
@@ -3622,7 +3643,7 @@ function coRealLevels(p) {
   return [1, 2, 3].filter((lv) => lv === 1 || unitItems(lv).some((it) => items[it.key]));
 }
 
-globalThis.KR = { decMake, decShift, decToString, decFromString, decParseInput, decEquals, decDigits, decFromFraction, decGcd, UNIT_LEVELS, UNIT_PAIRS, unitExp, unitItemsAll, unitItems, unitItemByKey, unitLadder, rngCrypto, qPick, qShuffle, qAllowedTypes, qMakeS, qOpLabel, qApplyOp, qOptions, qMakeQuestion, qMakeDrill, qCheck, qFlowStart, qFlowHint, qFlowChoose, qFlowInput, qFlowRecord, qFlowFirstRecord, qFlowRetried, PG_STREAK_TO_DOWN, PG_RECENT_MAX, PG_CHECK_INTERVAL_DAYS, PG_SESSION_SIZE, PG_MAX_CHECKS, PG_SLIP_DAYS, PG_PROBE_MAX, pgToday, pgDaysBetween, pgNewItem, pgMastered, pgRecord, pgRecordProbe, pgPlace, pgMarks, pgIsCheckDue, pgWeight, pgPickNormal, pgMarkProbes, pgLevelProgress, pgEvents, pgNextStep, pgMasteredKeys, pgPickL4, pgL4Ready, pgL4Need, pgWeakKeys, pgPickReview, pgJumpKeys, pgPickJump, pgRecordJump, SLOT_SYMBOLS, SLOT_REEL, SLOT_REEL_RIGHT, SLOT_REVIEW_MULT, slotReviewBonus, SLOT_JUMP_MULT, slotJumpBonus, SLOT_DRILL_GIVES_SLOT, slotCompute, slotFormula, slotSpin, SLOT_THEMES, slotThemesFor, RS_DEFAULT, RS_MAX_TICKETS, rsValidate, rsExpected, rsSig, rsNewBox, rsBoxEmpty, rsCurrentBox, rsDraw, SLOT_AN_REEL, slotAnzanReel, slotSpinAnzan, STORE_SCHEMA, STORE_KEY, STORE_KEY_BROKEN, STORE_KEY_BEFORE_IMPORT, STORE_KEY_LOCK, STORE_LOCK_TTL_MS, STORE_SESSIONS_MAX, STORE_UNDO_HOURS, STORE_PREFIX_KEY_RE, STORE_LOG_MAX, STORE_LOG_KINDS, STORE_BEST_MAX, STORE_DEFAULT_NAMES, STORE_RS_COST_DEFAULT, storeUpgrade, storeClone, storeInitial, storeValidate, storeLoad, storeLockAcquire, storeLockRelease, storeSave, storeProfile, storeSetItem, storeSetPrefix, storeApplyTime, storeApplyMemtest, storeApplyBonus, storeAddLog, storeSetRank, storeSetUnlocked, storeSetClock, storeSetWord, storeSetMeaning, storeAddDrill, storeApplySession, storeClearPending, storeExchange, storeRsCost, storeSetRsCost, storeRewardSlot, storeSetRewardSlot, storeSpinReward, storeSetRewards, storeRename, storeSetTheme, storeResetProfile, storeResetAll, storeMarkExported, storeExportText, storeParseImport, storeImportSummary, storeBackupBeforeImport, storeReadBeforeImport, storeClearBeforeImport, storeAdoptImported, storeSetAnzanBest, CHARA_LIST, CHARA_MOODS, CHARA_LINES, charaLine, charaForLevel, charaSvg, charaLiterSvg, AV_MOODS, AV_IDS, avatarSvg, avMoodFromResult, avMood, avIsFirst, PREFIXES, PREFIX_KINDS, PREFIX_BOX_MAX, prefixById, prefixKeys, prefixFactorLabel, prefixMakeQuestion, prefixRecord, prefixLearned, prefixPick, prefixTableHtml, MN_DONE_BOX, MEANING, mnById, mnForLevel, mnMakeQuestion, mnRecord, mnDone, mnNextFor, mnLevelDone, WD_DONE_BOX, WORD, wdById, wdMakeQuestion, wdRecord, wdDone, wdKeysFor, wdPick, REAL, realById, realPick, realMakeQuestion, whyChain, whyFactor, whyMoney, AN_KINDS, AN_SESSION_SIZE, anMakeQuestion, anMakeSet, anCheck, CK_FACTORS, CK_SESSION_SIZE, CK_MAX_CHECKS, CK_ITEMS, ckById, ckOpLabel, ckOptions, ckMakeQuestion, ckFlowStart, ckFlowHint, ckFlowChoose, ckFlowInput, ckFlowRecord, ckFirstRecord, ckPick, ckHasWork, ckPickLabel, MT_POINTS, MT_MIN_MASTERED, MT_LOGIN_BONUS, MT_WEEK_STAMPS, MT_WEEK_BONUS, mtPoints, mtCandidates, mtAvailable, mtDoneToday, mtPick, mtWeekStart, mtWeekStamps, mtDueBonuses, TC_SECONDS, TC_DAILY_MAX, TC_UNLOCK_MASTERED, TC_WRONG_SHOW_MS, tcMakeQuestion, tcPoints, tcScore, tcCountToday, tcPointsFromScore, tcPointsFor, tcReady, coClockCleared, coClockMastered, coWordLevels, coLevelCleared, CO_RECENT_DAYS, CO_ERR_MIN, coRecentErrors, coLevelHasWork, coL4Available, coTimeAvailable, coRecommend, coSessionEvents, CO_RANKS, coRankStats, coRankIndex, coCheckWaiting, coLevelStages, CO_WEEK_KINDS, coWeekDone, CO_OTHER_MODES, CO_OTHER_DAILY_MAX, CO_OTHER_DAILY_MAX_BY, coOtherMax, coOtherLeft, coRealLevels };
+globalThis.KR = { decMake, decShift, decToString, decFromString, decParseInput, decEquals, decDigits, decFromFraction, decGcd, UNIT_LEVELS, UNIT_PAIRS, unitExp, unitItemsAll, unitItems, unitItemByKey, unitLadder, rngCrypto, qPick, qShuffle, qAllowedTypes, qMakeS, qOpLabel, qApplyOp, qOptions, qMakeQuestion, qMakeDrill, qCheck, qFlowStart, qFlowHint, qFlowChoose, qFlowInput, qFlowRecord, qFlowFirstRecord, qFlowRetried, PG_STREAK_TO_DOWN, PG_RECENT_MAX, PG_CHECK_INTERVAL_DAYS, PG_SESSION_SIZE, PG_MAX_CHECKS, PG_SLIP_DAYS, PG_PROBE_MAX, pgToday, pgDaysBetween, pgNewItem, pgMastered, pgRecord, pgRecordProbe, pgPlace, pgMarks, pgIsCheckDue, pgWeight, pgPickNormal, pgMarkProbes, pgLevelProgress, pgEvents, pgNextStep, pgMasteredKeys, pgPickL4, pgL4Ready, pgL4Need, pgWeakKeys, pgPickReview, pgJumpKeys, pgPickJump, pgRecordJump, SLOT_SYMBOLS, SLOT_REEL, SLOT_REEL_RIGHT, SLOT_REVIEW_MULT, slotReviewBonus, SLOT_JUMP_MULT, slotJumpBonus, SLOT_DRILL_GIVES_SLOT, slotCompute, slotFormula, slotSpin, SLOT_THEMES, slotThemesFor, RS_DEFAULT, RS_ITEM_MAX, rsPrizeLabel, RS_MAX_TICKETS, rsValidate, rsExpected, rsSig, rsNewBox, rsBoxEmpty, rsCurrentBox, rsDraw, SLOT_AN_REEL, slotAnzanReel, slotSpinAnzan, STORE_SCHEMA, STORE_KEY, STORE_KEY_BROKEN, STORE_KEY_BEFORE_IMPORT, STORE_KEY_LOCK, STORE_LOCK_TTL_MS, STORE_SESSIONS_MAX, STORE_UNDO_HOURS, STORE_PREFIX_KEY_RE, STORE_LOG_MAX, STORE_LOG_KINDS, STORE_BEST_MAX, STORE_DEFAULT_NAMES, STORE_RS_COST_DEFAULT, storeUpgrade, storeClone, storeInitial, storeValidate, storeLoad, storeLockAcquire, storeLockRelease, storeSave, storeProfile, storeSetItem, storeSetPrefix, storeApplyTime, storeApplyMemtest, storeApplyBonus, storeAddLog, storeSetRank, storeSetUnlocked, storeSetClock, storeSetWord, storeSetMeaning, storeAddDrill, storeApplySession, storeClearPending, storeExchange, storeRsCost, storeSetRsCost, storeRewardSlot, storeSetRewardSlot, storeSpinReward, storeSetRewards, storeRename, storeSetTheme, storeResetProfile, storeResetAll, storeMarkExported, storeExportText, storeParseImport, storeImportSummary, storeBackupBeforeImport, storeReadBeforeImport, storeClearBeforeImport, storeAdoptImported, storeSetAnzanBest, CHARA_LIST, CHARA_MOODS, CHARA_LINES, charaLine, charaForLevel, charaSvg, charaLiterSvg, AV_MOODS, AV_IDS, avatarSvg, avMoodFromResult, avMood, avIsFirst, PREFIXES, PREFIX_KINDS, PREFIX_BOX_MAX, prefixById, prefixKeys, prefixFactorLabel, prefixMakeQuestion, prefixRecord, prefixLearned, prefixPick, prefixTableHtml, MN_DONE_BOX, MEANING, mnById, mnForLevel, mnMakeQuestion, mnRecord, mnDone, mnNextFor, mnLevelDone, WD_DONE_BOX, WORD, wdById, wdMakeQuestion, wdRecord, wdDone, wdKeysFor, wdPick, REAL, realById, realPick, realMakeQuestion, whyChain, whyFactor, whyMoney, AN_KINDS, AN_SESSION_SIZE, anMakeQuestion, anMakeSet, anCheck, CK_FACTORS, CK_SESSION_SIZE, CK_MAX_CHECKS, CK_ITEMS, ckById, ckOpLabel, ckOptions, ckMakeQuestion, ckFlowStart, ckFlowHint, ckFlowChoose, ckFlowInput, ckFlowRecord, ckFirstRecord, ckPick, ckHasWork, ckPickLabel, MT_POINTS, MT_MIN_MASTERED, MT_LOGIN_BONUS, MT_WEEK_STAMPS, MT_WEEK_BONUS, mtPoints, mtCandidates, mtAvailable, mtDoneToday, mtPick, mtWeekStart, mtWeekStamps, mtDueBonuses, TC_SECONDS, TC_DAILY_MAX, TC_UNLOCK_MASTERED, TC_WRONG_SHOW_MS, tcMakeQuestion, tcPoints, tcScore, tcCountToday, tcPointsFromScore, tcPointsFor, tcReady, coClockCleared, coClockMastered, coWordLevels, coLevelCleared, CO_RECENT_DAYS, CO_ERR_MIN, coRecentErrors, coLevelHasWork, coL4Available, coTimeAvailable, coRecommend, coSessionEvents, CO_RANKS, coRankStats, coRankIndex, coCheckWaiting, coLevelStages, CO_WEEK_KINDS, coWeekDone, CO_OTHER_MODES, CO_OTHER_DAILY_MAX, CO_OTHER_DAILY_MAX_BY, coOtherMax, coOtherLeft, coRealLevels };
 if (typeof document !== 'undefined') {
 // ---- src/ui/app.js ----
 // ui/app.js — 画面の描画とイベント。logic の関数は同じスコープに連結されている（build.mjs）。設計 §9
@@ -5051,9 +5072,9 @@ function uiRewards() {
     // くじの結果（設計 §13.22）
     const sp = uiS.rspin;
     h += '<div class="card rs"><h2>ごほうびくじ</h2>';
-    h += '<div class="reel big-reel" id="rs-reel">' + (sp.shown ? sp.prize.yen + '円' : '?') + '</div>';
+    h += '<div class="reel big-reel" id="rs-reel">' + (sp.shown ? uiEsc(rsPrizeLabel(sp.prize)) : '?') + '</div>';
     if (sp.shown) {
-      h += '<p class="fb ok" style="text-align:center">' + (sp.prize.last ? '<b>ラストワン賞！</b> ' : '') + '<b>' + sp.prize.yen + '円</b> 当たり！ おとなの人に見せてね。</p>';
+      h += '<p class="fb ok" style="text-align:center">' + (sp.prize.last ? '<b>ラストワン賞！</b> ' : '') + '<b>' + uiEsc(rsPrizeLabel(sp.prize)) + '</b> 当たり！ おとなの人に見せてね。</p>';
       if (rsBoxEmpty(p.rbox)) h += '<p class="muted" style="text-align:center">箱がからっぽになった。次は新しい箱だよ。</p>';
       h += '<p style="text-align:center"><button class="primary big" data-act="rsdone">OK</button></p>';
     }
@@ -5088,7 +5109,7 @@ function uiBoxHtml(rs, box) {
   const n = box.left.reduce((s, x) => s + x, 0) + (box.last ? 1 : 0);
   let h = '<p>箱 ' + box.no + ' 番目・残り <b>' + n + '</b> 枚</p><div class="box-left">';
   rs.prizes.forEach((x, i) => {
-    h += '<span class="chip' + (box.left[i] ? '' : ' gone') + '">' + x.yen + '円 × ' + box.left[i] + '</span>';
+    h += '<span class="chip' + (box.left[i] ? '' : ' gone') + '">' + uiEsc(rsPrizeLabel(x)) + ' × ' + box.left[i] + '</span>';
   });
   if (rs.last > 0) h += '<span class="chip last' + (box.last ? '' : ' gone') + '">ラストワン ' + rs.last + '円' + (box.last ? '' : '（出た）') + '</span>';
   return h + '</div>';
@@ -5184,13 +5205,15 @@ function uiAdult() {
   h += '<div class="row">1回 <input type="number" id="rs-cost" value="' + rs.cost + '" min="1" step="1"> ポイント</div>';
   for (let i = 0; i < 10; i++) {
     const x = rs.prizes[i] || { yen: '', w: '' };
-    h += '<div class="row">当たり' + (i + 1) + ': <input type="number" id="rs-yen-' + i + '" value="' + x.yen + '" min="0" step="1"> 円 × <input type="number" id="rs-w-' + i + '" value="' + x.w + '" min="1" step="1"> 枚</div>';
+    // 品物（D-050）: 名前を入れると お金ではなく品物の当たり（円は 0 にする）
+    h += '<div class="row">当たり' + (i + 1) + ': <input type="number" id="rs-yen-' + i + '" value="' + x.yen + '" min="0" step="1"> 円 または 品物 <input type="text" id="rs-item-' + i + '" value="' + uiEsc(x.item || '') + '" maxlength="' + RS_ITEM_MAX + '" placeholder="例: あめ 1こ"> × <input type="number" id="rs-w-' + i + '" value="' + x.w + '" min="1" step="1"> 枚</div>';
   }
   h += '<div class="row">ラストワン（最後の 1枚）: <input type="number" id="rs-last" value="' + (rs.last || 0) + '" min="0" step="1"> 円（0 なら なし）</div>';
   // メンバーごとの 1回のポイント（D-043）。空なら上の「1回」の値
   h += '<p><b>メンバーごとの 1回のポイント</b>（空なら上の値）</p>';
   for (const pr of d.profiles) h += '<div class="row">' + uiEsc(pr.name) + ': <input type="number" id="rs-pcost-' + pr.id + '" value="' + (Number.isInteger(pr.rsCost) ? pr.rsCost : '') + '" min="1" step="1" placeholder="' + rs.cost + '"> ポイント</div>';
-  h += '<p class="muted">1箱: <b>' + ev.den + ' 枚・' + ev.num + ' 円</b>。1枚の期待値: <b>' + ev.label + ' 円</b>。空の行は使いません。中身を変えると、次に引くときから新しい箱になります。</p>';
+  const items = rs.prizes.filter((x) => x.item).map((x) => x.item + ' × ' + x.w).join('、');
+  h += '<p class="muted">1箱: <b>' + ev.den + ' 枚・' + ev.num + ' 円</b>' + (items ? '（ほかに ' + uiEsc(items) + '）' : '') + '。1枚の お金の期待値: <b>' + ev.label + ' 円</b>。空の行は使いません。中身を変えると、次に引くときから新しい箱になります。</p>';
   for (const pr of d.profiles) {
     const bx = rsCurrentBox(rs, pr.rbox);
     h += '<p class="muted">' + uiEsc(pr.name) + ': 箱 ' + bx.no + ' 番目・残り ' + (bx.left.reduce((s, x) => s + x, 0) + (bx.last ? 1 : 0)) + ' 枚</p>';
@@ -5210,15 +5233,17 @@ function uiReadRewardSlotForm() {
   for (let i = 0; i < 10; i++) {
     const yen = num('rs-yen-' + i);
     const w = num('rs-w-' + i);
-    if (yen === null && w === null) continue;
-    prizes.push({ yen, w });
+    const ie = document.getElementById('rs-item-' + i);
+    const item = ie ? ie.value.trim() : '';
+    if (yen === null && w === null && !item) continue;
+    prizes.push(item ? { yen: 0, item, w } : { yen, w });
   }
   return { cost: num('rs-cost'), prizes, last: num('rs-last') || 0 };
 }
 
 function uiRunRewardSpin() {
   const sp = uiS.rspin;
-  const labels = storeRewardSlot(uiS.data).prizes.map((x) => x.yen + '円');
+  const labels = storeRewardSlot(uiS.data).prizes.map(rsPrizeLabel);
   let t = 0;
   const iv = setInterval(() => {
     t += 1;
