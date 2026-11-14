@@ -114,6 +114,11 @@ table.place td.lab { border: none; font-size: 18px; text-align: right; width: au
 .why-money svg { max-width: 100%; height: auto; }
 /* 何と何が同じか（D-044） */
 .eq-line { display: inline-block; margin: 6px 0; padding: 2px 12px; border: 2px solid var(--accent); border-radius: 10px; font-size: 1.15em; font-weight: bold; background: var(--bg); }
+/* 暗算トレーニング（D-046） */
+.an-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.an-timer { font-size: 1.4em; font-variant-numeric: tabular-nums; }
+.an-ok { color: var(--ok, #2e8b57); font-weight: bold; }
+.an-row { font-size: 40px; }
 .chara-row { display: flex; justify-content: center; gap: 18px; margin: 4px 0 8px; }
 .chara-cheer { animation: chara-hop .6s ease-in-out infinite alternate; }
 @media (prefers-reduced-motion: reduce) { .chara-cheer { animation: none; } }
@@ -1080,6 +1085,20 @@ function rsDraw(rng, cfg, box) {
   throw new Error('rsDraw: 到達しない');
 }
 
+// ---------- 暗算トレーニングのスロット（D-046） ----------
+// 中央のリールだけ（右は ÷1）。ちょーじょ（p1）は ×1/2・×1・×2、ほかのメンバーは ×1・×2・×3。どの目も同じ出やすさ
+const SLOT_AN_REEL = { p1: [2, 3, 4], other: [3, 4, 8] };
+function slotAnzanReel(pid) {
+  return SLOT_AN_REEL[pid] || SLOT_AN_REEL.other;
+}
+function slotSpinAnzan(rng, correct, pid) {
+  const reel = slotAnzanReel(pid);
+  const midPos = rng.int(reel.length);
+  const mi = reel[midPos];
+  const ri = SLOT_REEL_RIGHT[0];
+  return { correct, midPos, rightPos: 0, mi, ri, ...slotCompute(correct, mi, ri), formula: slotFormula(correct, mi, ri) };
+}
+
 // ---- src/logic/store.js ----
 // store.js — 保存データのスキーマ、検証、読み込み、保存（lock・rev）、ポイントと交換、書き出し・読み込み。設計 §8
 // ls は localStorage と同じ getItem/setItem/removeItem を持つもの（テストで差し替える）
@@ -1231,6 +1250,8 @@ function storeValidate(d) {
       // rsCost は任意（D-043。メンバーごとの くじ 1回のポイント）
       if (p.rsCost !== undefined && !isIntIn(p.rsCost, 1, 100000)) w('rsCost が不正');
       if (p.rsCostSet !== undefined && typeof p.rsCostSet !== 'boolean') w('rsCostSet が不正');
+      // anzan は任意（D-046。暗算トレーニングの自己ベスト。キーは種類 1〜5、best はミリ秒）
+      if (p.anzan !== undefined && (!isObj(p.anzan) || Object.entries(p.anzan).some(([k, v]) => !/^[1-5]$/.test(k) || !isObj(v) || !isIntIn(v.best, 1, 3600000)))) w('anzan が不正');
       // rbox は任意（D-018。くじの箱）
       if (p.rbox !== undefined && (!isObj(p.rbox) || !Number.isInteger(p.rbox.no) || p.rbox.no < 1 || !Array.isArray(p.rbox.left)
         || p.rbox.left.some((n) => !isInt0(n)) || typeof p.rbox.last !== 'boolean' || typeof p.rbox.sig !== 'string')) w('rbox が不正');
@@ -1638,6 +1659,18 @@ function storeClearBeforeImport(ls) {
 // 読み込んだデータを、今の rev の続きとして保存できる形にする
 function storeAdoptImported(next, curRev) {
   return { ...storeClone(next), rev: curRev };
+}
+
+// 暗算トレーニングの自己ベスト（D-046）。全問正解の回だけ。今までより速ければ書きかえる。{ data, newBest, best }
+function storeSetAnzanBest(data, pid, kind, ms) {
+  if (!Number.isInteger(kind) || kind < 1 || kind > 5) throw new Error('storeSetAnzanBest: 種類が不正 ' + kind);
+  if (!Number.isInteger(ms) || ms < 1 || ms > 3600000) throw new Error('storeSetAnzanBest: 時間が不正 ' + ms);
+  const old = ((storeProfile(data, pid).anzan || {})[kind] || {}).best;
+  if (old !== undefined && old <= ms) return { data, newBest: false, best: old };
+  const d = storeWithProfile(data, pid, (p) => {
+    p.anzan = { ...(p.anzan || {}), [kind]: { best: ms } };
+  });
+  return { data: d, newBest: true, best: ms };
 }
 
 // ---- src/logic/chara.js ----
@@ -2614,6 +2647,107 @@ function whyMoney(n) {
   return WHY_MONEY[n] ? { small: '1円玉', big: WHY_MONEY[n], n } : null;
 }
 
+// ---- src/logic/anzan.js ----
+// anzan.js — 暗算トレーニング（D-046）。整数だけの問題（小数なし）を1回10問。設計 §13.46
+// 1: くり上がりのある たし算（2けた＋2けた、和は2けた）
+// 2: くり下がりのある ひき算（2けた－2けた）
+// 3: かけ算（九九 2〜9の段）。半分は「7 × □ ＝ 56」の形（D-046: 1種類 100通りくらいにするため。64 ＋ 64 ＝ 128通り）
+// 4: わり算（九九の ぎゃく、あまりなし）。半分は「□ ÷ 7 ＝ 8」の形（128通り）
+// 5: くふうして暗算する 2けたの かけ算・わり算（2けた×1けた、2けた÷1けた で 答えが2けた）
+
+const AN_KINDS = [
+  { id: 1, name: 'くり上がりのある たし算', sub: '47 ＋ 38 など' },
+  { id: 2, name: 'くり下がりのある ひき算', sub: '63 － 28 など' },
+  { id: 3, name: 'かけ算（九九）', sub: '7 × 8 など' },
+  { id: 4, name: 'わり算（九九の ぎゃく）', sub: '56 ÷ 7 など' },
+  { id: 5, name: '2けたの かけ算・わり算', sub: '23 × 4、72 ÷ 3 など（くふうして暗算）' },
+];
+const AN_SESSION_SIZE = 10;
+
+const r = (rng, lo, hi) => lo + rng.int(hi - lo + 1); // lo〜hi の整数
+
+// 1問: { kind, a, b, op: '+'|'-'|'*'|'/', answer, text, hint, blank }。式は「a op b」。blank のときは □ の数が answer
+function anMakeQuestion(rng, kind) {
+  if (kind === 1) {
+    const a1 = r(rng, 1, 9);
+    const b1 = r(rng, 10 - a1, 9); // 一の位の和が10以上（くり上がる）
+    const a10 = r(rng, 1, 7);
+    const b10 = r(rng, 1, 8 - a10); // 十の位の和＋1 が 9 以下（和は2けた）
+    const a = a10 * 10 + a1;
+    const b = b10 * 10 + b1;
+    return anQ(kind, a, b, '+', a + b, '一の位から。' + a1 + ' ＋ ' + b1 + ' ＝ ' + (a1 + b1) + ' で、十の位に 1 くり上がるよ。');
+  }
+  if (kind === 2) {
+    const a1 = r(rng, 0, 8);
+    const b1 = r(rng, a1 + 1, 9); // 一の位が ひけない（くり下がる）
+    const a10 = r(rng, 2, 9);
+    const b10 = r(rng, 1, a10 - 1);
+    const a = a10 * 10 + a1;
+    const b = b10 * 10 + b1;
+    return anQ(kind, a, b, '-', a - b, '一の位が ひけないので、十の位から 1 かりて ' + (a1 + 10) + ' － ' + b1 + ' ＝ ' + (a1 + 10 - b1) + '。');
+  }
+  if (kind === 3) {
+    const a = r(rng, 2, 9);
+    const b = r(rng, 2, 9);
+    if (rng.int(2) === 0) return anQ(kind, a, b, '*', a * b, a + 'の段を思い出そう。');
+    return { ...anQ(kind, a, b, '*', b, a + 'の段で ' + a * b + ' になるのは？'), text: a + ' × □ ＝ ' + a * b, blank: true };
+  }
+  if (kind === 4) {
+    const d = r(rng, 2, 9);
+    const q = r(rng, 2, 9);
+    if (rng.int(2) === 0) return anQ(kind, d * q, d, '/', q, d + ' × □ ＝ ' + d * q + ' の □ を さがそう（' + d + 'の段）。');
+    return { ...anQ(kind, d * q, d, '/', d * q, '□ は、' + d + ' × ' + q + ' で もとめられるよ。'), text: '□ ÷ ' + d + ' ＝ ' + q, blank: true };
+  }
+  if (kind === 5) {
+    if (rng.int(2) === 0) {
+      // 2けた × 1けた: 十の位と一の位に分ける
+      let a;
+      do a = r(rng, 12, 49); while (a % 10 === 0);
+      const b = r(rng, 2, 9);
+      const t = a - (a % 10);
+      return anQ(kind, a, b, '*', a * b, a + ' を ' + t + ' と ' + (a % 10) + ' に分けよう。' + t + ' × ' + b + ' ＝ ' + t * b + '、' + (a % 10) + ' × ' + b + ' ＝ ' + (a % 10) * b + '、たして ' + a * b + '。');
+    }
+    // 2けた ÷ 1けた（答えが2けた、あまりなし）: わりやすい数に分ける
+    let d;
+    let q;
+    do {
+      d = r(rng, 2, 9);
+      q = r(rng, 11, 49);
+    } while (d * q > 99 || q % 10 === 0);
+    const x = d * q;
+    const big = Math.floor(x / (10 * d)) * 10 * d; // 10×d の倍数のうち いちばん大きいもの
+    return anQ(kind, x, d, '/', q, x + ' を ' + big + ' と ' + (x - big) + ' に分けよう。' + big + ' ÷ ' + d + ' ＝ ' + big / d + '、' + (x - big) + ' ÷ ' + d + ' ＝ ' + (x - big) / d + '、たして ' + q + '。');
+  }
+  throw new Error('anMakeQuestion: 種類が不正 ' + kind);
+}
+
+const AN_OP = { '+': '＋', '-': '－', '*': '×', '/': '÷' };
+function anQ(kind, a, b, op, answer, hint) {
+  return { kind, a, b, op, answer, text: a + ' ' + AN_OP[op] + ' ' + b + ' ＝', hint, blank: false };
+}
+
+// 1回分（n問）。同じ問題を くり返さない
+function anMakeSet(rng, kind, n) {
+  const out = [];
+  const seen = new Set();
+  let guard = 0;
+  while (out.length < n) {
+    const q = anMakeQuestion(rng, kind);
+    guard += 1;
+    if (seen.has(q.text) && guard < 1000) continue;
+    seen.add(q.text);
+    out.push(q);
+  }
+  return out;
+}
+
+// 答えの判定（整数の文字列で比べる。前の0・空白は無視）
+function anCheck(input, answer) {
+  const s = String(input == null ? '' : input).trim();
+  if (!/^\d+$/.test(s)) return 'invalid';
+  return String(Number(s)) === String(answer) ? 'ok' : 'ng';
+}
+
 // ---- src/logic/clock.js ----
 // clock.js — じかん の セクション（秒・分・時間・日、時刻と時間）。設計 §13.20、D-016
 // 倍率は 10 のべき乗ではない。ここ（CK_FACTORS）に1か所だけ置き、テストで独立した正解表と照合する。答えはすべて整数。
@@ -3155,7 +3289,7 @@ function coWeekDone(p, today) {
 
 // ほかの練習（苦手復習・ドリル1・ドリル2・キロ・ミリ クイズ・文章題）は、それぞれ1日2回まで（D-037）。
 // 短い時間でできるので、ポイントの取りすぎを防ぐ。ドリルは 1 と 2 を別に数える。途中でやめた回は数えない（記録が残らないため）
-const CO_OTHER_MODES = ['review', 'drill', 'prefix', 'word', 'real'];
+const CO_OTHER_MODES = ['review', 'drill', 'prefix', 'word', 'real', 'anzan']; // anzan は D-046（種類ごとに数える）
 // D-045: ちょーじょ以外は3倍（6回）。ちょーじょは学年が上で解くのが速いので 2回のまま
 const CO_OTHER_DAILY_MAX = 6;
 const CO_OTHER_DAILY_MAX_BY = { p1: 2 };
@@ -3164,7 +3298,7 @@ function coOtherMax(pid) {
 }
 function coOtherLeft(sessions, today, mode, level, pid) {
   if (!CO_OTHER_MODES.includes(mode)) return Infinity;
-  const n = (sessions || []).filter((s) => s && s.date === today && s.mode === mode && (mode !== 'drill' || s.level === level)).length;
+  const n = (sessions || []).filter((s) => s && s.date === today && s.mode === mode && ((mode !== 'drill' && mode !== 'anzan') || s.level === level)).length;
   return Math.max(0, coOtherMax(pid) - n);
 }
 
@@ -3174,7 +3308,7 @@ function coRealLevels(p) {
   return [1, 2, 3].filter((lv) => lv === 1 || unitItems(lv).some((it) => items[it.key]));
 }
 
-globalThis.KR = { decMake, decShift, decToString, decFromString, decParseInput, decEquals, decDigits, decFromFraction, decGcd, UNIT_LEVELS, UNIT_PAIRS, unitExp, unitItemsAll, unitItems, unitItemByKey, unitLadder, rngCrypto, qPick, qShuffle, qAllowedTypes, qMakeS, qOpLabel, qApplyOp, qOptions, qMakeQuestion, qMakeDrill, qCheck, qFlowStart, qFlowHint, qFlowChoose, qFlowInput, qFlowRecord, qFlowFirstRecord, qFlowRetried, PG_STREAK_TO_DOWN, PG_RECENT_MAX, PG_CHECK_INTERVAL_DAYS, PG_SESSION_SIZE, PG_MAX_CHECKS, PG_SLIP_DAYS, PG_PROBE_MAX, pgToday, pgDaysBetween, pgNewItem, pgMastered, pgRecord, pgRecordProbe, pgPlace, pgMarks, pgIsCheckDue, pgWeight, pgPickNormal, pgMarkProbes, pgLevelProgress, pgEvents, pgNextStep, pgMasteredKeys, pgPickL4, pgL4Ready, pgL4Need, pgWeakKeys, pgPickReview, pgJumpKeys, pgPickJump, pgRecordJump, SLOT_SYMBOLS, SLOT_REEL, SLOT_REEL_RIGHT, SLOT_REVIEW_MULT, slotReviewBonus, SLOT_JUMP_MULT, slotJumpBonus, SLOT_DRILL_GIVES_SLOT, slotCompute, slotFormula, slotSpin, SLOT_THEMES, slotThemesFor, RS_DEFAULT, RS_MAX_TICKETS, rsValidate, rsExpected, rsSig, rsNewBox, rsBoxEmpty, rsCurrentBox, rsDraw, STORE_SCHEMA, STORE_KEY, STORE_KEY_BROKEN, STORE_KEY_BEFORE_IMPORT, STORE_KEY_LOCK, STORE_LOCK_TTL_MS, STORE_SESSIONS_MAX, STORE_UNDO_HOURS, STORE_PREFIX_KEY_RE, STORE_LOG_MAX, STORE_LOG_KINDS, STORE_BEST_MAX, STORE_DEFAULT_NAMES, STORE_RS_COST_DEFAULT, storeUpgrade, storeClone, storeInitial, storeValidate, storeLoad, storeLockAcquire, storeLockRelease, storeSave, storeProfile, storeSetItem, storeSetPrefix, storeApplyTime, storeApplyMemtest, storeApplyBonus, storeAddLog, storeSetRank, storeSetUnlocked, storeSetClock, storeSetWord, storeSetMeaning, storeAddDrill, storeApplySession, storeClearPending, storeExchange, storeRsCost, storeSetRsCost, storeRewardSlot, storeSetRewardSlot, storeSpinReward, storeSetRewards, storeRename, storeSetTheme, storeResetProfile, storeResetAll, storeMarkExported, storeExportText, storeParseImport, storeImportSummary, storeBackupBeforeImport, storeReadBeforeImport, storeClearBeforeImport, storeAdoptImported, CHARA_LIST, CHARA_MOODS, CHARA_LINES, charaLine, charaForLevel, charaSvg, charaLiterSvg, AV_MOODS, AV_IDS, avatarSvg, avMoodFromResult, avMood, avIsFirst, PREFIXES, PREFIX_KINDS, PREFIX_BOX_MAX, prefixById, prefixKeys, prefixFactorLabel, prefixMakeQuestion, prefixRecord, prefixLearned, prefixPick, prefixTableHtml, MN_DONE_BOX, MEANING, mnById, mnForLevel, mnMakeQuestion, mnRecord, mnDone, mnNextFor, mnLevelDone, WD_DONE_BOX, WORD, wdById, wdMakeQuestion, wdRecord, wdDone, wdKeysFor, wdPick, REAL, realById, realPick, realMakeQuestion, whyChain, whyFactor, whyMoney, CK_FACTORS, CK_SESSION_SIZE, CK_MAX_CHECKS, CK_ITEMS, ckById, ckOpLabel, ckOptions, ckMakeQuestion, ckFlowStart, ckFlowHint, ckFlowChoose, ckFlowInput, ckFlowRecord, ckFirstRecord, ckPick, ckHasWork, ckPickLabel, MT_POINTS, MT_MIN_MASTERED, MT_LOGIN_BONUS, MT_WEEK_STAMPS, MT_WEEK_BONUS, mtPoints, mtCandidates, mtAvailable, mtDoneToday, mtPick, mtWeekStart, mtWeekStamps, mtDueBonuses, TC_SECONDS, TC_DAILY_MAX, TC_UNLOCK_MASTERED, TC_WRONG_SHOW_MS, tcMakeQuestion, tcPoints, tcScore, tcCountToday, tcPointsFromScore, tcPointsFor, tcReady, coClockCleared, coClockMastered, coWordLevels, coLevelCleared, CO_RECENT_DAYS, CO_ERR_MIN, coRecentErrors, coLevelHasWork, coL4Available, coTimeAvailable, coRecommend, coSessionEvents, CO_RANKS, coRankStats, coRankIndex, coCheckWaiting, coLevelStages, CO_WEEK_KINDS, coWeekDone, CO_OTHER_MODES, CO_OTHER_DAILY_MAX, CO_OTHER_DAILY_MAX_BY, coOtherMax, coOtherLeft, coRealLevels };
+globalThis.KR = { decMake, decShift, decToString, decFromString, decParseInput, decEquals, decDigits, decFromFraction, decGcd, UNIT_LEVELS, UNIT_PAIRS, unitExp, unitItemsAll, unitItems, unitItemByKey, unitLadder, rngCrypto, qPick, qShuffle, qAllowedTypes, qMakeS, qOpLabel, qApplyOp, qOptions, qMakeQuestion, qMakeDrill, qCheck, qFlowStart, qFlowHint, qFlowChoose, qFlowInput, qFlowRecord, qFlowFirstRecord, qFlowRetried, PG_STREAK_TO_DOWN, PG_RECENT_MAX, PG_CHECK_INTERVAL_DAYS, PG_SESSION_SIZE, PG_MAX_CHECKS, PG_SLIP_DAYS, PG_PROBE_MAX, pgToday, pgDaysBetween, pgNewItem, pgMastered, pgRecord, pgRecordProbe, pgPlace, pgMarks, pgIsCheckDue, pgWeight, pgPickNormal, pgMarkProbes, pgLevelProgress, pgEvents, pgNextStep, pgMasteredKeys, pgPickL4, pgL4Ready, pgL4Need, pgWeakKeys, pgPickReview, pgJumpKeys, pgPickJump, pgRecordJump, SLOT_SYMBOLS, SLOT_REEL, SLOT_REEL_RIGHT, SLOT_REVIEW_MULT, slotReviewBonus, SLOT_JUMP_MULT, slotJumpBonus, SLOT_DRILL_GIVES_SLOT, slotCompute, slotFormula, slotSpin, SLOT_THEMES, slotThemesFor, RS_DEFAULT, RS_MAX_TICKETS, rsValidate, rsExpected, rsSig, rsNewBox, rsBoxEmpty, rsCurrentBox, rsDraw, SLOT_AN_REEL, slotAnzanReel, slotSpinAnzan, STORE_SCHEMA, STORE_KEY, STORE_KEY_BROKEN, STORE_KEY_BEFORE_IMPORT, STORE_KEY_LOCK, STORE_LOCK_TTL_MS, STORE_SESSIONS_MAX, STORE_UNDO_HOURS, STORE_PREFIX_KEY_RE, STORE_LOG_MAX, STORE_LOG_KINDS, STORE_BEST_MAX, STORE_DEFAULT_NAMES, STORE_RS_COST_DEFAULT, storeUpgrade, storeClone, storeInitial, storeValidate, storeLoad, storeLockAcquire, storeLockRelease, storeSave, storeProfile, storeSetItem, storeSetPrefix, storeApplyTime, storeApplyMemtest, storeApplyBonus, storeAddLog, storeSetRank, storeSetUnlocked, storeSetClock, storeSetWord, storeSetMeaning, storeAddDrill, storeApplySession, storeClearPending, storeExchange, storeRsCost, storeSetRsCost, storeRewardSlot, storeSetRewardSlot, storeSpinReward, storeSetRewards, storeRename, storeSetTheme, storeResetProfile, storeResetAll, storeMarkExported, storeExportText, storeParseImport, storeImportSummary, storeBackupBeforeImport, storeReadBeforeImport, storeClearBeforeImport, storeAdoptImported, storeSetAnzanBest, CHARA_LIST, CHARA_MOODS, CHARA_LINES, charaLine, charaForLevel, charaSvg, charaLiterSvg, AV_MOODS, AV_IDS, avatarSvg, avMoodFromResult, avMood, avIsFirst, PREFIXES, PREFIX_KINDS, PREFIX_BOX_MAX, prefixById, prefixKeys, prefixFactorLabel, prefixMakeQuestion, prefixRecord, prefixLearned, prefixPick, prefixTableHtml, MN_DONE_BOX, MEANING, mnById, mnForLevel, mnMakeQuestion, mnRecord, mnDone, mnNextFor, mnLevelDone, WD_DONE_BOX, WORD, wdById, wdMakeQuestion, wdRecord, wdDone, wdKeysFor, wdPick, REAL, realById, realPick, realMakeQuestion, whyChain, whyFactor, whyMoney, AN_KINDS, AN_SESSION_SIZE, anMakeQuestion, anMakeSet, anCheck, CK_FACTORS, CK_SESSION_SIZE, CK_MAX_CHECKS, CK_ITEMS, ckById, ckOpLabel, ckOptions, ckMakeQuestion, ckFlowStart, ckFlowHint, ckFlowChoose, ckFlowInput, ckFlowRecord, ckFirstRecord, ckPick, ckHasWork, ckPickLabel, MT_POINTS, MT_MIN_MASTERED, MT_LOGIN_BONUS, MT_WEEK_STAMPS, MT_WEEK_BONUS, mtPoints, mtCandidates, mtAvailable, mtDoneToday, mtPick, mtWeekStart, mtWeekStamps, mtDueBonuses, TC_SECONDS, TC_DAILY_MAX, TC_UNLOCK_MASTERED, TC_WRONG_SHOW_MS, tcMakeQuestion, tcPoints, tcScore, tcCountToday, tcPointsFromScore, tcPointsFor, tcReady, coClockCleared, coClockMastered, coWordLevels, coLevelCleared, CO_RECENT_DAYS, CO_ERR_MIN, coRecentErrors, coLevelHasWork, coL4Available, coTimeAvailable, coRecommend, coSessionEvents, CO_RANKS, coRankStats, coRankIndex, coCheckWaiting, coLevelStages, CO_WEEK_KINDS, coWeekDone, CO_OTHER_MODES, CO_OTHER_DAILY_MAX, CO_OTHER_DAILY_MAX_BY, coOtherMax, coOtherLeft, coRealLevels };
 if (typeof document !== 'undefined') {
 // ---- src/ui/app.js ----
 // ui/app.js — 画面の描画とイベント。logic の関数は同じスコープに連結されている（build.mjs）。設計 §9
@@ -3586,6 +3720,13 @@ function uiHome() {
   h += '<button data-act="whyopen">どうして × ・ ÷ ？<br><span class="muted">単位を直すときの考え方</span></button>';
   h += '<button data-act="rewards">ごほうび</button>';
   h += '</div>';
+  // 暗算トレーニング（D-046）
+  h += '<h2>暗算トレーニング</h2><p class="muted">10問を 速く正しく。全問正解したときのタイムが 自己ベストになるよ。</p><div class="grid2">';
+  for (const k of AN_KINDS) {
+    const best = ((p.anzan || {})[k.id] || {}).best;
+    h += '<button data-act="start" data-mode="anzan" data-level="' + k.id + '"' + oDis('anzan', k.id) + '>' + uiEsc(k.name) + '<br><span class="muted">' + uiEsc(k.sub) + '</span><br><span class="muted">' + (best ? '自己ベスト ' + uiSec(best) : '自己ベスト まだ') + '</span>' + oNote('anzan', k.id) + '</button>';
+  }
+  h += '</div>';
   if (weakN === 0) h += '<p class="muted">苦手はありません。練習をしてみよう。</p>';
   if (themes.length > 1) {
     h += '<h3>スロットの色</h3><div class="row">';
@@ -3627,6 +3768,7 @@ function uiStart(mode, level, fromRec) {
   else if (mode === 'real') list = realPick(uiRng, coRealLevels(p), PG_SESSION_SIZE).map((id) => ({ key: 'rl:' + id, isMeaning: true, isReal: true, isCheck: false, isProbe: false })); // 身近なもの クイズ（D-040）
   else if (mode === 'clock') list = ckPick(uiRng, p.clock, today);
   else if (mode === 'memtest') list = mtDoneToday(p.sessions, today) ? [] : mtPick(uiRng, p.items, p.clock, today);
+  else if (mode === 'anzan') list = Array.from({ length: AN_SESSION_SIZE }, () => ({ key: 'anzan', isCheck: false })); // D-046
   else list = Array.from({ length: PG_SESSION_SIZE }, () => ({ key: 'drill', isCheck: false }));
   if (!list.length) return;
   // 意味の問題（D-014）: 通常の回で、そのレベルに「わかった」でない問題があり今日まだ答えていなければ、確認でない最後の1問と入れ替える
@@ -3681,6 +3823,18 @@ function uiNextQ() {
     pl.flow = null;
     pl.drillHint = false;
     pl.pf = { disabled: [], wrongs: 0, done: false, lastWrong: null };
+    return;
+  }
+  if (pl.mode === 'anzan') {
+    if (!pl.anQs) {
+      pl.anQs = anMakeSet(uiRng, pl.level, pl.list.length);
+      pl.anStart = Date.now();
+    }
+    pl.q = pl.anQs[pl.idx];
+    pl.flow = null;
+    pl.anShow = false;
+    pl.anFb = null;
+    pl.drillHint = false;
     return;
   }
   if (pl.mode === 'drill') {
@@ -3876,6 +4030,7 @@ function uiPlayInner() {
   if (pl.mode !== 'memtest') h += '<button class="small" data-act="hint">ヒント</button>';
   h += '<button class="small" data-act="quit">やめる</button></div>';
   if (pl.mode === 'drill') return uiWithChara(h + uiDrill(), uiCharaId(pl, q));
+  if (pl.mode === 'anzan') return uiWithChara(h + uiAnzan(), 'shikaku');
   if (pl.mode === 'prefix') return uiWithChara(h + uiPrefix(), uiCharaId(pl, q));
   if (pl.isMeaning) return uiWithChara(h + uiMeaning(), charaForLevel(q.level).id);
   if (pl.isWord) return uiWithChara(h + uiWord(), charaForLevel(q.level).id);
@@ -3921,6 +4076,28 @@ function uiTenkey() {
   const keys = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '0', '.', '⌫'];
   // 決定（tk-ok）はスマホのときだけ見せる（答えの欄の 決定 の代わり。D-030）
   return '<div class="tenkey">' + keys.map((k) => '<button data-act="key" data-k="' + k + '">' + k + '</button>').join('') + '<button class="primary tk-ok" data-act="submit">決定</button></div>';
+}
+
+// ---------- 暗算トレーニング（D-046） ----------
+function uiSec(ms) {
+  return (Math.floor(ms / 100) / 10).toFixed(1) + '秒'; // 表示だけ（記録はミリ秒の整数）
+}
+function uiAnzan() {
+  const pl = uiS.play;
+  const q = pl.q;
+  const k = AN_KINDS.find((x) => x.id === pl.level);
+  let h = '<p class="an-head">' + uiEsc(k.name) + '　<b class="an-timer" id="an-timer">' + uiSec(Date.now() - pl.anStart) + '</b>' + (pl.anLastOk ? ' <span class="an-ok">○ 正解！</span>' : '') + '</p>';
+  h += '<div class="answer-row an-row">' + uiEsc(q.text) + ' ';
+  if (pl.anShow) {
+    h += '<b>' + q.answer + '</b></div>';
+    h += '<div class="fb hint">答えは <b>' + q.answer + '</b> だよ。' + uiEsc(q.hint) + '</div>';
+    h += '<p><button class="primary big" data-act="next">次へ（Enter）</button></p>';
+    return h;
+  }
+  h += '<input id="ans" type="text" inputmode="numeric" autocomplete="off" aria-label="答え"> <button class="primary" data-act="submit">決定</button></div>' + uiTenkey();
+  if (pl.anFb === 'invalid') h += '<div class="fb info">数字で入れてね。</div>';
+  if (pl.drillHint) h += '<div class="fb info">ヒント: ' + uiEsc(q.hint) + '<br><span class="muted">ヒントを見た問題は、正解の数に入らないよ。</span></div>';
+  return h;
 }
 
 function uiDrill() {
@@ -4211,6 +4388,23 @@ function uiSubmit() {
     uiRender();
     return;
   }
+  if (pl.mode === 'anzan') {
+    const r = anCheck(val, pl.q.answer);
+    if (r === 'invalid') {
+      pl.anFb = 'invalid';
+    } else if (r === 'ok') {
+      // 正解はすぐ次の問題へ（速さの練習）。ヒントを見た問題は正解の数に入れない
+      if (pl.drillHint) pl.retried += 1;
+      else pl.correct += 1;
+      pl.anLastOk = true;
+      uiNext();
+    } else {
+      pl.anLastOk = false;
+      pl.anShow = true;
+    }
+    uiRender();
+    return;
+  }
   if (pl.mode === 'drill') {
     const r = qCheck(val, pl.q.answer);
     if (r === 'invalid') pl.drillFb = 'invalid';
@@ -4260,7 +4454,7 @@ function uiFinishSession() {
     uiFinishMemtest();
     return;
   }
-  const spin0 = slotSpin(uiRng, pl.correct);
+  const spin0 = pl.mode === 'anzan' ? slotSpinAnzan(uiRng, pl.correct, uiS.pid) : slotSpin(uiRng, pl.correct); // 暗算はメンバーで倍率が違う（D-046）
   // 苦手ふくしゅうは2倍（D-025）。補助なしは1.5倍、ただしヒントを使った回は ふつう（D-034）
   const spin = pl.mode === 'review' ? slotReviewBonus(spin0) : pl.mode === 'jump' && !pl.hintUsed ? slotJumpBonus(spin0) : spin0;
   const session = {
@@ -4272,6 +4466,19 @@ function uiFinishSession() {
   // できるようになったこと（設計 §13.5）: 1問ごとの出来事 ＋ 回の終わりの出来事。同じ日の重複は storeAddLog が落とす
   const today = pgToday();
   let d = r.data;
+  // 暗算トレーニングのタイム（D-046）。全問正解のときだけ自己ベストにする
+  let anRes = null;
+  if (pl.mode === 'anzan') {
+    const ms = Math.max(1, Math.min(3600000, Date.now() - pl.anStart));
+    const perfect = pl.correct === pl.list.length;
+    anRes = { ms, perfect, newBest: false, best: ((storeProfile(d, uiS.pid).anzan || {})[pl.level] || {}).best || null };
+    if (perfect) {
+      const b = storeSetAnzanBest(d, uiS.pid, pl.level, ms);
+      d = b.data;
+      anRes.newBest = b.newBest;
+      anRes.best = b.best;
+    }
+  }
   const se = coSessionEvents(pl.before, storeProfile(d, uiS.pid), today);
   for (const k of se.unlock) d = storeSetUnlocked(d, uiS.pid, k, today);
   // 段位（設計 §13.16）: 上がったら記録して出来事にする
@@ -4293,7 +4500,7 @@ function uiFinishSession() {
   const shown = lg.added;
   const nextStep = shown.length || !(pl.mode === 'normal' && pl.level) ? null : pgNextStep(storeProfile(d, uiS.pid).items, pl.level);
   uiS.play = null;
-  uiS.result = { session, phase: 0, events: shown.filter((e) => e.kind !== 'daily'), nextStep, bonuses: bn.got };
+  uiS.result = { session, phase: 0, events: shown.filter((e) => e.kind !== 'daily'), nextStep, bonuses: bn.got, anzan: anRes, reel: pl.mode === 'anzan' ? slotAnzanReel(uiS.pid) : null };
   uiS.screen = 'result';
 }
 
@@ -4489,6 +4696,10 @@ function uiResult() {
     h += '<div class="fb info say">' + charaSvg('shikaku', 'normal', 72) + '<b>次の一歩</b><br>' + uiEsc(uiNextStepText(res.nextStep)) + '</div>';
   }
   h += '<p class="stat">できた: <b>' + s.correct + '</b> 問 / ' + s.n + ' 問' + (s.retried ? '　やり直してできた: <b>' + s.retried + '</b> 問' : '') + '</p>';
+  if (res.anzan) {
+    const an = res.anzan;
+    h += '<p class="stat">タイム <b>' + uiSec(an.ms) + '</b>' + (an.newBest ? ' <b class="clear">自己ベスト！</b>' : an.best ? '（自己ベスト ' + uiSec(an.best) + '）' : '') + (an.perfect ? '' : '<br><span class="muted">全問正解のときに 自己ベストを記録するよ。</span>') + '</p>';
+  }
   h += '<div class="chara-row">' + uiMyAvatar(avMoodFromResult(s.correct, s.n), 96) + CHARA_LIST.map((c) => charaSvg(c.id, ph >= 3 ? 'happy' : 'cheer', 80)).join('') + '</div>';
   h += '<div class="slot ' + uiEsc(p.theme) + '"><div class="reel">' + s.correct + '</div><span>×</span>';
   h += '<div class="reel' + (ph < 1 ? ' spin' : '') + '" id="reel-m">' + (ph >= 1 ? sym(s.mid) : '?') + '</div></div>'; // 右（÷）のリールは無くした（D-038）
@@ -4505,7 +4716,7 @@ function uiRunSlot() {
   if (!res || res.running) return;
   res.running = true;
   const val = (i) => SLOT_SYMBOLS[i].n / SLOT_SYMBOLS[i].d; // 並べる順だけに使う（点の計算には使わない）
-  const reels = [...new Set(SLOT_REEL)].sort((a, b) => val(a) - val(b)).map((i) => SLOT_SYMBOLS[i].label); // リールにある目だけ（D-029）
+  const reels = [...new Set(res.reel || SLOT_REEL)].sort((a, b) => val(a) - val(b)).map((i) => SLOT_SYMBOLS[i].label); // リールにある目だけ（D-029。暗算は D-046 のリール）
   let tick = 0;
   const iv = setInterval(() => {
     tick += 1;
@@ -5030,7 +5241,7 @@ function uiOnKey(e) {
       if (!e.repeat) uiSubmit();
       return;
     }
-    const done = pl.isClock ? pl.ck.stage === 'done' : pl.isWord ? pl.wd.show : pl.mode === 'drill' ? pl.drillShow : pl.mode === 'prefix' || pl.isMeaning ? pl.pf.done : pl.flow.stage === 'done';
+    const done = pl.isClock ? pl.ck.stage === 'done' : pl.isWord ? pl.wd.show : pl.mode === 'anzan' ? pl.anShow : pl.mode === 'drill' ? pl.drillShow : pl.mode === 'prefix' || pl.isMeaning ? pl.pf.done : pl.flow.stage === 'done';
     if (done && e.key === 'Enter') {
       if (e.repeat) return; // 押しっぱなしで答えを見ずに進まないようにする
       e.preventDefault();
@@ -5089,6 +5300,13 @@ uiApp.addEventListener('click', (e) => {
   }
 });
 document.addEventListener('keydown', uiOnKey);
+// 暗算トレーニングのタイマーの表示（D-046）。画面を描き直さず、数字だけ書きかえる
+setInterval(() => {
+  const pl = uiS.play;
+  if (uiS.screen !== 'play' || !pl || pl.mode !== 'anzan' || !pl.anStart) return;
+  const el = document.getElementById('an-timer');
+  if (el) el.textContent = uiSec(Date.now() - pl.anStart);
+}, 200);
 // テンキーで入れる欄（じかん の 答えが2つの問題）: 最後に触った欄
 // タッチの端末: 欄をタップしても画面を動かさない（選ぶだけ。D-031）
 document.addEventListener('touchend', (e) => {

@@ -1,7 +1,7 @@
 // sw.js — iPad・iPhone 用（PWA）のサービスワーカー。設計 §13.23、D-020
 // 同じ場所のアプリのファイルだけをキャッシュし、ネットが無くても開けるようにする。外のアドレスには触れない。
 // CACHE と FILES は build.mjs が差し込む。CACHE には中身のハッシュが入るので、新しい版を公開するとこのファイルが変わる。
-const CACHE = "tani-v5-13e5579dd356";
+const CACHE = "tani-v5-86f0e74b0735";
 const FILES = ["./","index.html","manifest.webmanifest","icon-180.png","icon-192.png","icon-512.png"];
 
 self.addEventListener('install', (event) => {
