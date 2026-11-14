@@ -2469,7 +2469,7 @@ function wdPick(rng, states, levels, n) {
 }
 
 // ---- src/logic/real.js ----
-// real.js — 身近なもの クイズ（D-040・D-041・D-048）。身近な物で単位の大きさをつかむ4択の問題。設計 §13.41
+// real.js — 身近なもの クイズ（D-040・D-041・D-048・D-049）。身近な物で単位の大きさをつかむ4択の問題。設計 §13.41
 // 物の大きさ（src）は一次資料・表示・規格で確かめた値か、問題文の中で大きさを決めて出す。
 // check がある問題は、tests/real.test.mjs で units.js の換算係数と整数で照合する。
 // kind: unit（単位を選ぶ）／count（何こ分）／about（およそどれくらい）
@@ -2830,6 +2830,79 @@ const REAL = [
     hint: '1 dL ＝ 100 mL。',
     explain: '350 ÷ 100 ＝ 3.5 dL。',
     src: 'かんの表示（350 mL）', check: { kind: 'eq', level: 3, a: [35, 10, 'dL'], b: [350, 1, 'mL'] },
+  },
+  // ---------- D-049: 小さなもの（mm・mm²）と 生き物（大きさは はばのまま、単位を選ぶ） ----------
+  {
+    id: 'R1t', level: 1, kind: 'unit', text: 'かみの毛 1本の太さ（直径）は、およそ 0.1 □', options: ['mm', 'cm', 'm', 'km'],
+    hint: '0.1 cm は 1 mm。かみの毛は もっと細いよ。',
+    explain: 'かみの毛は およそ 0.1 mm。1 mm の 10分の1 くらい。',
+    src: 'けんび鏡の学会の解説（かみの毛は直径 約0.1 mm）〔人によってちがう〕', check: null,
+  },
+  {
+    id: 'R1u', level: 1, kind: 'count', text: 'かみの毛（太さ 約 0.1 mm）を すきまなく 100本 ならべると、何 cm？', options: ['1 cm', '10 cm', '0.1 cm', '100 cm'],
+    hint: '0.1 mm が 100こ で 何 mm？',
+    explain: '0.1 mm × 100 ＝ 10 mm ＝ 1 cm。',
+    src: '問題文で太さを決めている', check: { kind: 'eq', level: 1, a: [100, 10, 'mm'], b: [1, 1, 'cm'] },
+  },
+  {
+    id: 'R1v', level: 1, kind: 'count', text: '1円玉を 10まい 重ねると 高さは 1.5 cm。1まいの あつさは 何 mm？', options: ['1.5 mm', '15 mm', '0.15 mm', '0.15 cm'],
+    hint: '1.5 cm は 何 mm？ それを 10 で わろう。',
+    explain: '1.5 cm ＝ 15 mm。15 ÷ 10 ＝ 1.5 mm。',
+    src: '一円玉の あつさ 約1.5 mm（Wikipedia）。問題文でも決めている', check: { kind: 'eq', level: 1, a: [15, 10, 'mm'], b: [15, 100, 'cm'] },
+  },
+  {
+    id: 'R1w', level: 1, kind: 'unit', text: 'シャープペンの しんの太さは 0.5 □', options: ['mm', 'cm', 'm', 'km'],
+    hint: '0.5 cm だと 5 mm。えんぴつより 太くなってしまうよ。',
+    explain: 'シャープペンの しんは 0.5 mm（しんの入れものに 書いてあるよ）。',
+    src: 'しんの表示（0.5 mm）', check: null,
+  },
+  {
+    id: 'R1x', level: 1, kind: 'unit', text: '砂（すな）の つぶの大きさは、0.075〜2 □', options: ['mm', 'cm', 'm', 'km'],
+    hint: '2 cm だと、小石くらい。砂は もっと小さいよ。',
+    explain: '砂の つぶは 0.075〜2 mm くらい。2 mm より大きいと「れき（小石）」。',
+    src: '土の分け方（0.075 mm 以上 2 mm 未満を 砂）', check: null,
+  },
+  {
+    id: 'R1y', level: 1, kind: 'unit', text: 'カブトムシ（オス）の体の長さ（角をのぞく）は、27〜59 □', options: ['mm', 'cm', 'm', 'km'],
+    hint: '27 cm だと、ものさし くらい。カブトムシは 手にのるよ。',
+    explain: 'カブトムシは 27〜59 mm くらい。3〜6 cm だね。',
+    src: 'Wikipedia（カブトムシ オスの体長 27〜59 mm。資料によって ちがう）', check: null,
+  },
+  {
+    id: 'R1z', level: 1, kind: 'unit', text: 'クロオオアリ（日本で大きい アリ）の体の長さは、7〜12 □', options: ['mm', 'cm', 'm', 'km'],
+    hint: '7 cm だと、指くらい。アリは もっと小さいよ。',
+    explain: 'クロオオアリは 7〜12 mm くらい。1 cm くらいだね。',
+    src: '子ども向け ずかん記事（クロオオアリ 体長 7〜12 mm）', check: null,
+  },
+  {
+    id: 'R1za', level: 1, kind: 'unit', text: 'アフリカゾウ（オス）の かたまでの高さは、およそ 4 □', options: ['m', 'cm', 'km', 'mm'],
+    hint: '4 cm だと 消しゴムくらい。ゾウは 大人より ずっと大きいよ。',
+    explain: 'アフリカゾウは かたまで およそ 4 m。大人 2人分より 高い！',
+    src: '学研の子ども向け資料（オスの かたまでの高さ およそ 4 m）', check: null,
+  },
+  {
+    id: 'R2m', level: 2, kind: 'count', text: '1辺 1 cm の正方形の中に、1辺 1 mm の 小さい正方形は 何こ 入る？', options: ['100こ', '10こ', '1000こ', '20こ'],
+    hint: '1 cm ＝ 10 mm。たてに 10こ、よこに 10こ。',
+    explain: '10 × 10 ＝ 100こ。1 cm² ＝ 100 mm²（mm² は 1辺 1 mm の 正方形の広さ）。',
+    src: '問題文で大きさを決めている', check: { kind: 'fit', level: 2, big: [1, 'cm²'], dims: [[1, 'mm'], [1, 'mm']], ans: 100 },
+  },
+  {
+    id: 'R2n', level: 2, kind: 'count', text: '1辺 5 mm の 正方形の シールの広さは、何 mm²？', options: ['25 mm²', '10 mm²', '20 mm²', '2.5 mm²'],
+    hint: '広さは たて × よこ。',
+    explain: '5 mm × 5 mm ＝ 25 mm²。',
+    src: '問題文で大きさを決めている', check: { kind: 'area', level: 2, dims: [[5, 'mm'], [5, 'mm']], unit: 'mm²', tenths: 250 },
+  },
+  {
+    id: 'R2o', level: 2, kind: 'count', text: '1円玉が ちょうど入る 1辺 2 cm の 正方形の広さは、何 mm²？', options: ['400 mm²', '4 mm²', '40 mm²', '4000 mm²'],
+    hint: '2 cm は 何 mm？',
+    explain: '2 cm ＝ 20 mm。20 mm × 20 mm ＝ 400 mm²。',
+    src: '一円玉の直径 20 mm（法令）。問題文で大きさを決めている', check: { kind: 'area', level: 2, dims: [[2, 'cm'], [2, 'cm']], unit: 'mm²', tenths: 4000 },
+  },
+  {
+    id: 'R2p', level: 2, kind: 'count', text: '1 m² の中に、1辺 1 mm の 小さい正方形は 何こ 入る？', options: ['1000000こ', '1000こ', '10000こ', '100こ'],
+    hint: '1 m ＝ 1000 mm。たてに 1000こ、よこに 1000こ。',
+    explain: '1000 × 1000 ＝ 1000000こ（100万こ）。1 m² ＝ 1000000 mm²。',
+    src: '問題文で大きさを決めている', check: { kind: 'fit', level: 2, big: [1, 'm²'], dims: [[1, 'mm'], [1, 'mm']], ans: 1000000 },
   },
 ];
 
