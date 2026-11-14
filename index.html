@@ -2469,7 +2469,7 @@ function wdPick(rng, states, levels, n) {
 }
 
 // ---- src/logic/real.js ----
-// real.js — 身近なもの クイズ（D-040・D-041）。身近な物で単位の大きさをつかむ4択の問題。設計 §13.41
+// real.js — 身近なもの クイズ（D-040・D-041・D-048）。身近な物で単位の大きさをつかむ4択の問題。設計 §13.41
 // 物の大きさ（src）は一次資料・表示・規格で確かめた値か、問題文の中で大きさを決めて出す。
 // check がある問題は、tests/real.test.mjs で units.js の換算係数と整数で照合する。
 // kind: unit（単位を選ぶ）／count（何こ分）／about（およそどれくらい）
@@ -2591,6 +2591,245 @@ const REAL = [
     hint: '28 を 2 で わろう。',
     explain: '28 ÷ 2 ＝ 14本。大きいペットボトル 14本分！',
     src: '保護者から（おとんぴんの測定値。2026-11-14）。2 L はペットボトルの表示', check: { kind: 'div', level: 3, big: [28, 'L'], each: [2, 'L'], ans: 14 },
+  },
+  // ---------- D-048 で足した問題 ----------
+  // 長さ（レベル1）
+  {
+    id: 'R1e', level: 1, kind: 'unit', text: 'B5 の ノートの たての長さは 257 □', options: ['mm', 'cm', 'm', 'km'],
+    hint: '257 cm だと、大人の身長より長くなってしまうよ。',
+    explain: 'B5 の紙は たて 257 mm（25.7 cm）、よこ 182 mm。',
+    src: 'JIS の紙の大きさ B5 ＝ 182 mm × 257 mm', check: null,
+  },
+  {
+    id: 'R1f', level: 1, kind: 'count', text: '25 m プールを 4往復（行って帰るを 4回）すると、何 m 泳いだ？', options: ['200 m', '100 m', '50 m', '2 km'],
+    hint: '1往復は 25 m ＋ 25 m。',
+    explain: '1往復は 50 m。50 m × 4 ＝ 200 m。',
+    src: '問題文で大きさを決めている', check: { kind: 'mul', level: 1, each: [25, 'm'], times: 8, ans: [200, 'm'] },
+  },
+  {
+    id: 'R1g', level: 1, kind: 'count', text: 'マラソンの きょりは 42.195 km。何 m？', options: ['42195 m', '4219.5 m', '421.95 m', '42 m'],
+    hint: '1 km は何 m？',
+    explain: '1 km ＝ 1000 m だから、42.195 × 1000 ＝ 42195 m。',
+    src: 'マラソンの きょり 42.195 km（世界陸上競技連盟の決まり）', check: { kind: 'eq', level: 1, a: [42195, 1000, 'km'], b: [42195, 1, 'm'] },
+  },
+  {
+    id: 'R1h', level: 1, kind: 'count', text: '30 cm の ものさしを 10本 まっすぐ ならべると、何 m？', options: ['3 m', '30 m', '300 m', '0.3 m'],
+    hint: 'まず何 cm になるか考えよう。',
+    explain: '30 cm × 10 ＝ 300 cm ＝ 3 m。',
+    src: '問題文で大きさを決めている', check: { kind: 'mul', level: 1, each: [30, 'cm'], times: 10, ans: [3, 'm'] },
+  },
+  {
+    id: 'R1i', level: 1, kind: 'count', text: 'テニスの ネットの高さは、まん中で 91.4 cm。何 m？', options: ['0.914 m', '9.14 m', '91.4 m', '0.0914 m'],
+    hint: '1 m ＝ 100 cm。100 cm より 少し短いよ。',
+    explain: '91.4 ÷ 100 ＝ 0.914 m。1 m より 少し低いね。',
+    src: 'ITF のルール（ネットの高さ まん中 0.914 m）', check: { kind: 'eq', level: 1, a: [914, 10, 'cm'], b: [914, 1000, 'm'] },
+  },
+  {
+    id: 'R1j', level: 1, kind: 'count', text: '富士山の高さは 3776 m。何 km？', options: ['3.776 km', '37.76 km', '377.6 km', '0.3776 km'],
+    hint: '1000 m で 1 km。',
+    explain: '3776 ÷ 1000 ＝ 3.776 km。',
+    src: '国土地理院（富士山の高さ 3776 m）', check: { kind: 'eq', level: 1, a: [3776, 1000, 'km'], b: [3776, 1, 'm'] },
+  },
+  // 面積（レベル2）
+  {
+    id: 'R2e', level: 2, kind: 'count', text: '教室の ゆかが たて 8 m・よこ 8 m のとき、広さは 何 m²？', options: ['64 m²', '16 m²', '32 m²', '640 m²'],
+    hint: '広さは たて × よこ。',
+    explain: '8 m × 8 m ＝ 64 m²。',
+    src: '問題文で大きさを決めている', check: { kind: 'area', level: 2, dims: [[8, 'm'], [8, 'm']], unit: 'm²', tenths: 640 },
+  },
+  {
+    id: 'R2f', level: 2, kind: 'about', text: 'たたみ 1まいを たて 180 cm・よこ 90 cm とすると、広さは およそ 何 m²？', options: ['1.6 m²', '16 m²', '0.16 m²', '160 m²'],
+    hint: 'm に直してから かけよう。1.8 m × 0.9 m。',
+    explain: '1.8 m × 0.9 m ＝ 1.62 m²。およそ 1.6 m²。',
+    src: '問題文で大きさを決めている', check: { kind: 'area', level: 2, dims: [[180, 'cm'], [90, 'cm']], unit: 'm²', tenths: 16 },
+  },
+  {
+    id: 'R2g', level: 2, kind: 'count', text: 'たて 100 m・よこ 100 m の 田んぼ（1 ha）は、何 a？', options: ['100 a', '10 a', '1000 a', '1 a'],
+    hint: '1 a は 10 m × 10 m。',
+    explain: '1 ha ＝ 100 a。10 m × 10 m の 1 a が、たてに 10こ・よこに 10こ で 100こ。',
+    src: '問題文で大きさを決めている', check: { kind: 'conv', level: 2, from: [1, 'ha'], ans: [100, 'a'] },
+  },
+  {
+    id: 'R2h', level: 2, kind: 'about', text: 'B5 の紙（たて 25.7 cm・よこ 18.2 cm）の 広さは およそ 何 cm²？', options: ['約 470 cm²', '約 47 cm²', '約 4700 cm²', '約 44 cm²'],
+    hint: '26 × 18 くらいで 見当をつけよう。たし算ではなく かけ算。',
+    explain: '25.7 × 18.2 ＝ 467.74 cm²。およそ 470 cm²。',
+    src: 'JIS の紙の大きさ B5 ＝ 182 mm × 257 mm', check: { kind: 'area', level: 2, dims: [[257, 'mm'], [182, 'mm']], unit: 'cm²', tenths: 4677 },
+  },
+  {
+    id: 'R2i', level: 2, kind: 'count', text: 'たて 1 km・よこ 1 km の 町の広さ（1 km²）は、何 ha？', options: ['100 ha', '10 ha', '1000 ha', '1 ha'],
+    hint: '1 ha は 100 m × 100 m。1 km は何 m？',
+    explain: '1 km ＝ 1000 m。100 m × 100 m の 1 ha が、たてに 10こ・よこに 10こ で 100 ha。',
+    src: '問題文で大きさを決めている', check: { kind: 'conv', level: 2, from: [1, 'km²'], ans: [100, 'ha'] },
+  },
+  {
+    id: 'R2j', level: 2, kind: 'count', text: '2 m² の ベッドを 50台 しきつめると、広さは 何 a？', options: ['1 a', '10 a', '100 a', '0.1 a'],
+    hint: 'まず何 m² になるか。1 a ＝ 100 m²。',
+    explain: '2 m² × 50 ＝ 100 m² ＝ 1 a。',
+    src: '問題文で大きさを決めている', check: { kind: 'mul', level: 2, each: [2, 'm²'], times: 50, ans: [1, 'a'] },
+  },
+  // 体積・かさ（レベル3）
+  {
+    id: 'R3l', level: 3, kind: 'count', text: '給食の牛乳（200 mL）を 5本 あつめると、何 L？', options: ['1 L', '10 L', '100 L', '0.1 L'],
+    hint: '200 mL × 5 は 何 mL？',
+    explain: '200 mL × 5 ＝ 1000 mL ＝ 1 L。',
+    src: '問題文で大きさを決めている', check: { kind: 'mul', level: 3, each: [200, 'mL'], times: 5, ans: [1, 'L'] },
+  },
+  {
+    id: 'R3m', level: 3, kind: 'count', text: '500 mL の ペットボトル 4本で、何 L？', options: ['2 L', '20 L', '200 L', '0.2 L'],
+    hint: '500 mL が 2本で 1 L。',
+    explain: '500 mL × 4 ＝ 2000 mL ＝ 2 L。',
+    src: 'ペットボトルの表示（500 mL）', check: { kind: 'mul', level: 3, each: [500, 'mL'], times: 4, ans: [2, 'L'] },
+  },
+  {
+    id: 'R3n', level: 3, kind: 'count', text: '1 L の水を、1 dL ずつ コップに 分けると 何ばい？', options: ['10ぱい', '100ぱい', '1000ぱい', '1ぱい'],
+    hint: '1 L は 何 dL？',
+    explain: '1 L ＝ 10 dL だから 10ぱい。',
+    src: '問題文で大きさを決めている', check: { kind: 'div', level: 3, big: [1, 'L'], each: [1, 'dL'], ans: 10 },
+  },
+  {
+    id: 'R3o', level: 3, kind: 'count', text: '大さじ 1ぱいは 15 mL。大さじ 2はいでは 何 mL？', options: ['30 mL', '3 dL', '17 mL', '150 mL'],
+    hint: '15 mL が 2つ。',
+    explain: '15 mL × 2 ＝ 30 mL。',
+    src: '計量スプーン 大さじ 15 mL（問題文でも決めている）', check: { kind: 'mul', level: 3, each: [15, 'mL'], times: 2, ans: [30, 'mL'] },
+  },
+  {
+    id: 'R3p', level: 3, kind: 'count', text: 'ジュース 1 L を 4人で 同じだけ 分けると、1人 何 mL？', options: ['250 mL', '25 mL', '400 mL', '2.5 mL'],
+    hint: '1 L は 何 mL？ それを 4で わろう。',
+    explain: '1 L ＝ 1000 mL。1000 ÷ 4 ＝ 250 mL。',
+    src: '問題文で大きさを決めている', check: { kind: 'mul', level: 3, each: [250, 'mL'], times: 4, ans: [1, 'L'] },
+  },
+  {
+    id: 'R3q', level: 3, kind: 'count', text: '1辺 10 cm の 立方体の 箱に 入る水は、何 L？', options: ['1 L', '10 L', '100 L', '0.1 L'],
+    hint: '10 × 10 × 10 ＝ 1000 cm³。1 L は 何 cm³？',
+    explain: '10 cm × 10 cm × 10 cm ＝ 1000 cm³ ＝ 1 L。りっぽーと 同じ大きさ！',
+    src: '問題文で大きさを決めている', check: { kind: 'vol', level: 3, dims: [[10, 'cm'], [10, 'cm'], [10, 'cm']], ans: [1, 'L'] },
+  },
+  {
+    id: 'R3r', level: 3, kind: 'count', text: 'たて 30 cm・よこ 20 cm・高さ 10 cm の 水そうに 入る水は、何 L？', options: ['6 L', '60 L', '600 L', '0.6 L'],
+    hint: 'まず何 cm³ か計算しよう。1000 cm³ で 1 L。',
+    explain: '30 × 20 × 10 ＝ 6000 cm³ ＝ 6 L。',
+    src: '問題文で大きさを決めている', check: { kind: 'vol', level: 3, dims: [[30, 'cm'], [20, 'cm'], [10, 'cm']], ans: [6, 'L'] },
+  },
+  {
+    id: 'R3s', level: 3, kind: 'count', text: 'おとんぴんの おなかの しぼう 28 L は、何 mL？', options: ['28000 mL', '2800 mL', '280 mL', '28 mL'],
+    hint: '1 L は 何 mL？',
+    explain: '1 L ＝ 1000 mL。28 × 1000 ＝ 28000 mL！',
+    src: '保護者から（おとんぴんの測定値。2026-11-14）', check: { kind: 'conv', level: 3, from: [28, 'L'], ans: [28000, 'mL'] },
+  },
+  {
+    id: 'R3t', level: 3, kind: 'count', text: '1 m³ の水は、1 L の牛乳パック 何本分？', options: ['1000本', '100本', '10本', '10000本'],
+    hint: '1 m³ は 何 L？',
+    explain: '1 m³ ＝ 1000 L だから 1000本分。',
+    src: '問題文で大きさを決めている', check: { kind: 'div', level: 3, big: [1, 'm³'], each: [1, 'L'], ans: 1000 },
+  },
+  {
+    id: 'R3u', level: 3, kind: 'count', text: 'おふろ（200 L）を 2 L の ペットボトルで いっぱいにするには、何本？', options: ['100本', '10本', '400本', '1000本'],
+    hint: '200 を 2 で わろう。',
+    explain: '200 L ÷ 2 L ＝ 100本。',
+    src: '問題文で大きさを決めている', check: { kind: 'div', level: 3, big: [200, 'L'], each: [2, 'L'], ans: 100 },
+  },
+  {
+    id: 'R3v', level: 3, kind: 'count', text: 'たて 25 m・よこ 10 m・深さ 1 m の プールに 入る水は、何 m³？', options: ['250 m³', '36 m³', '25 m³', '2500 m³'],
+    hint: '体積は たて × よこ × 深さ。たし算ではないよ。',
+    explain: '25 × 10 × 1 ＝ 250 m³。牛乳パック 25万本分！',
+    src: '問題文で大きさを決めている', check: { kind: 'vol', level: 3, dims: [[25, 'm'], [10, 'm'], [1, 'm']], ans: [250, 'm³'] },
+  },
+  // ---------- D-048: 横浜・日本一・世界一・生き物・食べ物 ----------
+  {
+    id: 'R1k', level: 1, kind: 'unit', text: '横浜ランドマークタワーの高さは、およそ 296 □', options: ['m', 'cm', 'km', 'mm'],
+    hint: '296 cm だと、大人 2人分くらい。もっと ずっと高いよ。',
+    explain: 'ランドマークタワーは およそ 296 m。70階だての 高いビル。',
+    src: '横浜市観光情報サイト（地上70階・高さ約296 m）', check: null,
+  },
+  {
+    id: 'R1l', level: 1, kind: 'count', text: '横浜ベイブリッジの長さは 860 m。何 km？', options: ['0.86 km', '8.6 km', '86 km', '0.086 km'],
+    hint: '1000 m で 1 km。860 m は 1 km より 少し短い。',
+    explain: '860 ÷ 1000 ＝ 0.86 km。',
+    src: '首都高速道路（横浜ベイブリッジ 全長 860 m）', check: { kind: 'eq', level: 1, a: [86, 100, 'km'], b: [860, 1, 'm'] },
+  },
+  {
+    id: 'R1m', level: 1, kind: 'count', text: '横浜マリンタワーの高さは 106 m。何 cm？', options: ['10600 cm', '1060 cm', '106000 cm', '1.06 cm'],
+    hint: '1 m は 何 cm？',
+    explain: '1 m ＝ 100 cm。106 × 100 ＝ 10600 cm。',
+    src: '横浜市（横浜マリンタワー 高さ 106 m）', check: { kind: 'eq', level: 1, a: [10600, 1, 'cm'], b: [106, 1, 'm'] },
+  },
+  {
+    id: 'R1n', level: 1, kind: 'count', text: '日本一高いタワー、東京スカイツリーは 634 m。何 km？', options: ['0.634 km', '6.34 km', '63.4 km', '634 km'],
+    hint: '1000 m で 1 km。',
+    explain: '634 ÷ 1000 ＝ 0.634 km。',
+    src: '東京スカイツリー 高さ 634 m', check: { kind: 'eq', level: 1, a: [634, 1000, 'km'], b: [634, 1, 'm'] },
+  },
+  {
+    id: 'R1o', level: 1, kind: 'about', text: '世界一高い山、エベレストは 8849 m。およそ 何 km？', options: ['約 9 km', '約 90 km', '約 0.9 km', '約 900 km'],
+    hint: '8849 m を km に直すと 8.849 km。',
+    explain: '8849 ÷ 1000 ＝ 8.849 km。およそ 9 km。',
+    src: 'エベレストの高さ 8848.86 m（2020年 ネパールと中国の発表）', check: { kind: 'round', level: 1, value: [8849, 'm'], unit: 'km', tenths: 88 },
+  },
+  {
+    id: 'R1p', level: 1, kind: 'count', text: '日本一長い川、しなの川は 367 km。何 m？', options: ['367000 m', '36700 m', '3670 m', '367 m'],
+    hint: '1 km は 何 m？',
+    explain: '1 km ＝ 1000 m。367 × 1000 ＝ 367000 m。',
+    src: '国土交通省 北陸地方整備局（しなの川 幹川流路延長 367 km）', check: { kind: 'eq', level: 1, a: [367000, 1, 'm'], b: [367, 1, 'km'] },
+  },
+  {
+    id: 'R1q', level: 1, kind: 'unit', text: '世界一大きい動物、シロナガスクジラの長さは、およそ 30 □', options: ['m', 'cm', 'mm', 'km'],
+    hint: '30 cm だと、ものさし 1本分。クジラは もっと大きい！',
+    explain: 'シロナガスクジラは 大きいもので 30 m くらい。25 m プールより長い！',
+    src: '資料によって 24〜33 m（最大で約 30 m とする資料が多い）', check: null,
+  },
+  {
+    id: 'R1r', level: 1, kind: 'unit', text: 'キリンの 頭までの高さは、およそ 5 □', options: ['m', 'cm', 'km', 'mm'],
+    hint: '5 cm は 消しゴムくらい。キリンは 大人より ずっと高いよ。',
+    explain: 'キリンは およそ 5 m。2階の まどに とどくくらい。',
+    src: '動物ずかんの目安（4.5〜5.5 m くらい）〔要確認: 個体によってちがう〕', check: null,
+  },
+  {
+    id: 'R1s', level: 1, kind: 'unit', text: 'てんとう虫（ナナホシテントウ）の長さは、およそ 7 □', options: ['mm', 'cm', 'm', 'km'],
+    hint: '7 cm だと、手のひらくらい。てんとう虫は もっと小さいよ。',
+    explain: 'ナナホシテントウは 7 mm くらい。1 cm より 小さい。',
+    src: 'こん虫ずかんの目安（5〜9 mm くらい）〔要確認: 個体によってちがう〕', check: null,
+  },
+  {
+    id: 'R2k', level: 2, kind: 'unit', text: '日本一大きい湖、びわ湖の広さは、およそ 670 □', options: ['km²', 'ha', 'a', 'm²'],
+    hint: '670 m² だと 教室 10こ分くらい。湖は もっと ずっと広いよ。',
+    explain: 'びわ湖は 669.26 km²。およそ 670 km²。',
+    src: '滋賀県（びわ湖の面積 669.26 km²、国土地理院の値）', check: null,
+  },
+  {
+    id: 'R2l', level: 2, kind: 'about', text: '東京ドームの広さは 46755 m²。およそ 何 ha？', options: ['約 4.7 ha', '約 47 ha', '約 0.47 ha', '約 467 ha'],
+    hint: '1 ha ＝ 10000 m²。',
+    explain: '46755 ÷ 10000 ＝ 4.6755 ha。およそ 4.7 ha。',
+    src: '東京ドームシティ（建築面積 46,755 m²）', check: { kind: 'roundL', level: 2, value: [46755, 'm²'], unit: 'ha', tenths: 47 },
+  },
+  {
+    id: 'R3w', level: 3, kind: 'count', text: 'お米 1合 は 180 mL。3合 では 何 mL？', options: ['540 mL', '5400 mL', '54 mL', '183 mL'],
+    hint: '180 mL が 3つ。',
+    explain: '180 mL × 3 ＝ 540 mL。',
+    src: '米の 1合 ＝ 約 180 mL（すいはんきの 米用カップ）', check: { kind: 'mul', level: 3, each: [180, 'mL'], times: 3, ans: [540, 'mL'] },
+  },
+  {
+    id: 'R3x', level: 3, kind: 'count', text: 'お米 1合（180 mL）は、何 dL？', options: ['1.8 dL', '18 dL', '0.18 dL', '180 dL'],
+    hint: '1 dL ＝ 100 mL。',
+    explain: '180 ÷ 100 ＝ 1.8 dL。',
+    src: '米の 1合 ＝ 約 180 mL', check: { kind: 'eq', level: 3, a: [18, 10, 'dL'], b: [180, 1, 'mL'] },
+  },
+  {
+    id: 'R3y', level: 3, kind: 'count', text: 'ヤクルト（65 mL）を 4本 のむと、何 mL？', options: ['260 mL', '2600 mL', '26 mL', '69 mL'],
+    hint: '65 mL が 4つ。',
+    explain: '65 mL × 4 ＝ 260 mL。',
+    src: '商品の表示（65 mL）', check: { kind: 'mul', level: 3, each: [65, 'mL'], times: 4, ans: [260, 'mL'] },
+  },
+  {
+    id: 'R3z', level: 3, kind: 'count', text: 'ヤクルト1000（100 mL）を 10本 あつめると、何 L？', options: ['1 L', '10 L', '0.1 L', '100 L'],
+    hint: '100 mL × 10 は 何 mL？',
+    explain: '100 mL × 10 ＝ 1000 mL ＝ 1 L。',
+    src: '商品の表示（100 mL）', check: { kind: 'mul', level: 3, each: [100, 'mL'], times: 10, ans: [1, 'L'] },
+  },
+  {
+    id: 'R3za', level: 3, kind: 'count', text: 'かんジュース 350 mL は、何 dL？', options: ['3.5 dL', '35 dL', '0.35 dL', '350 dL'],
+    hint: '1 dL ＝ 100 mL。',
+    explain: '350 ÷ 100 ＝ 3.5 dL。',
+    src: 'かんの表示（350 mL）', check: { kind: 'eq', level: 3, a: [35, 10, 'dL'], b: [350, 1, 'mL'] },
   },
 ];
 
