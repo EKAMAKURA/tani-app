@@ -119,6 +119,37 @@ table.place td.lab { border: none; font-size: 18px; text-align: right; width: au
 .an-timer { font-size: 1.4em; font-variant-numeric: tabular-nums; }
 .an-ok { color: var(--ok, #2e8b57); font-weight: bold; }
 .an-row { font-size: 40px; }
+/* くじの おまけ（D-053） */
+.omake { text-align: center; margin: 8px 0; padding: 8px 12px; border: 3px solid #f5c242; border-radius: 14px; background: #fff8e1; color: #7a5a12; }
+.omake-tag { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: #e0533b; color: #fff; font-size: 0.85em; font-weight: bold; }
+/* くじの特別演出（D-053） */
+.card.rs { position: relative; overflow: hidden; }
+.celebrate { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.confetti { position: absolute; top: -12px; width: 9px; height: 14px; border-radius: 2px; opacity: .9; animation-name: rs-fall; animation-timing-function: linear; animation-iteration-count: 2; }
+@keyframes rs-fall { 0% { top: -12px; } 100% { top: 105%; } }
+.win-banner { position: relative; z-index: 3; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.win-big { height: 130px; }
+.win-mid { height: 56px; }
+.win-banner .burst { position: absolute; left: 50%; top: 50%; margin: -110px 0 0 -110px; opacity: .7; animation: rs-spin 6s linear infinite; }
+@keyframes rs-spin { to { transform: rotate(360deg); } }
+@keyframes rs-pop { 0% { transform: scale(.2); opacity: 0; } 100% { transform: scale(1); } }
+.bigwin, .midwin { position: relative; text-align: center; font-weight: 900; letter-spacing: .05em; }
+.bigwin { font-size: 46px; color: #e0533b; text-shadow: 3px 3px 0 #ffd34d, -2px -2px 0 #fff; animation: rs-shake .5s ease-in-out 3, rs-pop .6s ease-out; }
+.midwin { font-size: 34px; color: #f39c12; text-shadow: 2px 2px 0 #fff; animation: rs-pop .6s ease-out; }
+@keyframes rs-shake { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-6deg) scale(1.08); } 75% { transform: rotate(6deg) scale(1.08); } }
+.rs-big { background: linear-gradient(180deg, #fff6d5, var(--card, #fff)); border-color: #f5c242; }
+.big-reel.reel-long { width: auto; min-width: 0; max-width: 100%; height: auto; padding: 10px 14px; font-size: 24px; line-height: 1.3; white-space: normal; }
+.reel-big { position: relative; z-index: 3; border-color: #e0533b; color: #e0533b; animation: rs-glow 1s ease-in-out 3; }
+@keyframes rs-glow { 50% { box-shadow: 0 0 0 10px rgba(245, 194, 66, .6); } }
+.omake-big { position: relative; z-index: 3; }
+.omake-hug { display: flex; justify-content: center; align-items: center; gap: 4px; }
+.omake-hug .heart { animation: rs-beat .8s ease-in-out infinite; }
+@keyframes rs-beat { 50% { transform: scale(1.3); } }
+.big-tag { margin: 0 0 4px; }
+@media (prefers-reduced-motion: reduce) {
+  .confetti, .win-banner .burst, .bigwin, .midwin, .reel-big, .omake-hug .heart { animation: none; }
+  .confetti { display: none; }
+}
 .chara-row { display: flex; justify-content: center; gap: 18px; margin: 4px 0 8px; }
 .chara-cheer { animation: chara-hop .6s ease-in-out infinite alternate; }
 @media (prefers-reduced-motion: reduce) { .chara-cheer { animation: none; } }
@@ -1028,7 +1059,21 @@ const RS_DEFAULT = {
   prizes: [{ yen: 10, w: 12 }, { yen: 20, w: 4 }, { yen: 50, w: 2 }, { yen: 100, w: 1 }, { yen: 0, item: 'あめ 1こ', w: 10 }, { yen: 0, item: 'おとんぴんの ハグ（大当たり！）', w: 1 }, { yen: 0, item: 'ゲーム時間 5分 延長', w: 5 }, { yen: 50, item: 'おとんぴんの かたもみ 100回で 50円', w: 1 }],
   last: 100,
   monthCap: 1500, // D-052: 1人 1か月の お金の当たりの上限（円）。0 なら上限なし
+  omake: 'おとんぴんとの ハグ', // D-053: どの くじにも つく おまけ（画面では「（期間限定）」をつける）。'' なら なし
 };
+
+// 当たりの演出の大きさ（D-053）: big（大当たり・100円以上・ラストワン）／mid（50円以上・品物）／small
+function rsPrizeTier(prize) {
+  if (!prize) return 'small';
+  if (prize.last || prize.yen >= 100 || (typeof prize.item === 'string' && prize.item.includes('大当たり'))) return 'big';
+  if (prize.yen >= 50 || (typeof prize.item === 'string' && prize.item)) return 'mid';
+  return 'small';
+}
+
+// どの くじにも つく おまけ（D-053）。設定に無いとき（前に保存した設定）は既定の値。'' なら なし
+function rsOmake(cfg) {
+  return typeof cfg.omake === 'string' ? cfg.omake : RS_DEFAULT.omake;
+}
 const RS_ITEM_MAX = 30; // 品物の名前の長さ（D-051 で 20 → 30）
 
 // 当たりの表示（品物なら その名前、お金なら ○円）
@@ -1047,6 +1092,7 @@ function rsValidate(cfg) {
   else if (cfg.prizes.some((x) => !x || !isInt(x.yen, 0, 100000) || !isInt(x.w, 1, RS_MAX_TICKETS))) e.push('prizes の値が不正');
   else if (cfg.prizes.some((x) => x.item !== undefined && (typeof x.item !== 'string' || x.item.length < 1 || x.item.length > RS_ITEM_MAX))) e.push('品物の名前が不正');
   if (cfg.monthCap !== undefined && !isInt(cfg.monthCap, 0, 1000000)) e.push('1か月の上限が不正');
+  if (cfg.omake !== undefined && (typeof cfg.omake !== 'string' || cfg.omake.length > RS_ITEM_MAX)) e.push('おまけが不正');
   else if (cfg.prizes.reduce((s, x) => s + x.w, 0) > RS_MAX_TICKETS) e.push('枚数の合計が多すぎる');
   return e;
 }
@@ -1583,7 +1629,7 @@ function storeSetRewardSlot(data, cfg) {
   const errs = rsValidate(cfg);
   if (errs.length) throw new Error('storeSetRewardSlot: ' + errs.join(' / '));
   const d = storeClone(data);
-  d.rewardSlot = { cost: cfg.cost, prizes: cfg.prizes.map((x) => ({ yen: x.yen, w: x.w, ...(x.item ? { item: x.item } : {}) })), last: cfg.last || 0, monthCap: rsMonthCap(cfg) };
+  d.rewardSlot = { cost: cfg.cost, prizes: cfg.prizes.map((x) => ({ yen: x.yen, w: x.w, ...(x.item ? { item: x.item } : {}) })), last: cfg.last || 0, monthCap: rsMonthCap(cfg), omake: rsOmake(cfg) };
   return d;
 }
 
@@ -3694,7 +3740,7 @@ function coRealLevels(p) {
   return [1, 2, 3].filter((lv) => lv === 1 || unitItems(lv).some((it) => items[it.key]));
 }
 
-globalThis.KR = { decMake, decShift, decToString, decFromString, decParseInput, decEquals, decDigits, decFromFraction, decGcd, UNIT_LEVELS, UNIT_PAIRS, unitExp, unitItemsAll, unitItems, unitItemByKey, unitLadder, rngCrypto, qPick, qShuffle, qAllowedTypes, qMakeS, qOpLabel, qApplyOp, qOptions, qMakeQuestion, qMakeDrill, qCheck, qFlowStart, qFlowHint, qFlowChoose, qFlowInput, qFlowRecord, qFlowFirstRecord, qFlowRetried, PG_STREAK_TO_DOWN, PG_RECENT_MAX, PG_CHECK_INTERVAL_DAYS, PG_SESSION_SIZE, PG_MAX_CHECKS, PG_SLIP_DAYS, PG_PROBE_MAX, pgToday, pgDaysBetween, pgNewItem, pgMastered, pgRecord, pgRecordProbe, pgPlace, pgMarks, pgIsCheckDue, pgWeight, pgPickNormal, pgMarkProbes, pgLevelProgress, pgEvents, pgNextStep, pgMasteredKeys, pgPickL4, pgL4Ready, pgL4Need, pgWeakKeys, pgPickReview, pgJumpKeys, pgPickJump, pgRecordJump, SLOT_SYMBOLS, SLOT_REEL, SLOT_REEL_RIGHT, SLOT_REVIEW_MULT, slotReviewBonus, SLOT_JUMP_MULT, slotJumpBonus, SLOT_DRILL_GIVES_SLOT, slotCompute, slotFormula, slotSpin, SLOT_THEMES, slotThemesFor, RS_DEFAULT, RS_ITEM_MAX, rsPrizeLabel, RS_MAX_TICKETS, rsValidate, rsExpected, rsSig, rsNewBox, rsBoxEmpty, rsCurrentBox, rsMonthCap, rsCanDraw, rsDraw, SLOT_AN_REEL, slotAnzanReel, slotSpinAnzan, STORE_SCHEMA, STORE_KEY, STORE_KEY_BROKEN, STORE_KEY_BEFORE_IMPORT, STORE_KEY_LOCK, STORE_LOCK_TTL_MS, STORE_SESSIONS_MAX, STORE_UNDO_HOURS, STORE_PREFIX_KEY_RE, STORE_LOG_MAX, STORE_LOG_KINDS, STORE_BEST_MAX, STORE_DEFAULT_NAMES, STORE_RS_COST_DEFAULT, storeUpgrade, storeClone, storeInitial, storeValidate, storeLoad, storeLockAcquire, storeLockRelease, storeSave, storeProfile, storeSetItem, storeSetPrefix, storeApplyTime, storeApplyMemtest, storeApplyBonus, storeAddLog, storeSetRank, storeSetUnlocked, storeSetClock, storeSetWord, storeSetMeaning, storeAddDrill, storeApplySession, storeClearPending, storeExchange, storeRsCost, storeSetRsCost, storeRewardSlot, storeSetRewardSlot, storeMonthYen, storeRsMaxYen, storeSpinReward, storeSetRewards, storeRename, storeSetTheme, storeResetProfile, storeResetAll, storeMarkExported, storeExportText, storeParseImport, storeImportSummary, storeBackupBeforeImport, storeReadBeforeImport, storeClearBeforeImport, storeAdoptImported, storeSetAnzanBest, CHARA_LIST, CHARA_MOODS, CHARA_LINES, charaLine, charaForLevel, charaSvg, charaLiterSvg, AV_MOODS, AV_IDS, avatarSvg, avMoodFromResult, avMood, avIsFirst, PREFIXES, PREFIX_KINDS, PREFIX_BOX_MAX, prefixById, prefixKeys, prefixFactorLabel, prefixMakeQuestion, prefixRecord, prefixLearned, prefixPick, prefixTableHtml, MN_DONE_BOX, MEANING, mnById, mnForLevel, mnMakeQuestion, mnRecord, mnDone, mnNextFor, mnLevelDone, WD_DONE_BOX, WORD, wdById, wdMakeQuestion, wdRecord, wdDone, wdKeysFor, wdPick, REAL, realById, realPick, realMakeQuestion, whyChain, whyFactor, whyMoney, AN_KINDS, AN_SESSION_SIZE, anMakeQuestion, anMakeSet, anCheck, CK_FACTORS, CK_SESSION_SIZE, CK_MAX_CHECKS, CK_ITEMS, ckById, ckOpLabel, ckOptions, ckMakeQuestion, ckFlowStart, ckFlowHint, ckFlowChoose, ckFlowInput, ckFlowRecord, ckFirstRecord, ckPick, ckHasWork, ckPickLabel, MT_POINTS, MT_MIN_MASTERED, MT_LOGIN_BONUS, MT_WEEK_STAMPS, MT_WEEK_BONUS, mtPoints, mtCandidates, mtAvailable, mtDoneToday, mtPick, mtWeekStart, mtWeekStamps, mtDueBonuses, TC_SECONDS, TC_DAILY_MAX, TC_UNLOCK_MASTERED, TC_WRONG_SHOW_MS, tcMakeQuestion, tcPoints, tcScore, tcCountToday, tcPointsFromScore, tcPointsFor, tcReady, coClockCleared, coClockMastered, coWordLevels, coLevelCleared, CO_RECENT_DAYS, CO_ERR_MIN, coRecentErrors, coLevelHasWork, coL4Available, coTimeAvailable, coRecommend, coSessionEvents, CO_RANKS, coRankStats, coRankIndex, coCheckWaiting, coLevelStages, CO_WEEK_KINDS, coWeekDone, CO_OTHER_MODES, CO_OTHER_DAILY_MAX, CO_OTHER_DAILY_MAX_BY, coOtherMax, coOtherLeft, coRealLevels };
+globalThis.KR = { decMake, decShift, decToString, decFromString, decParseInput, decEquals, decDigits, decFromFraction, decGcd, UNIT_LEVELS, UNIT_PAIRS, unitExp, unitItemsAll, unitItems, unitItemByKey, unitLadder, rngCrypto, qPick, qShuffle, qAllowedTypes, qMakeS, qOpLabel, qApplyOp, qOptions, qMakeQuestion, qMakeDrill, qCheck, qFlowStart, qFlowHint, qFlowChoose, qFlowInput, qFlowRecord, qFlowFirstRecord, qFlowRetried, PG_STREAK_TO_DOWN, PG_RECENT_MAX, PG_CHECK_INTERVAL_DAYS, PG_SESSION_SIZE, PG_MAX_CHECKS, PG_SLIP_DAYS, PG_PROBE_MAX, pgToday, pgDaysBetween, pgNewItem, pgMastered, pgRecord, pgRecordProbe, pgPlace, pgMarks, pgIsCheckDue, pgWeight, pgPickNormal, pgMarkProbes, pgLevelProgress, pgEvents, pgNextStep, pgMasteredKeys, pgPickL4, pgL4Ready, pgL4Need, pgWeakKeys, pgPickReview, pgJumpKeys, pgPickJump, pgRecordJump, SLOT_SYMBOLS, SLOT_REEL, SLOT_REEL_RIGHT, SLOT_REVIEW_MULT, slotReviewBonus, SLOT_JUMP_MULT, slotJumpBonus, SLOT_DRILL_GIVES_SLOT, slotCompute, slotFormula, slotSpin, SLOT_THEMES, slotThemesFor, RS_DEFAULT, rsPrizeTier, rsOmake, RS_ITEM_MAX, rsPrizeLabel, RS_MAX_TICKETS, rsValidate, rsExpected, rsSig, rsNewBox, rsBoxEmpty, rsCurrentBox, rsMonthCap, rsCanDraw, rsDraw, SLOT_AN_REEL, slotAnzanReel, slotSpinAnzan, STORE_SCHEMA, STORE_KEY, STORE_KEY_BROKEN, STORE_KEY_BEFORE_IMPORT, STORE_KEY_LOCK, STORE_LOCK_TTL_MS, STORE_SESSIONS_MAX, STORE_UNDO_HOURS, STORE_PREFIX_KEY_RE, STORE_LOG_MAX, STORE_LOG_KINDS, STORE_BEST_MAX, STORE_DEFAULT_NAMES, STORE_RS_COST_DEFAULT, storeUpgrade, storeClone, storeInitial, storeValidate, storeLoad, storeLockAcquire, storeLockRelease, storeSave, storeProfile, storeSetItem, storeSetPrefix, storeApplyTime, storeApplyMemtest, storeApplyBonus, storeAddLog, storeSetRank, storeSetUnlocked, storeSetClock, storeSetWord, storeSetMeaning, storeAddDrill, storeApplySession, storeClearPending, storeExchange, storeRsCost, storeSetRsCost, storeRewardSlot, storeSetRewardSlot, storeMonthYen, storeRsMaxYen, storeSpinReward, storeSetRewards, storeRename, storeSetTheme, storeResetProfile, storeResetAll, storeMarkExported, storeExportText, storeParseImport, storeImportSummary, storeBackupBeforeImport, storeReadBeforeImport, storeClearBeforeImport, storeAdoptImported, storeSetAnzanBest, CHARA_LIST, CHARA_MOODS, CHARA_LINES, charaLine, charaForLevel, charaSvg, charaLiterSvg, AV_MOODS, AV_IDS, avatarSvg, avMoodFromResult, avMood, avIsFirst, PREFIXES, PREFIX_KINDS, PREFIX_BOX_MAX, prefixById, prefixKeys, prefixFactorLabel, prefixMakeQuestion, prefixRecord, prefixLearned, prefixPick, prefixTableHtml, MN_DONE_BOX, MEANING, mnById, mnForLevel, mnMakeQuestion, mnRecord, mnDone, mnNextFor, mnLevelDone, WD_DONE_BOX, WORD, wdById, wdMakeQuestion, wdRecord, wdDone, wdKeysFor, wdPick, REAL, realById, realPick, realMakeQuestion, whyChain, whyFactor, whyMoney, AN_KINDS, AN_SESSION_SIZE, anMakeQuestion, anMakeSet, anCheck, CK_FACTORS, CK_SESSION_SIZE, CK_MAX_CHECKS, CK_ITEMS, ckById, ckOpLabel, ckOptions, ckMakeQuestion, ckFlowStart, ckFlowHint, ckFlowChoose, ckFlowInput, ckFlowRecord, ckFirstRecord, ckPick, ckHasWork, ckPickLabel, MT_POINTS, MT_MIN_MASTERED, MT_LOGIN_BONUS, MT_WEEK_STAMPS, MT_WEEK_BONUS, mtPoints, mtCandidates, mtAvailable, mtDoneToday, mtPick, mtWeekStart, mtWeekStamps, mtDueBonuses, TC_SECONDS, TC_DAILY_MAX, TC_UNLOCK_MASTERED, TC_WRONG_SHOW_MS, tcMakeQuestion, tcPoints, tcScore, tcCountToday, tcPointsFromScore, tcPointsFor, tcReady, coClockCleared, coClockMastered, coWordLevels, coLevelCleared, CO_RECENT_DAYS, CO_ERR_MIN, coRecentErrors, coLevelHasWork, coL4Available, coTimeAvailable, coRecommend, coSessionEvents, CO_RANKS, coRankStats, coRankIndex, coCheckWaiting, coLevelStages, CO_WEEK_KINDS, coWeekDone, CO_OTHER_MODES, CO_OTHER_DAILY_MAX, CO_OTHER_DAILY_MAX_BY, coOtherMax, coOtherLeft, coRealLevels };
 if (typeof document !== 'undefined') {
 // ---- src/ui/app.js ----
 // ui/app.js — 画面の描画とイベント。logic の関数は同じスコープに連結されている（build.mjs）。設計 §9
@@ -5122,10 +5168,14 @@ function uiRewards() {
   if (uiS.rspin) {
     // くじの結果（設計 §13.22）
     const sp = uiS.rspin;
-    h += '<div class="card rs"><h2>ごほうびくじ</h2>';
-    h += '<div class="reel big-reel" id="rs-reel">' + (sp.shown ? uiEsc(rsPrizeLabel(sp.prize)) : '?') + '</div>';
+    const tier = sp.shown ? rsPrizeTier(sp.prize) : 'small';
+    h += '<div class="card rs' + (sp.shown ? ' rs-' + tier : '') + '"><h2>ごほうびくじ</h2>';
+    if (sp.shown && tier !== 'small') h += uiCelebrate(tier); // 当たりの特別演出（D-053）
+    const longName = sp.shown && rsPrizeLabel(sp.prize).length > 5;
+    h += '<div class="reel big-reel' + (sp.shown ? ' reel-' + tier : '') + (longName ? ' reel-long' : '') + '" id="rs-reel">' + (sp.shown ? uiEsc(rsPrizeLabel(sp.prize)) : '?') + '</div>';
     if (sp.shown) {
       h += '<p class="fb ok" style="text-align:center">' + (sp.prize.last ? '<b>ラストワン賞！</b> ' : '') + '<b>' + uiEsc(rsPrizeLabel(sp.prize)) + '</b> 当たり！ おとなの人に見せてね。</p>';
+      if (rsOmake(rs)) h += uiOmakeHtml(rsOmake(rs)); // D-053
       if (rsBoxEmpty(p.rbox)) h += '<p class="muted" style="text-align:center">箱がからっぽになった。次は新しい箱だよ。</p>';
       h += '<p style="text-align:center"><button class="primary big" data-act="rsdone">OK</button></p>';
     }
@@ -5139,7 +5189,9 @@ function uiRewards() {
   // 今月の お金の当たりの上限（D-052）
   const maxYen = storeRsMaxYen(uiS.data, uiS.pid, uiNowIso());
   const canDraw = rsCanDraw(rs, p.rbox, maxYen);
-  h += '<div class="card rs"><h3>ごほうびくじ（1回 ' + rsCost + ' ポイント）</h3>' + uiBoxHtml(rs, rsCurrentBox(rs, p.rbox));
+  h += '<div class="card rs"><h3>ごほうびくじ（1回 ' + rsCost + ' ポイント）</h3>';
+  if (rsOmake(rs)) h += '<p class="omake">いまだけ！ どの くじにも おまけ: <b>' + uiEsc(rsOmake(rs)) + '</b><span class="omake-tag">期間限定</span></p>'; // D-053
+  h += uiBoxHtml(rs, rsCurrentBox(rs, p.rbox));
   if (maxYen !== null) {
     h += '<p class="muted">今月の お金の当たり: あと <b>' + maxYen + '円</b>（1か月 ' + rsMonthCap(rs) + '円まで）</p>';
     if (!canDraw) h += '<p class="fb info">今月の お金の当たりは いっぱい。品物の札も 残っていないので、来月まで まってね。ポイントは 貯めておけるよ。</p>';
@@ -5161,6 +5213,45 @@ function uiRewards() {
   if (uiS.adult.msg) h += '<p class="fb ok">' + uiS.adult.msg + '</p>';
   h += '<p><button data-act="home">← もどる</button></p>';
   return h;
+}
+
+// ---------- くじの特別演出（D-053） ----------
+// big: 光の輪と「大当たり！」・紙ふぶき 40まい。mid: 「当たり！」と紙ふぶき 16まい。絵と色は CSS と SVG だけ（外部の画像なし）
+function uiCelebrate(tier) {
+  const colors = ['#f5c242', '#e0533b', '#3bb5a0', '#5b8fd9', '#ff7eb6', '#9b7be0'];
+  const n = tier === 'big' ? 40 : 16;
+  let h = '<div class="celebrate" aria-hidden="true">';
+  for (let i = 0; i < n; i++) {
+    // 位置・色・おくれは i から決める（毎回同じ並び。乱数は使わない）
+    const left = (i * 37) % 100;
+    const delay = ((i * 13) % 20) / 10;
+    const dur = 2.2 + ((i * 7) % 10) / 10;
+    const rot = (i * 47) % 360;
+    h += '<i class="confetti" style="left:' + left + '%;background:' + colors[i % colors.length] + ';animation-delay:' + delay + 's;animation-duration:' + dur + 's;transform:rotate(' + rot + 'deg)"></i>';
+  }
+  if (tier === 'big') {
+    // 光の輪（24本の すじ）と 星
+    let rays = '';
+    for (let i = 0; i < 24; i++) {
+      const a = (i * 15 * Math.PI) / 180;
+      const x2 = 150 + Math.cos(a) * 140;
+      const y2 = 150 + Math.sin(a) * 140;
+      rays += '<line x1="150" y1="150" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) + '" stroke="' + (i % 2 ? '#ffd34d' : '#ff9f43') + '" stroke-width="10" stroke-linecap="round"/>';
+    }
+    h += '</div><div class="win-banner win-big" aria-hidden="true"><svg class="burst" viewBox="0 0 300 300" width="220" height="220">' + rays + '<circle cx="150" cy="150" r="70" fill="#fff3c4" stroke="#f5c242" stroke-width="6"/></svg>';
+    h += '<div class="bigwin">大当たり！</div></div>';
+    return h;
+  }
+  return h + '</div><div class="win-banner win-mid" aria-hidden="true"><div class="midwin">当たり！</div></div>';
+}
+
+// おまけ（期間限定）の絵: 自分のキャラと おとんぴんが ハートで ハグ
+function uiOmakeHtml(name) {
+  const p = uiProfile();
+  const me = p && AV_IDS.includes(p.id) && p.id !== 'p5' ? avatarSvg(p.id, 'star', 64) : '';
+  let h = '<div class="omake omake-big"><div class="omake-tag big-tag">期間限定</div>';
+  h += '<div class="omake-hug">' + me + '<svg class="heart" viewBox="0 0 40 36" width="40" height="36" aria-hidden="true"><path d="M20 34 C 4 22 0 14 6 7 C 11 1 18 3 20 9 C 22 3 29 1 34 7 C 40 14 36 22 20 34 Z" fill="#ff5c8a"/></svg>' + avatarSvg('p5', 'star', 64) + '</div>';
+  return h + '<p>＋ おまけ: <b>' + uiEsc(name) + '</b></p></div>';
 }
 
 // くじの箱の中身（設計 §13.22）。あたりごとの残り枚数と、ラストワン
@@ -5268,6 +5359,7 @@ function uiAdult() {
     h += '<div class="row">当たり' + (i + 1) + ': <input type="number" id="rs-yen-' + i + '" value="' + x.yen + '" min="0" step="1"> 円・名前 <input type="text" id="rs-item-' + i + '" value="' + uiEsc(x.item || '') + '" maxlength="' + RS_ITEM_MAX + '" placeholder="例: あめ 1こ"> × <input type="number" id="rs-w-' + i + '" value="' + x.w + '" min="1" step="1"> 枚</div>';
   }
   h += '<div class="row">ラストワン（最後の 1枚）: <input type="number" id="rs-last" value="' + (rs.last || 0) + '" min="0" step="1"> 円（0 なら なし）</div>';
+  h += '<div class="row">どの くじにも つく おまけ: <input type="text" id="rs-omake" value="' + uiEsc(rsOmake(rs)) + '" maxlength="' + RS_ITEM_MAX + '"> （空なら なし。画面では「期間限定」と出る）</div>';
   h += '<div class="row">1人 1か月の お金の上限: <input type="number" id="rs-cap" value="' + rsMonthCap(rs) + '" min="0" step="1"> 円（0 なら 上限なし。届いたら、その月は品物の札だけ）</div>';
   // メンバーごとの 1回のポイント（D-043）。空なら上の「1回」の値
   h += '<p><b>メンバーごとの 1回のポイント</b>（空なら上の値）</p>';
@@ -5299,7 +5391,8 @@ function uiReadRewardSlotForm() {
     prizes.push(item ? { yen: yen === null ? 0 : yen, item, w } : { yen, w }); // 名前つきでも 円を入れれば お金の当たり（D-051）
   }
   const cap = num('rs-cap');
-  return { cost: num('rs-cost'), prizes, last: num('rs-last') || 0, monthCap: cap === null ? RS_DEFAULT.monthCap : cap };
+  const om = document.getElementById('rs-omake');
+  return { cost: num('rs-cost'), prizes, last: num('rs-last') || 0, monthCap: cap === null ? RS_DEFAULT.monthCap : cap, omake: om ? om.value.trim() : rsOmake(storeRewardSlot(uiS.data)) };
 }
 
 function uiRunRewardSpin() {
